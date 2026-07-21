@@ -21,6 +21,7 @@ import {
   CheckSquare
 } from 'lucide-react';
 import { formatDate } from '../utils';
+import MetricCard from '../components/MetricCard';
 
 export default function Home({ 
   setCurrentPage, 
