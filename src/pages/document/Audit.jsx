@@ -402,9 +402,11 @@ export default function Audit() {
                 <div 
                   style={{ 
                     height: '100%', 
-                    width: `${progressPercent}%`, 
+                    width: '100%', 
+                    transform: `scaleX(${progressPercent / 100})`,
+                    transformOrigin: 'left',
                     backgroundColor: progressPercent === 100 ? 'var(--green)' : 'var(--accent)', 
-                    transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)' 
+                    transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)' 
                   }} 
                 />
               </div>
