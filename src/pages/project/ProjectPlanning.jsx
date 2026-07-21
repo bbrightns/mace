@@ -457,35 +457,35 @@ export default function ProjectPlanning() {
           <TrendingUp size={24} className="text3" style={{ opacity: 0.3 }} />
         </div>
 
-        <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid var(--border)' }}>
+        <div className="card metric-card flex-between">
           <div>
-            <div className="form-label" style={{ color: 'var(--text3)', margin: 0 }}>Safety & SPOF Critical (S)</div>
-            <div className="font-mono" style={{ fontSize: '22px', fontWeight: '800', color: 'var(--red)', marginTop: '4px' }}>
+            <div className="metric-label">Safety & SPOF Critical (S)</div>
+            <div className="metric-value" style={{ color: 'var(--red)' }}>
               {formatMthb(safetyBudget)}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '2px' }}>{safetyCount} super-critical items</div>
+            <div className="metric-subtext">{safetyCount} super-critical items</div>
           </div>
           <ShieldAlert size={24} style={{ color: 'var(--red)', opacity: 0.4 }} />
         </div>
 
-        <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid var(--border)' }}>
+        <div className="card metric-card flex-between">
           <div>
-            <div className="form-label" style={{ color: 'var(--text3)', margin: 0 }}>Capital Projects (CAPEX)</div>
-            <div className="font-mono" style={{ fontSize: '22px', fontWeight: '800', color: '#8b5cf6', marginTop: '4px' }}>
+            <div className="metric-label">Capital Projects (CAPEX)</div>
+            <div className="metric-value" style={{ color: '#8b5cf6' }}>
               {formatMthb(projectBudget)}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '2px' }}>{projectCount} investment upgrades</div>
+            <div className="metric-subtext">{projectCount} investment upgrades</div>
           </div>
           <Milestone size={24} style={{ color: '#8b5cf6', opacity: 0.4 }} />
         </div>
 
-        <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', border: '1px solid var(--border)' }}>
+        <div className="card metric-card flex-between">
           <div>
-            <div className="form-label" style={{ color: 'var(--text3)', margin: 0 }}>Maintenance & Spares (OPEX)</div>
-            <div className="font-mono" style={{ fontSize: '22px', fontWeight: '800', color: '#10b981', marginTop: '4px' }}>
+            <div className="metric-label">Maintenance & Spares (OPEX)</div>
+            <div className="metric-value" style={{ color: '#10b981' }}>
               {formatMthb(maintenanceBudget)}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '2px' }}>{maintenanceCount} yearly & parts programs</div>
+            <div className="metric-subtext">{maintenanceCount} yearly & parts programs</div>
           </div>
           <CheckCircle2 size={24} style={{ color: '#10b981', opacity: 0.4 }} />
         </div>

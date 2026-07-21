@@ -1364,15 +1364,15 @@ export default function Purchasing() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginTop: '14px' }}>
               <div>
-                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text3)', fontWeight: '700', letterSpacing: '0.4px' }}>Actual cost</div>
+                <div className="metric-label">Actual cost</div>
                 <div className="font-mono text-accent" style={{ fontSize: '14px', fontWeight: '850', color: 'var(--accent)', marginTop: '2px' }}>{formatBaht(mirActual)}</div>
               </div>
               <div>
-                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text3)', fontWeight: '700', letterSpacing: '0.4px' }}>Budget/Year</div>
+                <div className="metric-label">Budget/Year</div>
                 <div className="font-mono" style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text2)', marginTop: '2px' }}>{formatBaht(mirYearlyBudget)}</div>
               </div>
               <div>
-                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text3)', fontWeight: '700', letterSpacing: '0.4px' }}>Budget/Month</div>
+                <div className="metric-label">Budget/Month</div>
                 <div className="font-mono" style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text2)', marginTop: '2px' }}>{formatBaht(Math.round(mirYearlyBudget / 12))}</div>
               </div>
             </div>

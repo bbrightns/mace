@@ -1241,3 +1241,41 @@ h1, h2, h3, h4, h5, h6 {
     align-items: stretch;
   }
 }
+
+/* Extracted Design System Utility Classes */
+.metric-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.metric-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text3);
+}
+
+.metric-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 4px;
+}
+
+.metric-subtext {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
