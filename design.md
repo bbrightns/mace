@@ -64,3 +64,14 @@ When designing new components or views:
      - `Completed/Approved`: Light Green backdrop with `var(--green)` text.
      - `Failed/Breakdown`: Light Red backdrop with `var(--red)` text.
 5. **Toast Notifications**: Always trigger notifications through the `ToastProvider` context API (`useToast()`) to display error/success banners consistently.
+
+---
+
+## 🧱 Extracted Component Library (`src/components/`)
+
+- **`PageHeader`** ([PageHeader.jsx](file:///d:/UserProfiles/Desktop/mace/src/components/PageHeader.jsx)): Standardized page top block supporting `title`, `subtitle`, optional `badgeText`, and `actions` slot.
+- **`EmptyState`** ([EmptyState.jsx](file:///d:/UserProfiles/Desktop/mace/src/components/EmptyState.jsx)): Accessible placeholder state supporting `icon`, `title`, `description`, and `action` slot.
+- **`MetricCard`** ([MetricCard.jsx](file:///d:/UserProfiles/Desktop/mace/src/components/MetricCard.jsx)): KPI dashboard card supporting `label`, `value`, `subtext`, `icon`, `glowColor` (`blue` | `red` | `yellow` | `green`), and accessible `onClick` handling.
+- **`Modal`** ([Modal.jsx](file:///d:/UserProfiles/Desktop/mace/src/components/Modal.jsx)): WCAG AA modal dialog supporting focus management, ARIA attributes, and `Escape` key dismiss.
+- **`StatusBadge`** ([StatusBadge.jsx](file:///d:/UserProfiles/Desktop/mace/src/components/StatusBadge.jsx)): Uniform status pill component using design token colors.
+

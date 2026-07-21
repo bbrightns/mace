@@ -8,6 +8,8 @@ import {
 } from '../../firebase/collections';
 import Modal from '../../components/Modal';
 import { useToast } from '../../components/Toast';
+import PageHeader from '../../components/PageHeader';
+import EmptyState from '../../components/EmptyState';
 
 export default function Drawings() {
   const [items, setItems] = useState([]);
@@ -136,19 +138,19 @@ export default function Drawings() {
     const matchesArea = filterArea === 'all' || x.systemArea === filterArea;
     return matchesSearch && matchesArea;
   });
-
   return (
     <div className="workspace-container">
-      <div className="page-header">
-        <div className="page-title-block">
-          <h1 className="page-title">Electrical Blueprint Cabinet & Readings Registry</h1>
-          <p className="page-subtitle">Track industrial glass lines schematics, panel diagrams, revisions, and location keys without file clutter.</p>
-        </div>
-        <button className="btn btn-primary" onClick={handleOpenAdd} id="add-dwg-btn">
-          <Plus size={16} />
-          <span>New Drawing Index</span>
-        </button>
-      </div>
+      <PageHeader 
+        title="Electrical Blueprint Cabinet & Readings Registry"
+        subtitle="Track industrial glass lines schematics, panel diagrams, revisions, and location keys without file clutter."
+        actions={
+          <button className="btn btn-primary" onClick={handleOpenAdd} id="add-dwg-btn">
+            <Plus size={16} />
+            <span>New Drawing Index</span>
+          </button>
+        }
+        id="dwg-page-header"
+      />
 
       {/* Control filters */}
       <div className="card controls-bar" id="dwg-controls-bar">
@@ -185,12 +187,15 @@ export default function Drawings() {
           <div className="skeleton-row"></div>
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="empty-state" id="dwg-empty-state">
-          <Library className="empty-state-icon" />
-          <h4 className="empty-state-title">Cabinet Vault Empty</h4>
-          <p className="empty-state-desc font-sans">No drawing indexes configured. Catalog schematics with cabinet drawers coordinates here.</p>
-          <button className="btn btn-sm" onClick={handleOpenAdd}>Catalog Schematic</button>
-        </div>
+        <EmptyState 
+          icon={Library}
+          title="Cabinet Vault Empty"
+          description="No drawing indexes configured. Catalog schematics with cabinet drawers coordinates here."
+          action={
+            <button className="btn btn-sm" onClick={handleOpenAdd}>Catalog Schematic</button>
+          }
+          id="dwg-empty-state"
+        />
       ) : (
         <>
           {/* Desktop Table */}

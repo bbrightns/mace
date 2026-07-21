@@ -193,126 +193,52 @@ export default function Home({
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '18px' }}>
         
         {/* PM Tasks */}
-        <button 
-          type="button"
+        <MetricCard 
+          label="Remaining PM Tasks"
+          value={openPMs}
+          subtext={`Cycle: ${currentMonthName}`}
+          icon={ListTodo}
+          glowColor="blue"
           onClick={() => setCurrentPage('pm-plan')}
-          className="card card-glow-blue interactive-card"
-          aria-label="View remaining PM tasks"
-          style={{ 
-            padding: '18px 20px', 
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            backgroundColor: 'var(--surface)',
-            minHeight: '125px',
-            textAlign: 'left',
-            border: '1px solid var(--border)'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', paddingTop: '2px' }}>Remaining PM Tasks</div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--blue-soft)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <ListTodo size={20} />
-            </div>
-          </div>
-          <div style={{ marginTop: '8px' }}>
-            <div style={{ fontSize: '30px', fontWeight: '800', color: 'var(--text)', letterSpacing: '-1px', lineHeight: 1 }}>{openPMs}</div>
-            <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '600', marginTop: '6px' }}>Cycle: {currentMonthName}</div>
-          </div>
-        </button>
+          ariaLabel="View remaining PM tasks"
+          id="home-metric-pm"
+        />
 
         {/* Breakdowns */}
-        <button 
-          type="button"
+        <MetricCard 
+          label="Active Failures"
+          value={activeTroubles}
+          subtext={activeTroubles > 0 ? 'Needs Attention' : 'All Clear'}
+          icon={AlertTriangle}
+          glowColor="red"
           onClick={() => setCurrentPage('trouble-record')}
-          className="card card-glow-red interactive-card"
-          aria-label="View active breakdown records"
-          style={{ 
-            padding: '18px 20px', 
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            backgroundColor: 'var(--surface)',
-            minHeight: '125px',
-            textAlign: 'left',
-            border: '1px solid var(--border)'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', paddingTop: '2px' }}>Active Failures</div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: activeTroubles > 0 ? 'rgba(239, 68, 68, 0.12)' : 'var(--surface2)', color: activeTroubles > 0 ? 'var(--red)' : 'var(--text3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <AlertTriangle size={20} />
-            </div>
-          </div>
-          <div style={{ marginTop: '8px' }}>
-            <div style={{ fontSize: '30px', fontWeight: '800', color: activeTroubles > 0 ? 'var(--red)' : 'var(--text)', letterSpacing: '-1px', lineHeight: 1 }}>{activeTroubles}</div>
-            <div style={{ fontSize: '11px', color: activeTroubles > 0 ? 'var(--red)' : 'var(--green)', fontWeight: '600', marginTop: '6px' }}>
-              {activeTroubles > 0 ? 'Needs Attention' : 'All Clear'}
-            </div>
-          </div>
-        </button>
+          ariaLabel="View active breakdown records"
+          id="home-metric-trouble"
+        />
 
         {/* Pending Spares */}
-        <button 
-          type="button"
+        <MetricCard 
+          label="Pending Spares"
+          value={pendingPurchasing}
+          subtext="Awaiting Parts"
+          icon={ShoppingBag}
+          glowColor="yellow"
           onClick={() => setCurrentPage('purchasing')}
-          className="card card-glow-yellow interactive-card"
-          aria-label="View pending purchasing items"
-          style={{ 
-            padding: '18px 20px', 
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            backgroundColor: 'var(--surface)',
-            minHeight: '125px',
-            textAlign: 'left',
-            border: '1px solid var(--border)'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', paddingTop: '2px' }}>Pending Spares</div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.12)', color: 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <ShoppingBag size={20} />
-            </div>
-          </div>
-          <div style={{ marginTop: '8px' }}>
-            <div style={{ fontSize: '30px', fontWeight: '800', color: 'var(--text)', letterSpacing: '-1px', lineHeight: 1 }}>{pendingPurchasing}</div>
-            <div style={{ fontSize: '11px', color: 'var(--yellow)', fontWeight: '600', marginTop: '6px' }}>Awaiting Parts</div>
-          </div>
-        </button>
+          ariaLabel="View pending purchasing items"
+          id="home-metric-purchasing"
+        />
 
         {/* Floor Issues */}
-        <button 
-          type="button"
+        <MetricCard 
+          label="Shop Floor Issues"
+          value={openVOSF}
+          subtext="Open Reports"
+          icon={MessageSquare}
+          glowColor="green"
           onClick={() => setCurrentPage('vosf')}
-          className="card card-glow-green interactive-card"
-          aria-label="View voice of shop floor issues"
-          style={{ 
-            padding: '18px 20px', 
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            backgroundColor: 'var(--surface)',
-            minHeight: '125px',
-            textAlign: 'left',
-            border: '1px solid var(--border)'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', paddingTop: '2px' }}>Shop Floor Issues</div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.12)', color: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <MessageSquare size={20} />
-            </div>
-          </div>
-          <div style={{ marginTop: '8px' }}>
-            <div style={{ fontSize: '30px', fontWeight: '800', color: 'var(--text)', letterSpacing: '-1px', lineHeight: 1 }}>{openVOSF}</div>
-            <div style={{ fontSize: '11px', color: 'var(--green)', fontWeight: '600', marginTop: '6px' }}>Open Reports</div>
-          </div>
-        </button>
+          ariaLabel="View voice of shop floor issues"
+          id="home-metric-vosf"
+        />
 
       </div>
 
