@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Calendar, 
   Clock, 
@@ -72,18 +72,22 @@ export default function Home({
     return false;
   };
 
-  // Filter PM plans for current month
-  const pmTasksDueThisMonth = pmPlans.filter(item => {
-    const isRequired = isMonthRequired(item, currentYear, currentMonth);
-    const isFinished = isMonthFinished(item, currentYear, currentMonth);
-    return isRequired && !isFinished;
-  });
+  // Filter PM plans for current month with useMemo
+  const pmTasksDueThisMonth = useMemo(() => {
+    return pmPlans.filter(item => {
+      const isRequired = isMonthRequired(item, currentYear, currentMonth);
+      const isFinished = isMonthFinished(item, currentYear, currentMonth);
+      return isRequired && !isFinished;
+    });
+  }, [pmPlans, pmLogs, currentYear, currentMonth]);
 
-  const pmTasksFinishedThisMonth = pmPlans.filter(item => {
-    const isRequired = isMonthRequired(item, currentYear, currentMonth);
-    const isFinished = isMonthFinished(item, currentYear, currentMonth);
-    return isRequired && isFinished;
-  });
+  const pmTasksFinishedThisMonth = useMemo(() => {
+    return pmPlans.filter(item => {
+      const isRequired = isMonthRequired(item, currentYear, currentMonth);
+      const isFinished = isMonthFinished(item, currentYear, currentMonth);
+      return isRequired && isFinished;
+    });
+  }, [pmPlans, pmLogs, currentYear, currentMonth]);
 
   const totalPmRequiredThisMonth = pmTasksDueThisMonth.length + pmTasksFinishedThisMonth.length;
   const pmCompletionPercent = totalPmRequiredThisMonth > 0 
@@ -92,115 +96,30 @@ export default function Home({
 
   // Dynamic status-based counters
   const openPMs = pmTasksDueThisMonth.length;
-  const openVOSF = vosfItems.filter(p => p.status?.toLowerCase() === 'open' || p.status?.toLowerCase() === 'in process').length;
-  const activeTroubles = troubleRecords.filter(p => p.status?.toLowerCase() === 'open' || p.status?.toLowerCase() === 'in process').length;
-  const pendingPurchasing = purchasingItems.filter(p => {
+  const openVOSF = useMemo(() => vosfItems.filter(p => p.status?.toLowerCase() === 'open' || p.status?.toLowerCase() === 'in process').length, [vosfItems]);
+  const activeTroubles = useMemo(() => troubleRecords.filter(p => p.status?.toLowerCase() === 'open' || p.status?.toLowerCase() === 'in process').length, [troubleRecords]);
+  const pendingPurchasing = useMemo(() => purchasingItems.filter(p => {
     const s = p.status?.toLowerCase();
     return s && s !== 'received' && s !== 'declined' && s !== 'cancel';
-  }).length;
-  const openProjReqs = projectRequests.filter(p => p.status?.toLowerCase() === 'open' || p.status?.toLowerCase() === 'in process').length;
-
-  // Monthly Actionable Focus List compilation
-  const monthlyPmItems = pmTasksDueThisMonth.map(item => ({
-    id: `pm-${item.id}`,
-    originalId: item.id,
-    type: 'pm',
-    category: 'PM Task',
-    title: item.machineName || item.machineEquipment || 'Equipment PM',
-    plant: item.plant || 'RFG',
-    responsible: item.responsible || item.team || 'Maintenance',
-    badgeText: item.cycle || 'Monthly',
-    detail: item.checksheetId ? `Checksheet: ${item.checksheetId}` : `Code: ${item.pmCode || item.id}`,
-    targetPage: 'pm-plan',
-    urgent: false,
-    color: '#0284c7'
-  }));
-
-  const monthlyTroubleItems = troubleRecords
-    .filter(p => p.status?.toLowerCase() === 'open' || p.status?.toLowerCase() === 'in process')
-    .map(item => ({
-      id: `trouble-${item.id}`,
-      originalId: item.id,
-      type: 'trouble',
-      category: 'Breakdown',
-      title: item.machineEquipment || 'Equipment Breakdown',
-      plant: item.plant || 'RFG',
-      responsible: item.informer || 'Operator',
-      badgeText: item.status || 'Active',
-      detail: item.breakdownType || item.problem || 'Needs urgent maintenance',
-      targetPage: 'trouble-record',
-      urgent: true,
-      color: '#dc2626'
-    }));
-
-  const monthlyPurchasingItems = purchasingItems
-    .filter(p => {
-      const s = p.status?.toLowerCase();
-      return s && s !== 'received' && s !== 'declined' && s !== 'cancel';
-    })
-    .map(item => ({
-      id: `purchasing-${item.id}`,
-      originalId: item.id,
-      type: 'purchasing',
-      category: 'Spare Part',
-      title: item.itemName || item.description || 'Spare Part Request',
-      plant: item.plant || 'General',
-      responsible: item.requestedBy || 'Purchasing',
-      badgeText: item.status || 'Pending',
-      detail: item.quantity ? `Qty: ${item.quantity} | Part #: ${item.partNumber || 'N/A'}` : `Part #: ${item.partNumber || 'N/A'}`,
-      targetPage: 'purchasing',
-      urgent: false,
-      color: '#d97706'
-    }));
-
-  const monthlyVosfItems = vosfItems
-    .filter(p => p.status?.toLowerCase() === 'open' || p.status?.toLowerCase() === 'in process')
-    .map(item => ({
-      id: `vosf-${item.id}`,
-      originalId: item.id,
-      type: 'vosf',
-      category: 'Floor Issue',
-      title: item.problemDescription || item.title || 'Shop Floor Complaint',
-      plant: item.plant || 'MIR',
-      responsible: item.reportedBy || 'Shop Floor',
-      badgeText: item.status || 'Open',
-      detail: item.location ? `Location: ${item.location}` : 'Awaiting inspection',
-      targetPage: 'vosf',
-      urgent: false,
-      color: '#8b5cf6'
-    }));
-
-  const allMonthlyActionItems = [
-    ...monthlyTroubleItems,
-    ...monthlyPmItems,
-    ...monthlyPurchasingItems,
-    ...monthlyVosfItems
-  ];
-
-  // Filtering for Action Items Hub
-  const filteredActionItems = allMonthlyActionItems.filter(item => {
-    const matchesTab = activeFilterTab === 'all' || item.type === activeFilterTab;
-    const q = toDoSearch.toLowerCase();
-    const matchesSearch = !q || 
-      item.title.toLowerCase().includes(q) || 
-      item.plant.toLowerCase().includes(q) || 
-      item.detail.toLowerCase().includes(q) ||
-      item.category.toLowerCase().includes(q);
-    return matchesTab && matchesSearch;
-  });
+  }).length, [purchasingItems]);
+  const openProjReqs = useMemo(() => projectRequests.filter(p => p.status?.toLowerCase() === 'open' || p.status?.toLowerCase() === 'in process').length, [projectRequests]);
 
   // Dynamic stats calculation for bottom bar
-  const sortedFuturePMs = [...pmPlans]
-    .filter(p => p.nextDueDate && p.status?.toLowerCase() !== 'closed')
-    .sort((a, b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
-  const nextPm = sortedFuturePMs[0];
+  const recentTrouble = useMemo(() => {
+    const sortedTroubles = [...troubleRecords]
+      .filter(t => t.machineEquipment)
+      .sort((a, b) => new Date(b.dateTime || 0) - new Date(a.dateTime || 0));
+    return sortedTroubles[sortedTroubles.length - 1];
+  }, [troubleRecords]);
 
-  const sortedTroubles = [...troubleRecords]
-    .filter(t => t.machineEquipment)
-    .sort((a, b) => new Date(b.dateTime || 0) - new Date(a.dateTime || 0));
-  const recentTrouble = sortedTroubles[sortedTroubles.length - 1];
+  const nextPm = useMemo(() => {
+    const sortedFuturePMs = [...pmPlans]
+      .filter(p => p.nextDueDate && p.status?.toLowerCase() !== 'closed')
+      .sort((a, b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
+    return sortedFuturePMs[0];
+  }, [pmPlans]);
 
-  const modulesData = [
+  const modulesData = useMemo(() => [
     {
       title: 'Maintenance Work',
       description: 'Manage preventive maintenance lists, equipment failure logs, floor complaints, and spare parts.',
@@ -231,7 +150,7 @@ export default function Home({
         { id: 'audit', label: 'Audit', desc: 'Annual ISO preparation checklists', icon: FileCheck2, count: audits.length, countLabel: 'Audits' }
       ]
     }
-  ];
+  ], [openPMs, longTermPlans.length, openVOSF, activeTroubles, pendingPurchasing, openProjReqs, projectPlanning.length, drawings.length, audits.length]);
 
   return (
     <div className="workspace-container" id="home-dashboard" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -274,17 +193,21 @@ export default function Home({
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '18px' }}>
         
         {/* PM Tasks */}
-        <div 
+        <button 
+          type="button"
           onClick={() => setCurrentPage('pm-plan')}
           className="card card-glow-blue interactive-card"
+          aria-label="View remaining PM tasks"
           style={{ 
             padding: '18px 20px', 
             cursor: 'pointer',
             display: 'flex',
             flexDirection: 'column',
-            justify: 'space-between',
+            justifyContent: 'space-between',
             backgroundColor: 'var(--surface)',
-            minHeight: '125px'
+            minHeight: '125px',
+            textAlign: 'left',
+            border: '1px solid var(--border)'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
@@ -297,25 +220,29 @@ export default function Home({
             <div style={{ fontSize: '30px', fontWeight: '800', color: 'var(--text)', letterSpacing: '-1px', lineHeight: 1 }}>{openPMs}</div>
             <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '600', marginTop: '6px' }}>Cycle: {currentMonthName}</div>
           </div>
-        </div>
+        </button>
 
         {/* Breakdowns */}
-        <div 
+        <button 
+          type="button"
           onClick={() => setCurrentPage('trouble-record')}
           className="card card-glow-red interactive-card"
+          aria-label="View active breakdown records"
           style={{ 
             padding: '18px 20px', 
             cursor: 'pointer',
             display: 'flex',
             flexDirection: 'column',
-            justify: 'space-between',
+            justifyContent: 'space-between',
             backgroundColor: 'var(--surface)',
-            minHeight: '125px'
+            minHeight: '125px',
+            textAlign: 'left',
+            border: '1px solid var(--border)'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
             <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', paddingTop: '2px' }}>Active Failures</div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: activeTroubles > 0 ? '#fee2e2' : 'var(--surface2)', color: activeTroubles > 0 ? 'var(--red)' : 'var(--text3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: activeTroubles > 0 ? 'rgba(239, 68, 68, 0.12)' : 'var(--surface2)', color: activeTroubles > 0 ? 'var(--red)' : 'var(--text3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <AlertTriangle size={20} />
             </div>
           </div>
@@ -325,25 +252,29 @@ export default function Home({
               {activeTroubles > 0 ? 'Needs Attention' : 'All Clear'}
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Pending Spares */}
-        <div 
+        <button 
+          type="button"
           onClick={() => setCurrentPage('purchasing')}
           className="card card-glow-yellow interactive-card"
+          aria-label="View pending purchasing items"
           style={{ 
             padding: '18px 20px', 
             cursor: 'pointer',
             display: 'flex',
             flexDirection: 'column',
-            justify: 'space-between',
+            justifyContent: 'space-between',
             backgroundColor: 'var(--surface)',
-            minHeight: '125px'
+            minHeight: '125px',
+            textAlign: 'left',
+            border: '1px solid var(--border)'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
             <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', paddingTop: '2px' }}>Pending Spares</div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#fef3c7', color: 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.12)', color: 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <ShoppingBag size={20} />
             </div>
           </div>
@@ -351,25 +282,29 @@ export default function Home({
             <div style={{ fontSize: '30px', fontWeight: '800', color: 'var(--text)', letterSpacing: '-1px', lineHeight: 1 }}>{pendingPurchasing}</div>
             <div style={{ fontSize: '11px', color: 'var(--yellow)', fontWeight: '600', marginTop: '6px' }}>Awaiting Parts</div>
           </div>
-        </div>
+        </button>
 
         {/* Floor Issues */}
-        <div 
+        <button 
+          type="button"
           onClick={() => setCurrentPage('vosf')}
           className="card card-glow-green interactive-card"
+          aria-label="View voice of shop floor issues"
           style={{ 
             padding: '18px 20px', 
             cursor: 'pointer',
             display: 'flex',
             flexDirection: 'column',
-            justify: 'space-between',
+            justifyContent: 'space-between',
             backgroundColor: 'var(--surface)',
-            minHeight: '125px'
+            minHeight: '125px',
+            textAlign: 'left',
+            border: '1px solid var(--border)'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
             <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', paddingTop: '2px' }}>Shop Floor Issues</div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#d1fae5', color: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.12)', color: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <MessageSquare size={20} />
             </div>
           </div>
@@ -377,7 +312,7 @@ export default function Home({
             <div style={{ fontSize: '30px', fontWeight: '800', color: 'var(--text)', letterSpacing: '-1px', lineHeight: 1 }}>{openVOSF}</div>
             <div style={{ fontSize: '11px', color: 'var(--green)', fontWeight: '600', marginTop: '6px' }}>Open Reports</div>
           </div>
-        </div>
+        </button>
 
       </div>
 

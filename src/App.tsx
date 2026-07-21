@@ -47,10 +47,10 @@ function MainApp() {
         setCurrentPage('home');
       } else if (e.altKey && e.key.toLowerCase() === 't') {
         e.preventDefault();
-        setCurrentPage('troubleRecord');
+        setCurrentPage('trouble-record');
       } else if (e.altKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
-        setCurrentPage('pmPlan');
+        setCurrentPage('pm-plan');
       }
     };
 

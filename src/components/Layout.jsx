@@ -91,6 +91,16 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
 
   return (
     <div className="app-container" id="app-root-container">
+      {/* Mobile backdrop overlay */}
+      {mobileOpen && (
+        <div 
+          className="sidebar-backdrop" 
+          onClick={() => setMobileOpen(false)} 
+          aria-hidden="true"
+          id="sidebar-mobile-backdrop"
+        />
+      )}
+
       {/* Sidebar navigation */}
       <aside className={`app-sidebar ${mobileOpen ? 'mobile-open' : ''}`} id="app-sidebar">
         <div className="sidebar-logo">
@@ -98,7 +108,7 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
           <span className="sidebar-logo-sub">v1.2</span>
         </div>
         
-        <nav className="sidebar-nav">
+        <nav className="sidebar-nav" aria-label="Main Navigation">
           {menuGroups.map((group, gIdx) => {
             let themeClass = 'theme-general';
             if (group.title === 'Maintenance Work') themeClass = 'theme-maintenance';
@@ -112,10 +122,12 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
                   const IconComponent = item.icon;
                   const isActive = currentPage === item.id;
                   return (
-                    <div
+                    <button
                       key={item.id}
+                      type="button"
                       id={`nav-item-${item.id}`}
                       className={`nav-item ${themeClass} ${isActive ? 'active' : ''}`}
+                      aria-current={isActive ? 'page' : undefined}
                       onClick={() => {
                         setCurrentPage(item.id);
                         setMobileOpen(false);
@@ -123,7 +135,7 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
                     >
                       <IconComponent className="nav-item-icon" />
                       <span>{item.label}</span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -131,7 +143,7 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
           })}
         </nav>
         
-        {/* Botton User Section matching design aesthetic */}
+        {/* Bottom User Section matching design aesthetic */}
         <div className="sidebar-user" id="sidebar-engineer-profile">
           <div className="sidebar-user-avatar">EE</div>
           <div className="sidebar-user-info">

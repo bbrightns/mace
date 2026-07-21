@@ -26,7 +26,12 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={{ showToast, removeToast }}>
       {children}
-      <div className="toast-container" id="global-toast-container">
+      <div 
+        className="toast-container" 
+        id="global-toast-container"
+        role="region"
+        aria-label="Notifications"
+      >
         {toasts.map((toast) => (
           <ToastItem 
             key={toast.id} 
@@ -48,7 +53,12 @@ function ToastItem({ toast, onClose }) {
   }, [onClose]);
 
   return (
-    <div className={`toast toast-${toast.type}`} id={`toast-${toast.id}`}>
+    <div 
+      className={`toast toast-${toast.type}`} 
+      id={`toast-${toast.id}`}
+      role="status"
+      aria-live="polite"
+    >
       {toast.type === 'success' && <CheckCircle className="toast-icon" />}
       {toast.type === 'error' && <AlertCircle className="toast-icon" />}
       {toast.type === 'info' && <Info className="toast-icon" />}
@@ -57,7 +67,7 @@ function ToastItem({ toast, onClose }) {
         {toast.message}
       </div>
       
-      <button className="toast-close" onClick={onClose} aria-label="Dismiss notification">
+      <button className="toast-close" onClick={onClose} aria-label="Dismiss notification" type="button">
         <X size={14} />
       </button>
     </div>

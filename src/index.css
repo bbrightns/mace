@@ -139,10 +139,9 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.42);
+  color: #94a3b8; /* High contrast text (4.8:1 against #141B2E) */
   letter-spacing: 1.1px;
   padding: 0 10px 6px 10px;
-  opacity: 0.95;
 }
 
 .nav-item {
@@ -165,50 +164,50 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Group 1: General (Blue) */
 .nav-item.theme-general:hover {
-  background-color: rgba(96, 165, 250, 0.08) !important;
-  color: #60a5fa !important;
-  border-left-color: rgba(0, 102, 255, 0.5) !important;
+  background-color: rgba(96, 165, 250, 0.08);
+  color: #60a5fa;
+  border-left-color: rgba(0, 102, 255, 0.5);
   transform: translateX(3px);
 }
 .nav-item.theme-general.active {
-  background: rgba(0, 102, 255, 0.16) !important;
-  color: #ffffff !important;
+  background: rgba(0, 102, 255, 0.16);
+  color: #ffffff;
   font-weight: 600;
 }
 
 /* Group 2: Maintenance Work (Blue) */
 .nav-item.theme-maintenance:hover {
-  background-color: rgba(96, 165, 250, 0.08) !important;
-  color: #60a5fa !important;
+  background-color: rgba(96, 165, 250, 0.08);
+  color: #60a5fa;
   transform: translateX(3px);
 }
 .nav-item.theme-maintenance.active {
-  background: rgba(0, 102, 255, 0.16) !important;
-  color: #ffffff !important;
+  background: rgba(0, 102, 255, 0.16);
+  color: #ffffff;
   font-weight: 600;
 }
 
 /* Group 3: Project Work (Yellow/Amber) */
 .nav-item.theme-project:hover {
-  background-color: rgba(245, 158, 11, 0.08) !important;
-  color: #f59e0b !important;
+  background-color: rgba(245, 158, 11, 0.08);
+  color: #f59e0b;
   transform: translateX(3px);
 }
 .nav-item.theme-project.active {
-  background: rgba(245, 158, 11, 0.16) !important;
-  color: #ffffff !important;
+  background: rgba(245, 158, 11, 0.16);
+  color: #ffffff;
   font-weight: 600;
 }
 
 /* Group 4: Document Work (Green/Emerald) */
 .nav-item.theme-document:hover {
-  background-color: rgba(16, 185, 129, 0.08) !important;
-  color: #34d399 !important;
+  background-color: rgba(16, 185, 129, 0.08);
+  color: #34d399;
   transform: translateX(3px);
 }
 .nav-item.theme-document.active {
-  background: rgba(16, 185, 129, 0.16) !important;
-  color: #ffffff !important;
+  background: rgba(16, 185, 129, 0.16);
+  color: #ffffff;
   font-weight: 600;
 }
 
@@ -267,7 +266,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .sidebar-user-role {
   font-size: 11px;
-  color: #7c839b;
+  color: #94a3b8; /* High contrast role caption (4.8:1 against #141B2E) */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -307,7 +306,11 @@ h1, h2, h3, h4, h5, h6 {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
   color: var(--text2);
 }
 
@@ -443,7 +446,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-sm {
-  height: 30px;
+  height: 36px;
+  min-width: 44px;
   padding: 0 12px;
   font-size: 12px;
   border-radius: 6px;
@@ -465,7 +469,7 @@ h1, h2, h3, h4, h5, h6 {
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
 }
 
-/* Base glow class settings for background depth */
+/* Base glow class settings for background depth - optimized GPU rendering */
 .card-glow-blue, .card-glow-red, .card-glow-yellow, .card-glow-green {
   position: relative;
 }
@@ -473,30 +477,29 @@ h1, h2, h3, h4, h5, h6 {
 .card-glow-blue::before, .card-glow-red::before, .card-glow-yellow::before, .card-glow-green::before {
   content: '';
   position: absolute;
-  top: -30px;
-  left: -30px;
-  right: -30px;
-  bottom: -30px;
-  border-radius: 44px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 14px;
   z-index: -1;
   pointer-events: none;
-  filter: blur(50px);
-  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  opacity: 0.6;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  opacity: 0.4;
 }
 
-/* Colored gradient backdrops */
+/* Colored radial backdrop overlays */
 .card-glow-blue::before {
-  background: radial-gradient(circle at center, rgba(0, 102, 255, 0.08) 0%, rgba(0, 102, 255, 0.01) 70%, transparent 100%);
+  background: radial-gradient(circle at top right, rgba(0, 102, 255, 0.06) 0%, transparent 70%);
 }
 .card-glow-red::before {
-  background: radial-gradient(circle at center, rgba(239, 68, 68, 0.08) 0%, rgba(239, 68, 68, 0.01) 70%, transparent 100%);
+  background: radial-gradient(circle at top right, rgba(239, 68, 68, 0.06) 0%, transparent 70%);
 }
 .card-glow-yellow::before {
-  background: radial-gradient(circle at center, rgba(245, 158, 11, 0.09) 0%, rgba(245, 158, 11, 0.01) 70%, transparent 100%);
+  background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.07) 0%, transparent 70%);
 }
 .card-glow-green::before {
-  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.09) 0%, rgba(16, 185, 129, 0.01) 70%, transparent 100%);
+  background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.07) 0%, transparent 70%);
 }
 
 /* Hover behaviors for interactive dashboard grid cards */
@@ -664,35 +667,35 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: 0.2px;
 }
 
-/* Status Badge Themes matches specific hex colors requested */
+/* Status Badge Themes mapped to semantic design tokens */
 .status-open {
-  background-color: #eff6ff !important;
-  color: #1d4ed8 !important;
+  background-color: #eff6ff;
+  color: #1d4ed8;
 }
 
 .status-in-process {
-  background-color: #fffbeb !important;
-  color: #b45309 !important;
+  background-color: #fffbeb;
+  color: #b45309;
 }
 
 .status-closed {
-  background-color: #f0fdf4 !important;
-  color: #15803d !important;
+  background-color: #f0fdf4;
+  color: #15803d;
 }
 
 .status-on-hold {
-  background-color: #fef2f2 !important;
-  color: #b91c1c !important;
+  background-color: #fef2f2;
+  color: #b91c1c;
 }
 
 .status-pending {
-  background-color: #fffbeb !important;
-  color: #b45309 !important;
+  background-color: #fffbeb;
+  color: #b45309;
 }
 
 .status-purchased {
-  background-color: #f0fdf4 !important;
-  color: #15803d !important;
+  background-color: #f0fdf4;
+  color: #15803d;
 }
 
 /* Empty states */
@@ -781,11 +784,13 @@ h1, h2, h3, h4, h5, h6 {
   border: none;
   cursor: pointer;
   color: var(--text3);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
-  border-radius: 4px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px;
+  border-radius: 6px;
 }
 
 .modal-close-btn:hover {
@@ -865,7 +870,12 @@ h1, h2, h3, h4, h5, h6 {
   border: none;
   cursor: pointer;
   color: var(--text3);
-  padding: 2px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
 }
 
 /* Skeleton Loading Shimmer styling */
@@ -1187,6 +1197,15 @@ h1, h2, h3, h4, h5, h6 {
   height: 12px;
   border-radius: 50%;
   margin: 0 auto;
+}
+
+/* Mobile backdrop drawer overlay */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 95;
 }
 
 /* Responsive constraints */
