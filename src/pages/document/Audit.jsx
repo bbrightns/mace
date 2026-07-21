@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import Modal from '../../components/Modal';
 import { useToast } from '../../components/Toast';
+import PageHeader from '../../components/PageHeader';
 
 // Default empty state arrays
 const defaultSchedules = [];
@@ -333,28 +334,22 @@ export default function Audit() {
   return (
     <div className="workspace-container animate-fade-in" id="audit-system-workspace" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
-      {/* 1. Header with Breadcrumb */}
-      <div className="page-header" id="audit-page-header">
-        <div className="page-title-block">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>
-            <span>MACE</span>
-            <span style={{ fontSize: '10px' }}>/</span>
-            <span>Document Work</span>
-            <span style={{ fontSize: '10px' }}>/</span>
-            <span style={{ color: 'var(--accent)', fontWeight: '600' }}>Audit</span>
-          </div>
-          <h1 className="page-title">Audit Management</h1>
-          <p className="page-subtitle">Track audit schedules, preparation tasks, required documents, and asset readiness.</p>
-        </div>
-        <button 
-          onClick={handleOpenAddSchedule}
-          className="btn btn-primary"
-          id="add-audit-btn"
-        >
-          <Plus size={16} />
-          <span>New Audit Schedule</span>
-        </button>
-      </div>
+      {/* 1. Page Header */}
+      <PageHeader 
+        title="Audit Management"
+        subtitle="Track audit schedules, preparation tasks, required documents, and asset readiness."
+        actions={
+          <button 
+            onClick={handleOpenAddSchedule}
+            className="btn btn-primary"
+            id="add-audit-btn"
+          >
+            <Plus size={16} />
+            <span>New Audit Schedule</span>
+          </button>
+        }
+        id="audit-page-header"
+      />
 
       {/* 2. Hero Card / Next Audit (Styled cleanly in matching MACE theme) */}
       {nextAudit && (

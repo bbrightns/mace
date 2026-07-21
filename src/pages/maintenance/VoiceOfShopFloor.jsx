@@ -10,6 +10,8 @@ import StatusBadge from '../../components/StatusBadge';
 import Modal from '../../components/Modal';
 import { useToast } from '../../components/Toast';
 import { formatDate, toInputDate } from '../../utils';
+import PageHeader from '../../components/PageHeader';
+import EmptyState from '../../components/EmptyState';
 
 export default function VoiceOfShopFloor() {
   const [items, setItems] = useState([]);
@@ -151,16 +153,17 @@ export default function VoiceOfShopFloor() {
 
   return (
     <div className="workspace-container">
-      <div className="page-header">
-        <div className="page-title-block">
-          <h1 className="page-title">Voice of Shop Floor</h1>
-          <p className="page-subtitle">Field problem reporting registry for plant technicians, electrical assistants, and operators.</p>
-        </div>
-        <button className="btn btn-primary" onClick={handleOpenAdd} id="add-vosf-btn">
-          <Plus size={16} />
-          <span>New Problem Report</span>
-        </button>
-      </div>
+      <PageHeader 
+        title="Voice of Shop Floor"
+        subtitle="Field problem reporting registry for plant technicians, electrical assistants, and operators."
+        actions={
+          <button className="btn btn-primary" onClick={handleOpenAdd} id="add-vosf-btn">
+            <Plus size={16} />
+            <span>New Problem Report</span>
+          </button>
+        }
+        id="vosf-page-header"
+      />
 
       <div className="card controls-bar" id="vosf-controls-bar">
         <div className="filters-group">
@@ -202,12 +205,15 @@ export default function VoiceOfShopFloor() {
           <div className="skeleton-row"></div>
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="empty-state" id="vosf-empty-state">
-          <MessageSquare className="empty-state-icon" />
-          <h4 className="empty-state-title">Floor Issues Clear</h4>
-          <p className="empty-state-desc">No unresolved problem reports currently found. Create a ticket if a fault raises.</p>
-          <button className="btn btn-sm" onClick={handleOpenAdd}>File Problem</button>
-        </div>
+        <EmptyState 
+          icon={MessageSquare}
+          title="Floor Issues Clear"
+          description="No unresolved problem reports currently found. Create a ticket if a fault raises."
+          action={
+            <button className="btn btn-sm" onClick={handleOpenAdd}>File Problem</button>
+          }
+          id="vosf-empty-state"
+        />
       ) : (
         <>
           {/* Desktop view */}
