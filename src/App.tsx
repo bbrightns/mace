@@ -26,6 +26,38 @@ function MainApp() {
     }
   }, [currentPage]);
 
+  // Global Keyboard Shortcuts for Power User Accelerators
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore when typing inside input elements or textareas
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') {
+        if (e.key === 'Escape') {
+          (e.target as HTMLElement).blur();
+        }
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        const searchInput = document.querySelector('input[type="search"], input[placeholder*="Search"], input[placeholder*="search"]') as HTMLInputElement;
+        if (searchInput) searchInput.focus();
+      } else if (e.altKey && e.key.toLowerCase() === 'h') {
+        e.preventDefault();
+        setCurrentPage('home');
+      } else if (e.altKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        setCurrentPage('troubleRecord');
+      } else if (e.altKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        setCurrentPage('pmPlan');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const [syncStatus, setSyncStatus] = useState('synced');
 
   // Master collections states for dashboard counters
