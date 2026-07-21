@@ -1,0 +1,617 @@
+﻿Plant,Date,Time,Shift,Shift2,Location,Equipment,Name,Detail,Detail 2
+MIR,"Tue, 12-Dec-23",,,MIR สมนึก + ธีร์,MIR Line,Microphone,,,เช็คแล้วพบว่า เสียงดังชัดแค่กลางไลน์ load กับ unload ไม่ค่อยเสถียร
+MIR,"Mon, 08-Jan-24",,,MIR สมนึก + ธีร์,Base paint,Sensor,Entry,Entry sensor of Base paint didn’t detect the glass,ทำความสะอาดหน้า sensor
+MIR,"Mon, 15-Jan-24",,,MIR สมนึก + ธีร์,Base paint,Sensor,Entry,,เปลี่ยน sensor head + แก้ redundant
+MIR,"Mon, 22-Jan-24",,,MIR สมนึก + ธีร์,SB04,Magnetic,,,มดเข้า Magnetic จำนวนมากก >> เปลี่ยน Magnetic ไป 4 ตัว
+MIR,"Sat, 16-Mar-24",,,MIR สมนึก + ธีร์,OMC,Motor,X axis,,เช็คแล้วเหมือน Rectifier ของ brake ไม่ค่อยดีแล้ว ทำให้ brake ติด
+MIR,"Mon, 25-Mar-24",,,MIR สมนึก + ธีร์,SB03,Top paint,,,
+MIR,"Tue, 11-Mar-25",0.37,,MIR สมนึก + ธีร์,Sensitizer,Cool water orion,Cool water orion,Float switch of cooler tank interrupt,Re-install PVC fitting
+MIR,"Thu, 24-Apr-25",0.36,,MIR สมนึก + ธีร์,Metal dry,High pressure blower,Fuse 63A,Blower เปิดแล้ว trip,"เปลี่ยน fuse 63A ไปรอบแรก ยัง trip อยู่
+แต่ลองเปลี่ยนอีกรอบ ใช้งานได้ ยังไม่รู้ Root cause
+ก่อนหน้านี้ มีพี่นึกถอดล้างไป"
+MIR,"Tue, 06-May-25",7.29,,MIR สมนึก + ธีร์,,,Utility,"07.29 การไฟฟ้าพระนครใต้ ไฟฟ้าตก หม้อแปลง AFT ทริป
+07.30 กะไฟฟ้า reset หม้อแปลงกลับคืนมา ออนไฟคืนทั้งหมด
+08.30 RFG พร้อมใช้งาน
+09.05 MIR พร้อมใช้งาน เปลี่ยน Timer SB04 ไป 1 ตัว",
+MIR,"Tue, 06-May-25",9.03,,MIR สมนึก + ธีร์,SB04,Timer,,Timer ตัวดีเลย์ Heater เสีย 1 ตัว,Timer ตัวในสุด
+MIR,"Tue, 06-May-25",11.1,,MIR สมนึก + ธีร์,Exit,Logo printing,,ไฟไม่เข้าเครื่องปริ้น Logo,UPS แบตเสื่อม >> เปลี่ยนเป็นต่อตรง
+MIR,"Mon, 19-May-25",9.03,,MIR สมนึก + ธีร์,Facedown,Fuse,Roller,Roller Facedown ไม่หมุน,Fuse ขาด
+MIR,"Mon, 26-May-25",9.03,,MIR สมนึก + ธีร์,Facedown,Fuse,Roller,Roller Facedown ไม่หมุน,Fuse ขาด
+MIR,"Mon, 26-May-25",13.47,,MIR สมนึก + ธีร์,Metal dry,High pressure blower,Fuse 63A,Blower เปิดแล้ว trip,"Overload 40A was tripped
+Fuse 63A ขาดด้วย
+Ohm ปกติ 3P, กระแส 24A(delta)"
+MIR,"Mon, 26-May-25",15,,MIR สมนึก + ธีร์,Passivation,Roller,Breaker,Overload was tripped,OVL เดิม 1.2A --> ปรับไปเป็น 1.4A
+MIR,"Tue, 27-May-25",,,MIR สมนึก + ธีร์,Passivation,Roller,Breaker,Overload was tripped (different with yesterday) วัดได้ 1.4A,Prod. เสียบปลั๊ก โหลดเกิน
+MIR,"Fri, 30-May-25",8.37,,MIR สมนึก + ธีร์,RO,Softener pump,No.1,Trip น้ำเข้า box สายไฟ,ถอดสายไฟไว้ รอซื้อตัวใหม่มาเปลี่ยน
+MIR,"Mon, 02-Jun-25",10.13,,MIR สมนึก + ธีร์,RO,Softener pump,No.2,Pump ดูดน้ำไม่ขึ้น,Foot valve น่าจะรั่ว
+MIR,"Mon, 02-Jun-25",1.2,,MIR สมนึก + ธีร์,Passivation,Roller,Breaker,Overload was tripped,ตัวเดิมกับวันก่อนเลย
+MIR,"Mon, 07-Jul-25",9.02,,MIR สมนึก + ธีร์,Top Paint,Xylene Blower,No.2,มอเตอร์ Xylene blower หน้าห้อง Murakami,"- Mag main กับ star ทำงานอยู่
+- ไฟฟ้าไม่เข้า Timer
+- ทำให้ ไม่เปลี่ยนสถานะ เป็น Delta
+      -> ไฟฟ้าเลยนำ Timer มาเปลี่ยน
+- ชุด control star-delta ก็ทำงานได้ปกติ"
+MIR,"Mon, 07-Jul-25",9.02,,MIR สมนึก + ธีร์,Top paint,Belt conveyor,,ผ้าใบสี 2 ไม่ high speed,"- พี่เหมาแจ้งว่า  ผลิตไปแล้ว เจอว่ามันไม่ high speed
+- ไฟฟ้าเข้าไป ไลน์ก็หยุดแล้ว ไล่สายดูในตู้ พยายามเช็ค แต่ยังไม่เจออะไรผิดปกติ
+- ลองบัง sensor ก็พบว่า speed ปกติ 9.55"
+RFG,"Tue, 30-Aug-22",,,,Exit,Sensor,XL,The sensor is not detecting the glass,
+RFG,"Mon, 30-Jan-23",,,,Utility,Chiller,No.3,เติมน้ำยา R22,
+RFG,"Mon, 30-Jan-23",,,,Utility,Chiller,No.5,"เติมน้ำยา R22, เปลี่ยน DGT Sensor, เปลี่ยน Coil solenoid 220V",
+RFG,"Thu, 16-Feb-23",,,,Utility,Chiller,No.1,On แล้ว Trip ขึ้น alarm Over Temp,
+RFG,"Wed, 12-Apr-23",,,,Utility,Chiller,No.1,"Comp A1 ขดลวดลง GND, Magnetic ติด, Breaker Trip","Comp พันขดลวดใหม่, เติม Oil Comp, เปลี่ยน Mag, ต้องเติมน้ำยา R22 = 2 ถัง"
+RFG,"Wed, 12-Apr-23",,,,Utility,Chiller,No.4,"Comp A1 ขดลวดลง GND, Magnetic เสีย, OVL เสีย","Comp พันขดลวดใหม่, เติม Oil Comp, เปลี่ยน Mag+OVL, ต้องเติมน้ำยา R22 = 2 ถัง"
+RFG,"Tue, 18-Apr-23",,,,Utility,Chiller,No.4,Alarm : Comp Over Temperature,"เปลี่ยนสายเข้าเมน Breaker เพราะมีรอยไหม้, เปลี่ยน TiMECHr 1 ตัว"
+RFG,"Mon, 24-Apr-23",,,,Coat zone,Power Supply,AE #10,PS AE Excess ripple (E009 Cable interlock open),
+RFG,"Mon, 15-May-23",,,,Utility,Chiller,No.5,Circuit 1 น้ำยารั่วหมดระบบ,"เปลี่ยนสายเข้าเมน Breaker A3, เช็ครั่ว, Filter Drier D-48 = 4 ea, R22 = 4 ถัง"
+RFG,"Tue, 18-Jul-23",,,,Utility,Chiller,No.5,แก้ไขจุดรั่ว เสร็จเรียบร้อย,
+RFG,"Wed, 19-Jul-23",,,,Utility,Chiller,No.2,น้ำยารั่ว,จะเข้ามาเติมน้ำยา วันที่นำ comp no.4 มาติดตั้งคืน
+RFG,"Wed, 19-Jul-23",,,,Utility,Chiller,All,PM 2nd 2023,PM ทุกตัว ยกเว้น no.4 เพราะ LOTO อยู่
+RFG,"Thu, 03-Aug-23",,,,Utility,Chiller,No.3,Fuse ceramic 3A ขาด หรือ contact ไม่ดี มีตะกรัน,เปลี่ยนอันใหม่เรียบร้อย OK
+RFG,"Fri, 08-Sep-23",,,,Utility,Chiller,No.3,Fuse ceramic 3A ขาด หรือ contact ไม่ดี มีตะกรัน,เปลี่ยนอันใหม่เรียบร้อย OK
+RFG,"Fri, 08-Sep-23",,,,Utility,Chiller,No.4,Flow switch น้ำเย็นเสีย,ช้อตข้ามไว้อยู่ รอเปลี่ยนอันใหม่
+RFG,"Fri, 08-Sep-23",,,,Utility,Chiller,No.4,Breaker Comp A2 ไฟออกเฟสเดียว,รอเปลี่ยน breaker ใหม่ พร้อมงานของ 39
+RFG,"Mon, 06-Nov-23",,,,Coat zone,Power Supply,AE #5,PS AE Excess ripple (E009 Cable interlock open),
+RFG,"Tue, 07-Nov-23",,,,Coat zone,Power Supply,AE #8,PS AE Excess ripple (E009 Cable interlock open),
+RFG,"Wed, 08-Nov-23",,,,Exit,Inverter,XT_IV,Fault : 21 (Output Phase loss) XT Drives Is Faulted,Reset ปิด Breaker เปิดใหม่
+RFG,"Wed, 08-Nov-23",,,,Unload,Tilt table,Vacuum pad,ดูดกระจกขึ้นไปแล้วค้าง ไม่ปล่อยกระจก,
+RFG,"Wed, 08-Nov-23",,,,Exit,Inverter,XT_IV,Fault : 21 (Output Phase loss) XT Drives Is Faulted,Reset ปิด Breaker เปิดใหม่
+RFG,"Mon, 13-Nov-23",,,,Coat zone,Power Supply,AE #8,PS AE Excess ripple (E009 Cable interlock open),เปลี่ยนพัดลมลม cooling ด้านหน้า 1 ตัว
+RFG,"Tue, 14-Nov-23",,,,Coat zone,Cathode,U11,Loss communication ขึ้น not connected,
+RFG,"Wed, 15-Nov-23",,,,Coat zone,Power Supply,AE #9,PS AE Excess ripple (E009 Cable interlock open),โยกตัวจอ remote กลับ
+RFG,"Thu, 16-Nov-23",,,,,Chiller,No.1,Gauge Hi ของ Circuit A เสีย 1 ตัว,เปลี่ยนเกจ
+RFG,"Thu, 16-Nov-23",,,,,Chiller,No.3,Power supply 24VDC (ไฟสถานะ) ช้อต,ควรเปลี่ยน Supply + แก้ไข Fuse วงจรคอนโทรล
+RFG,"Fri, 17-Nov-23",,,,Coat zone,Power Supply,AE #9,PS AE Excess ripple (E009 Cable interlock open),
+RFG,"Sat, 18-Nov-23",,,,Coat zone,Power Supply,AE #5,Power supply ดับ,Restart กลับมาได้
+RFG,"Fri, 01-Dec-23",,,,Coat zone,Power Supply,MF #4,Alarm : 50017 AC dump,ว่าจะลองเปลี่ยนบอร์ด
+RFG,"Mon, 04-Dec-23",,,,Coat zone,Power Supply,AE #5,PS AE Internal supply voltage low,
+RFG,"Mon, 04-Dec-23",,,,Coat zone,Power Supply,MF #8,Prox. Sensor HV cover แม่เหล็ก เสีย,เปลี่ยน Prox. Sensor สีเหลือง
+RFG,"Mon, 11-Dec-23",,,,Coat zone,Power Supply,AE #8,PS AE Excess ripple (E009 Cable interlock open),
+RFG,"Tue, 12-Dec-23",,,,Loading,Tilt table,Vacuum pad,ถ้วย #5 ติดขัด ตอนเข้าออก,
+RFG,"Thu, 14-Dec-23",,,,Coat zone,Power Supply,AE #8,PS AE Excess ripple (E009 Cable interlock open),
+RFG,"Tue, 09-Jan-24",,,,Exit,PLC,Powder,กระจกโรยผงไม่เต็มแผ่น ช่วงปลายๆมันสปีด,"Adjust_spELECd_Xcross_TBL
+[GR79_XUTBL] [Line76] ลบ Fx spELECd
+[GR79_XUTBL] [Line35] XCTT2_LS1_TBL1_TMR (from 3 to 7)
+[GR79_XUTBL] [Line32] XCTT2_LS1_TMR (from 5.7 to 10)"
+RFG,"Fri, 26-Jan-24",,,,Exit,Valve,Slit Valve No.4,เปลี่ยน Solenoid Valve ไป,Norgren
+RFG,"Fri, 26-Jan-24",,,,Exit,PLC,Output card,Card Output Slit Valve 4 ช้อต ตอนเปลี่ยน solenoid valve,เดิมอยู่ O.5 --> O.15
+RFG,"Fri, 26-Jan-24",,,,Operator room,PLC,WS01,จอซ้าย CLX lost connection,CLX license? EtherNet cable?
+RFG,"Mon, 29-Jan-24",18.26,E,B พี่โย่ง+พี่โชค,Coat zone,Power Supply,AE #5,PS AE Internal supply voltage low,"CZ 1.1 ใช้ AE #8 แทน, 1.2 ใช้ MF #7 แทน"
+RFG,"Mon, 29-Jan-24",18.26,E,B พี่โย่ง+พี่โชค,Coat zone,Power Supply,MF #6,N/A,
+RFG,"Mon, 29-Jan-24",,,,Entry,Inverter,CZ_IV,Fault : 4037 (Net IO timeout),เปลี่ยนการ์ด Commu 20-750-ENETR
+RFG,"Tue, 30-Jan-24",,,,Entry,Inverter,NT_IV,Fault : 225 (Port5 Comm Loss),
+RFG,"Tue, 30-Jan-24",8.44,M,,Entry,Inverter,NT_IV,Fault : 225 (Port5 Comm Loss),Replace EtherNet module 20-750-ENETR
+RFG,"Wed, 31-Jan-24",,,,Unload,PLC,Stopper,กระจก 12mm วิ่งมาชน stopper แรง,"[GR79_XUTBL] [Line32] แก้เพิ่ม กรณีโต๊ะ 1 และโต๊ะ 2 มีกระจกอยู่ ให้ Delay 10s
+[GR79_XUTBL] [Line81] ปรับความเร็ว HI_SPD 45 --> 40 และ LO_SPD 5 -->10"
+RFG,"Fri, 02-Feb-24",,,,Exit,Inverter,XT_IV,Fault : 21 (Output Phase loss) XT Drives Is Faulted,Reset ปิด Breaker เปิดใหม่
+RFG,"Fri, 02-Feb-24",,,,Exit,Inverter,XT_IV,Fault : 21 (Output Phase loss) XT Drives Is Faulted,ลองเช็ค Power Input/Output ปกติด >> Reset ตู้ด้านหลัง
+RFG,"Fri, 02-Feb-24",,,,Entry,Sensor,NL,CHECK GLASS UNVER SV NO.2,ตัดต่อ ย้ำสายไฟใหม่ ทำความสะอาดหน้า sensor
+RFG,"Mon, 05-Feb-24",,,,Coat zone,Power Supply,AE #5,AE #5 cannot start,"Remove Capacitor, IGBT from #10 into #5"
+RFG,"Sun, 11-Feb-24",,,,Entry,Inverter,CZ_IV,Fault : 4037 (Net IO timeout),
+RFG,"Sun, 11-Feb-24",,,,Entry,Inverter,CZ_IV,Fault : 4037 (Net IO timeout),CLX license? EtherNet cable?
+RFG,"Sat, 17-Feb-24",16.43,E,B พี่โย่ง+พี่โชค,Washing MC,Level sw.,,ลูกลอยค้าง,
+RFG,"Thu, 29-Feb-24",11.25,M,A น้าหนาน+ยุทธนา,Exit,Inverter,XT_IV,Fault : 21 (Output Phase loss) XT Drives Is Faulted,Reset ปิด Breaker เปิดใหม่
+RFG,"Thu, 29-Feb-24",,,,Optoplex,Inverter,XT_IV,Fault : 13037 (Net IO Timeout),Reset ปิด Breaker เปิดใหม่
+RFG,"Wed, 06-Mar-24",,,,Utility,Valve,3ways valve,ไม่ทำงานเวลาอุณหภูมิถึง set point,"1. 3way #1(ตัวใน) ต่อสายผิดอยู่ครับ สลับสายให้ถูกต้องใช้งานได้
+2. 3way #2(ตัวด้านข้าง temp control) สายด้านใน เสื่อม ขาดจะหลุดจากเทอมินัล เลยตัดย้ำหัวใหม่ ใช้งานได้ แต่เวลาทำงานจะมีเสียงดังๆแปลกๆหน่อยครับ
+3. แถบไฟที่โชว์จอ Temp controller
+ถ้าไม่ขึ้นแถบ = วาร์ลเปิด
+ขึ้นแถบ = วาร์ลปิด"
+RFG,"Thu, 07-Mar-24",,,,Coat zone,TMP,,Check TMP cannot operate,Signal loss due to Shuttering power source
+RFG,"Tue, 12-Mar-24",,,,Washing MC,Benteler,Support,support รางสายไฟด้านล่าง ผุ ชำรุดหมดแล้ว,
+RFG,"Wed, 13-Mar-24",,,,Coat zone,Cathode,C01,"Alarm 09: HARD ALARM
+PROFIBUS FAULT DRIVE TARGET 1",
+RFG,"Thu, 14-Mar-24",,,,Small temper,T/C,,T/C ด้านล่าง แถวกลาง ตัวที่ 3 จาก 6 อุณหภูมิสูงโดดกว่าตัวอื่นๆ,
+RFG,"Thu, 14-Mar-24",16.15,E,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,AE #9,PS AE Excess ripple (E009 Cable interlock open),CZ 6.2 Restart
+RFG,"Sun, 17-Mar-24",,,,Utility,RO Plant,Water level,"Soften, Cooling G78 = Low","RO stop, EC=9694 >> RO,DI,Degas = Low >> DI stop
+Central Water to Raw water = 7Q
+Raw water to RO = 15-20Q"
+RFG,"Mon, 18-Mar-24",,,,Entry,Inverter,NT_IV,Fault : 225 (Port5 Comm Loss),
+RFG,"Mon, 18-Mar-24",12.22,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #5,Fault 51950 : Water Power Supply,CZ 5.1 พบตะกรันในท่อ Cooling >> Clean >> Restart
+RFG,"Mon, 18-Mar-24",,,,Entry,Inverter,NT_IV,"22:31 Roller เครื่องล้างไม่หมุน
+Fault code : N/A
+Alarm : Entry Drive Coms. Alarm
+การ์ด Ethernet ของ INV ไฟแดงที่เม็ดบนสุด","Restart เครื่องล้าง >> NG
+Reset INV  >> NG
+Restart PLC NL >> NG
+Reset PLC CLX >> OK !"
+RFG,"Tue, 19-Mar-24",8.14,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #6,Fault 51950 : Water Power Supply,พบตะกรันในท่อ Cooling >> Clean >> Restart
+RFG,"Wed, 20-Mar-24",5.46,N,B พี่โย่ง+พี่โชค,Coat zone,Power Supply,MF #6,Fault 51950 : Water Power Supply,พบตะกรันในท่อ Cooling >> Clean >> Restart
+RFG,"Thu, 21-Mar-24",,,,Utility,Other,Cable,สาย main Chemical control cabinet of cooling tower,ลากสายชั่วคราวใหม่
+RFG,"Fri, 22-Mar-24",,,,Small temper,T/C,,Check small temper temp reach 2000 °C,T/C broken when remove for calibrate >> Replaced OK.
+RFG,"Mon, 25-Mar-24",10.14,M,A น้าหนาน+ยุทธนา,Washing MC,Level sw.,ลูกลอย SUS,น้ำล้นไม่ตัด,
+RFG,"Sat, 30-Mar-24",6.08,N,C พี่ออฟ+พี่แดน,Washing MC,Level sw.,ลูกลอย SUS,ลูกลอยแตก,
+RFG,"Sun, 31-Mar-24",,,,Entry,Inverter,NT_IV,Fault : 225 (Port5 Comm Loss),
+RFG,"Sun, 31-Mar-24",8.32,M,C พี่ออฟ+พี่แดน,Exit,Inverter,XT_IV,Fault : 21 (Output Phase loss) XT Drives Is Faulted,Reset ปิด Breaker เปิดใหม่
+RFG,"Sun, 31-Mar-24",8.32,M,,Entry,Inverter,NT_IV,Fault : 4037 (Net IO timeout),"Roller เครื่องล้างไม่หมุน
+Fault code : 4037 (Net IO timeout)
+Alarm : Entry Lock NT Drive Coms. Alarm
+การ์ด Ethernet ของ INV ไฟแดงที่เม็ด ล่างสุด
+
+Reset PLC CLX >> OK !"
+RFG,"Tue, 02-Apr-24",4.35,N,,Exit,TMP,XB,XB_TMP หน้างานไม่เปิด แต่กดที่หน้าจอขึ้นเขียวแล้ว,เปลี่ี่ยน Solenoid valve SMC SYJ319-5H-X54-Q
+RFG,"Thu, 04-Apr-24",3.54,N,,Utility,Chiller,,Chiller no.1 and no.2 trip,Restart >> OK!
+RFG,"Thu, 04-Apr-24",20.27,E,,Coat zone,AC Plug,MF #4,CZ 4.2 รับไฟจาก MF #4 >> Short ไหม้ ทั้งตัวผู้ และ เมีย,เปลี่ยนหัวปลั๊กตัวผู้(ฝั่ง cathode) และนำ supply อื่นมาใช้งานแทนก่อน
+RFG,"Sat, 06-Apr-24",,,,Utility,Chiller,No.3,Chiller no.3 on แล้วดับ,"1. สาย Neutral Cable ของ Honeywell ฉนวนขาด
+2. Relay comp1 เสีย (รุ่น LY-2N)"
+RFG,"Tue, 23-Apr-24",,,,Utility,Level sw.,Electrode,Water hammer,เปลี่ี่ยน electrode วัดระดับน้ำ Raw water
+RFG,"Tue, 23-Apr-24",,,,Utility,Level sw.,ลูกลอยตลับ,"ไฟ Raw water level status อันด้ง L,M ขึ้นพร้อมกัน",เปลี่ยน Omron Electrode relay 61F-G2
+RFG,"Wed, 24-Apr-24",,,,Coat zone,CM Gauge,,CM Gauge CZ3 อ่านค่าแปลกๆ,CM Gauge เสื่อม อ่านค่าได้ต่ำกว่าปกติ แล้วพอ 3.1 ถึง SP ก็หยุดจ่าย gas
+RFG,"Fri, 26-Apr-24",,,,Utility,RO Plant,EC meter,RO ไม่ทำงาน เวลา EC Raw เกินค่า ต้องไป Manual Flush เอง,"Prod. บิด Off (Auto Flush) เอาไว้
+เนื่องจาก Function (Auto Flush) ของ PLC มีปัญหา Flush ไม่หยุด
+ตอนนี้แก้ไขแล้ว ใส่ M99 ดัก Function ไว้"
+RFG,"Sun, 28-Apr-24",,,,Entry,Inverter,NT_IV,Fault : 225 (Port5 Comm Loss),
+RFG,"Sun, 28-Apr-24",11.22,M,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,AE #5,จ่าย Power ไม่นิ่ง,"CZ 1.2 AE #5 --> MF #7
+CZ 6.B MF #7 --> AE #9"
+RFG,"Sun, 28-Apr-24",18.07,E,A น้าหนาน+ยุทธนา,Entry,Inverter,NT_IV,Fault : 4037 (Net IO timeout),"Roller เครื่องล้างไม่หมุน
+Fault code : 4037 (Net IO timeout)
+Alarm : Entry Lock NT Drive Coms. Alarm
+
+พี่โน้ต เปลี่ยนการ์ด Comm"
+RFG,"Mon, 29-Apr-24",11.46,M,A น้าหนาน+ยุทธนา,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,
+RFG,"Mon, 29-Apr-24",11.47,M,A น้าหนาน+ยุทธนา,Exit,Inverter,XT_IV,Fault : 21 (Output Phase loss) XT Drives Is Faulted,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME
+RFG,"Fri, 03-May-24",,,,Utility,Other,,11.02 ไฟกระพริบ เครื่องจักรหยุดทำงาน >> Reset ได้,สายส่งพระนครใต้ สวิทช์ตก
+RFG,"Fri, 03-May-24",20.42,E,B พี่โย่ง+พี่โชค,Optoplex,Inverter,XT_IV,Fault : 4037 (Net IO timeout),"20.46 Roller Optoplex ไม่หมุน
+Fault code : 4037 (Net IO timeout)
+Alarm: EXIT CROSS XFER TABLE 1 INVERTER FAULTED
+
+Reset PLC CLX >> OK !"
+RFG,"Fri, 03-May-24",,,,Coat zone,CM Gauge,,23.18 CZ3 Gas drop,หยุด เพื่อ Set Zero
+RFG,"Sat, 04-May-24",,,,Coat zone,CM Gauge,,11.48 CZ3 Gas แกว่งมาก,หยุด เพื่อ Set Zero
+RFG,"Mon, 06-May-24",,,,Entry,Inverter,NC_IV,N/A,
+RFG,"Mon, 06-May-24",,,,Entry,Inverter,NT_IV,Fault : 225 (Port5 Comm Loss),
+RFG,"Mon, 06-May-24",,,,Exit,Inverter,XUT_IV,N/A,
+RFG,"Mon, 06-May-24",1.04,N,,Entry,Inverter,NT_IV,01.04 ENTRY TABLE INVERTER FAULT ALARM,
+RFG,"Mon, 06-May-24",2.1,N,,Entry,Inverter,NC_IV,02.10 Entry Lock NC Drive Coms. Alarm,
+RFG,"Mon, 06-May-24",12.28,M,,Exit,Inverter,XUT_IV,"EXIT UNLOAD TABLE 1 INVERTER FAULTED
+EXIT CROSS XFER TABLE 1 INVERTER FAULTED",
+RFG,"Mon, 06-May-24",,,,Coat zone,TMP,,XB(HMI) or XL(ALARM) LID TMP 1 IS FAULTED,
+RFG,"Tue, 14-May-24",,,,Washing MC,Breaker,,Billco W/M : Brush roller No.1 top of billco fall down,Breaker was tripped >> Reset OVL ที่ตู้ ขวาสุดห้อง
+RFG,"Wed, 15-May-24",,,,Utility,RO Plant,EC meter,"RO water shortage. because Raw water EC1,5xx","adjust EC-1 (Inlet) to 2,000"
+RFG,"Mon, 20-May-24",,,,Coat zone,Power Supply,MF #3,MF #3 cannot turn on มี Arc เวลาเสียบปลั๊ก,ใช้ MF #7 แทน
+RFG,"Thu, 30-May-24",,,,Coat zone,Power Supply,MF #6,พบ Arc เล็กน้อยจากปลั๊ก ขณะ กำลังถอดเตรียม MT,Cleaning ขัดด้วยกระดาษทราย
+RFG,"Fri, 31-May-24",,,,Utility,Other,Plug pipe,ไฟรั่วมาจากเครื่องวัดสี ในออฟฟิศ,ลากสายกราวด์เชื่อมกับโครงสร้างอาคาร
+RFG,"Sat, 01-Jun-24",,,,Utility,Other,,อุปกรณ์ดับทั้งหมด แต่สามารถ reset กลับมาได้,TMP alarm 1 ตัว
+RFG,"Wed, 05-Jun-24",,,,Coat zone,Transmission Cam,,CZ 3 ค่าไม่ขึ้น,ขั้วปลั๊กที่บัดกรีไว้หลุด + หลอดไฟขาด
+RFG,"Thu, 06-Jun-24",,,,Coat zone,Cathode,C10,C10 Target ไม่หมุน 1 ตัว,การ์ด Inverter Siemens ข้างในหลวม
+RFG,"Thu, 06-Jun-24",,,,Coat zone,Cathode,C1,C1 Magnetic sw. สภาพไม่ดี,เปลี่ยน Magnetic sw.
+RFG,"Mon, 24-Jun-24",17.36,E,,Coat zone,Power Supply,AE #9,Was stopped while running with no glass,Restart
+RFG,"Mon, 24-Jun-24",22.03,E,,Exit,Valve,Slit Valve No.4,Slit valve V4 cannot operate,Coil plug of solenoid was loosen --> tighten it
+RFG,"Sun, 21-Jul-24",12.28,M,C พี่ออฟ+พี่แดน,Washing MC,Level sw.,ลูกลอย SUS,น้ำล้น ลูกลอยไม่ตัด,
+RFG,"Sun, 25-Aug-24",11.01,M,B พี่โย่ง+พี่โชค,Washing MC,Level sw.,ลูกลอย SUS,น้ำล้น ลูกลอยไม่ตัด,
+RFG,"Tue, 03-Sep-24",10.22,M,B พี่โย่ง+พี่โชค,Washing MC,Level sw.,ลูกลอย SUS,น้ำล้น ลูกลอยไม่ตัด,
+RFG,"Wed, 04-Sep-24",0.26,N,C พี่ออฟ+พี่แดน,Optoplex,Inverter,XT_IV,Roller optoplex ไม่หมุน,Restart XT_IV
+RFG,"Wed, 04-Sep-24",,,A น้าหนาน+ยุทธนา,Optoplex,Inverter,XT_IV,Roller optoplex ไม่หมุน,Restart XT_IV
+RFG,"Fri, 04-Oct-24",,,,Coat zone,Power Supply,MF #1,50006: Temperature chopper,คาดว่าน่าจะลืมเปิด น้ำ Cooling
+RFG,"Tue, 15-Oct-24",8.55,M,C พี่ออฟ+พี่แดน,Washing MC,Level sw.,ลูกลอย SUS,น้ำล้น ลูกลอยไม่ตัด,
+RFG,"Tue, 22-Oct-24",5.17,N,C พี่ออฟ+พี่แดน,Washing MC,Level sw.,ลูกลอย SUS,น้ำล้น ลูกลอยไม่ตัด,
+RFG,"Sat, 26-Oct-24",,,,Entry,Inverter,NT_IV,Fault : 225 (Port5 Comm Loss),
+RFG,"Fri, 01-Nov-24",8.32,M,A น้าหนาน+ยุทธนา,Washing MC,Level sw.,ลูกลอย SUS,น้ำล้น ลูกลอยไม่ตัด,
+RFG,"Sat, 16-Nov-24",,,,Optoplex,Inverter,XT_IV,Fault : 12 (HW OverCurrent),
+RFG,"Fri, 22-Nov-24",,,,Washing MC,Benteler,Limit sw.,Benteler : 125.1 Limit ตัวบนสุด Contact ช็อต,"Jump สายไว้ข้างในใช้ชั่วคราว
+>> 5 Feb 2025 เปลี่ยน Limit ตัวใหม่ เรียบร้อย"
+RFG,"Tue, 26-Nov-24",,,,Entry,Sensor,NL,CHECK GLASS UNVER SV NO.2,ตัดต่อ ย้ำสายไฟใหม่ ทำความสะอาดหน้า sensor
+RFG,"Wed, 04-Dec-24",,,,Entry,Inverter,NT_IV,Fault : 4037 (Net IO timeout),Reset ปิด Breaker เปิดใหม่
+RFG,"Sat, 21-Dec-24",,,,Washing MC,Inverter,,Benteler : ปรับ speed เครื่องล้าง Benteler ให้เท่ากับตัวข้างๆ,ปรับเป็น 3m/min
+RFG,"Wed, 29-Jan-25",22.45,E,B พี่โย่ง+พี่โชค,Exit,Inverter,XRT2 (120VF1),Fault : 21 (Output Phase loss) XT Drives Is Faulted,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME
+RFG,"Thu, 30-Jan-25",2.29,N,C พี่ออฟ+พี่แดน,Exit,Inverter,XRT1 (121VF1),Fault : 21 (Output Phase loss) XT Drives Is Faulted,"EXIT LOCK PUMPING TIME ABNORMAL
+ปรับ ตัวขวา P445 71% --> 50%"
+RFG,"Thu, 30-Jan-25",15.42,M,A น้าหนาน+ยุทธนา,Washing MC,Level sw.,ลูกลอย SUS,ลูกลอยกลางลอยไปติดใน Y-strainer,
+RFG,"Sat, 08-Feb-25",22.5,E,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,AE #8,PS AE Internal supply voltage low,CZ 1.2 ใช้ MF #7 แทน
+RFG,"Mon, 17-Feb-25",21.05,E,B พี่โย่ง+พี่โชค,Entry,Sensor,NL,CHECK GLASS UNVER SV NO.2,เรียก พี่เอ๊กเข้ามาแก้ไข ตัดต่อ ย้ำสายไฟใหม่ ทำความสะอาดหน้า sensor
+RFG,"Tue, 18-Feb-25",7.43,N,C พี่ออฟ+พี่แดน,Loading,Inverter,NLT_IV,"กดถอยหลัง แล้ว alarm
+ENTRY LOAD TBL INVERTER FAULT ALARM","Fault 12: HW OverCurrent
+- ขึ้น alarm นี้ ทั้งๆ ที่ ผมสังเกตกระแสตอน inverter ทำงาน จับกระแสได้แค่ 3.3 A เอง
+- inverter คุม motor conveyor ต้องใช้เวลา มอเตอร์หมุนซักระยะนึง(เวลาไม่แน่นอน) แล้วก็จะขึ้น alarm นี้
+
+จุดเปลี่ยนก่อนหน้านี้คือ
+- มีทางทีม mech เปลี่ยน gear ของมอเตอร์ไป
+- ไฟฟ้าย้ายปุ่มไปด้านหน้าไลน์"
+RFG,"Tue, 18-Feb-25",9,M,B พี่โย่ง+พี่โชค,Washing MC,Bilco,Level sw.,ถัง 5 ระดับ High แต่ขึ้น Low >> เหมือนค่าถูกปรับไป,
+RFG,"Wed, 19-Feb-25",1.58,N,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,AE #9,PS AE Excess ripple (E009 Cable interlock open),"CZ 6.B (TZO) stop at 49 kW, ผลิตจบพอดี"
+RFG,"Wed, 19-Feb-25",11.21,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,AE #8,PS AE Excess ripple (E009 Cable interlock open),"CZ 1.1 (SiAl) stop at 29kW, ใช้ AE #5 แทน"
+RFG,"Fri, 21-Feb-25",0.57,N,C พี่ออฟ+พี่แดน,Entry,Inverter,CZ_IV,Fault : 4037 (Net IO timeout),Reset ปิด Breaker เปิดใหม่
+RFG,"Fri, 21-Feb-25",22.59,E,B พี่โย่ง+พี่โชค,Entry,Inverter,CZ_IV,Fault : 4037 (Net IO timeout),Reset ปิด Breaker เปิดใหม่
+RFG,"Tue, 25-Feb-25",3.13,N,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #5,CZ5 SB1 PS HT AC Error 500/27 Too high arc density,CZ 5.1 (SiAl)
+RFG,"Tue, 25-Feb-25",5.11,N,A น้าหนาน+ยุทธนา,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,
+RFG,"Tue, 25-Feb-25",,N,A น้าหนาน+ยุทธนา,Exit,Cross XFER,,Signal is stuck,
+RFG,"Thu, 27-Feb-25",4.49,N,A น้าหนาน+ยุทธนา,Loading,Turn table,Operation,กระจกแผ่นแรกของหน้า B เข้าเครื่องล้างช้า ต้องรอจนกว่า แผ่นสุดท้ายของหน้า A เข้า Entry Lock ไปแล้ว,"พี่โย่งที่มารับต่อกะเช้า แจ้งว่า
+เกิดจากพนักงานด้านโหลดจะป้อนจำนวนกระจก ขณะที่โต้ะ Turn หมุนเสร็จ ซึ่งจะทำให้ Timer เกินค่าที่เราตั้งไว้ (95 วินาที) กระจกแผ่นแรกเลยจะรอให้กระจกในเครื่องล้างออกทั้งหมดก่อน
+
+วิธีแก้ : ให้พนักงานป้อนจำนวนกระจก ระหว่างโต้ะ turn กำลังหมุนเลย พร้อมทั้งกด transmit และเมื่อโต้ะหมุนเสร็จ ต้องพร้อมกด Auto start"
+RFG,"Thu, 27-Feb-25",5.09,N,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #5,CZ5 SB1 PS HT AC Error 500/27 Too high arc density,"CZ 5.1 (SiAl) คิดว่าปัญหาน่าจะมาจากการบริหาร Arc ภายใน Chamber
+✅ เปรียบเทียบ Parameter ของ No.5 และ No.6
+✅ ตรวจสอบ Target Condition ว่ามีการสึกหรอผิดปกติไหม
+✅ ดู Flow และ Pressure ของ Gas ว่าเสถียรไหม
+✅ เช็ก Arc Suppression Setting ใน Power Supply
+✅ ตรวจสอบ Grounding และการเชื่อมต่อสายไฟ
+✅ เช็กระบบ Water Cooling"
+RFG,"Thu, 27-Feb-25",,E,C พี่ออฟ+พี่แดน,Exit,Cross XFER,,Inverter alarm,
+RFG,"Thu, 27-Feb-25",22.37,E,C พี่ออฟ+พี่แดน,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,
+RFG,"Fri, 28-Feb-25",18.23,E,C พี่ออฟ+พี่แดน,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,กระจกจาก Buffer เข้ามาแล้ว ทำไม Slite valve no.3 ทำไมไม่ปิด?
+RFG,"Sat, 01-Mar-25",,N,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #5,CZ5 SB1 PS HT AC Error 500/27 Too high arc density,
+RFG,"Mon, 03-Mar-25",15.44,M,C พี่ออฟ+พี่แดน,Exit,,,Exit Lock slow venting atmosphere into the chamber,XLPG หลังค่า 730+ จะขึ้นช้ามากๆ --> Vent ช่วงปลายช้า
+RFG,"Tue, 11-Mar-25",10.33,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,DC3040 #5,CZ2.2 Alarm: Fault communication ไม่มี alarm ที่ตัว P/S,
+RFG,"Tue, 11-Mar-25",11.49,M,A น้าหนาน+ยุทธนา,Unload,Turn table,,Turn table stop while turning for a 45 degree,No alarm
+RFG,"Wed, 12-Mar-25",2.48,N,C พี่ออฟ+พี่แดน,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,กระจกจาก Buffer เข้ามาแล้ว ทำไม Slite valve no.3 ทำไมไม่ปิด?
+RFG,"Fri, 14-Mar-25",12.01,M,A น้าหนาน+ยุทธนา,Washing MC,Benteler,Limit sw.,Benteler : ต้องการปรับที่ 4mm แต่ปรับลงได้สุดแค่ 6.5mm,"ปรับ limit ตัวล่าง 124.1 ลงมาอีก ให้ปรับได้
+
+Alarm: Washing MC not ready >>
+ลองเช็ค Limit 125.1 ต้อง ON ตลอดเวลา Auto mode"
+RFG,"Thu, 27-Mar-25",7.19,N,B พี่โย่ง+พี่โชค,Coat zone,Cathode,C04,C04 ลูก A speed too low,"sensor detect รอบการหมุน ไฟไม่เข้าชั่วคราว ตอนนี้ใช้ได้แล้ว
+ยังไม่รู้สาเหตุ TURCK : bi6u-m18-ap6x"
+RFG,"Thu, 27-Mar-25",7.19,N,B พี่โย่ง+พี่โชค,Operator room,PLC,Trend graph,Trend graph not show,
+RFG,"Fri, 28-Mar-25",2.4,N,B พี่โย่ง+พี่โชค,Coat zone,Power Supply,MF #1,50006: Temperature chopper,CZ 2.B คาดว่าน่าจะลืมเปิด น้ำ Cooling
+RFG,"Fri, 28-Mar-25",2.4,N,B พี่โย่ง+พี่โชค,Coat zone,Cathode,C08,CZ5.2 Target B ไม่หมุน เช็คพบว่า มอเตอร์ขัด ร้อนกว่าปกติมาก,ยกเปลี่ยน/เช็ค End block
+RFG,"Sat, 29-Mar-25",7.51,N,B พี่โย่ง+พี่โชค,Coat zone,Power Supply,MF #2,50006: Temperature chopper,CZ 2.1 คาดว่าน่าจะลืมเปิด น้ำ Cooling
+RFG,"Mon, 31-Mar-25",11.14,M,B พี่โย่ง+พี่โชค,Exit,Powder M/C,,ITO โหลด 4 แผ่น กระจกคู่หน้าไม่โรยผง,- ต้องติด sensor เพิ่ม 1 จุด ที่ด้านขวา เพราะเดิมอยู่ตรงกลาง ไม่เจอกระจก
+RFG,"Sun, 30-Mar-25",1.45,N,C พี่ออฟ+พี่แดน,Small temper,Motor,Quenching fan,พัดลมในเตาไม่ทำงาน,#NAME?
+RFG,"Wed, 02-Apr-25",1.44,N,C พี่ออฟ+พี่แดน,Utility,Chiller,No.5,น้ำยารั่ว,"Carrier เข้ามาเช็ค เช้าวันที่ 3 Apr
+เชื่อมท่อใหม่ แล้วก็เติมน้ำยา"
+RFG,"Wed, 02-Apr-25",9.23,M,A น้าหนาน+ยุทธนา,Exit,Powder M/C,Powder M/C,ท้ายแผ่นคู่หน้า โรยไม่เต็ม,#NAME?
+RFG,"Wed, 02-Apr-25",16.32,E,B พี่โย่ง+พี่โชค,Operator room,PLC,Powder M/C,Download program ใหม่ หลังแก้ไข Powder ITO เสร็จ ทำให้ Conveyor หยุด แล้วไป interlock กับ P/S ดับไปด้วย,
+RFG,"Thu, 03-Apr-25",8.18,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #7,Fault: 52035 Frequency high,C04 CZ6.2 90SX at 38kW ดับ --> Target เสียหาย ต้องเปลี่ยนใหม่
+RFG,"Fri, 04-Apr-25",3.56,N,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,MF #7,Fault: 52032 Clamping rate,"during cond, found CZ6 SBB PS HT AC  Error
+500/32  Clamping  rate alarm at 6.B
+re-start to cond again
+
+switch to used MF8 (from MF7), off power to check MF8 and start conditioning
+MF8 (6B) shut off again
+re-start conditioning"
+RFG,"Sat, 05-Apr-25",4.25,N,C พี่ออฟ+พี่แดน,Exit,Inverter,XRT1 (121VF1),Fault : 21 (Output Phase loss) XT Drives Is Faulted,หน้าจอโชว์หมุน แต่ Roller ไม่หมุน
+RFG,"Mon, 07-Apr-25",4.29,N,C พี่ออฟ+พี่แดน,Utility,Chiller,No.4,Alarm: High Pressure at Circuit 2,
+RFG,"Sat, 12-Apr-25",2.48,N,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,AE #9,ท่อน้ำ cooling แตก รั่ว,
+RFG,"Mon, 21-Apr-25",,,,Loading,Tilt table,,โต้ะ Tilt ไม่ทำงาน,พนักงานรองโฟมเพื่อผลิต ทำให้ลูกถ้วยดูดไม่ถึง
+RFG,"Mon, 21-Apr-25",18.06,E,B พี่โย่ง+พี่โชค,Coat zone,Power Supply,MF #8,เปิดไม่ติด ติด alarm: Cooling water flow outside,ท่อน้ำของ AE #9 ดึง flow ไป ทำให้ flow ไม่พอ ต้องปิด AE #9
+RFG,"Wed, 23-Apr-25",10.2,M,A น้าหนาน+ยุทธนา,Loading,Tilt table,Vacuum pad,ลูกถ้วยด้านโหลด ขา 1 solenoid ค้าง,เปลี่ยน solenoid ใหม่
+RFG,"Thu, 24-Apr-25",14.28,M,A น้าหนาน+ยุทธนา,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,
+RFG,"Fri, 25-Apr-25",11.3,M,,Unload,Tilt table,Limit sw.,Tilt table not proper with 120x60 8mm,"11.30 ปรับองศา Tilt ใหม่ ที่ Limit sw. ของก้าน Cylinder
+13.00 หน้า B มีปัญหา เดินหน้าแล้ว Overrun Fwd.
+14.00 ขยับ Limit Overrun ไปข้างหน้าอีก 5mm
+14.20 ขยับ Limit Overrun ไปข้างหน้าอีก total เป็น 3cm
+--TEST--
+14.40 หน้า B >> OK
+15.20 หน้า A >> OK"
+RFG,"Wed, 30-Apr-25",13.57,M,B พี่โย่ง+พี่โชค,Coat zone,PLC,Point IO,"Coat Zone 2 Point IO: Lost Communication
+Coat Zone 3 Point IO: Lost Communication",
+RFG,"Thu, 01-May-25",11.15,M,A น้าหนาน+ยุทธนา,Unload,Cross XFER,,"กระจกไหลออกมา เลย Powder ออกมาครึ่งแผ่น
+roller หยุด สายพานยก แล้วเดินหน้าเลย",
+RFG,"Thu, 01-May-25",18.47,E,C พี่ออฟ+พี่แดน,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,"มีโรลเลอร์หยุดหมุน วิเคราะห์สาเหตุ น่าจะมาจาก กระจก หน้า 100 ตั้ง Timer Setpoint
+ไว้ 120 ต่อจากกะเช้ามา กระจกแผ่่นแรกเข้า Lock กำลังจะ Vent แผ่น 2 แตะ โฟโต้ กำลังจะหมุน V3 เปิด แต่มีกระจกอยู่ใน Lock จึงไปไม่ได้ทำให้ Conveyor หยุด สันนิษฐานไว้ประมาณนี้ครับ
+ขั้นตอนต่อไป จะ ทำการ ตั้ง Timer Setpoint. ไว้ที่ 155 แล้วทดสอบอีกครั้งครับ"
+RFG,"Tue, 06-May-25",7.29,N,,Utility,Other,,Machine stop due to MEA Electric voltage dip,"07.29 การไฟฟ้าพระนครใต้ ไฟฟ้าตก หม้อแปลง AFT ทริป
+07.30 กะไฟฟ้า reset หม้อแปลงกลับคืนมา ออนไฟคืนทั้งหมด
+08.30 RFG พร้อมใช้งาน
+09.05 MIR พร้อมใช้งาน เปลี่ยน Timer SB04 ไป 1 ตัว
+loss 3 shifts for back to normal production"
+RFG,"Tue, 06-May-25",10.03,M,C พี่ออฟ+พี่แดน,Washing MC,Conveyor,,Roller เครื่องล้างไม่ทำงาน reset ไม่หาย,"พี่เอ๊กเจอว่า sensor ไม่มีไฟ ก่อนจะพบว่า ฟิวส์ 0.5A ขาด
+ที่ตู้ PointIO ของ READY"
+RFG,"Wed, 07-May-25",10.22,M,C พี่ออฟ+พี่แดน,Washing MC,Bilco,Breaker,ปรับระดับแปรงดำไม่ได้ พบว่า Breaker 30A trip,เป็น main เดียวกับ Pump return no.8
+RFG,"Wed, 07-May-25",14.14,M,C พี่ออฟ+พี่แดน,Entry,Valve,Slit Valve No.2,Slit valve V2 เปิดเอง sensor ไม่ติด และทำให้ roller หมุนด้วย (เหมือนมีกระจกเลย แต่ไม่มี),
+RFG,"Wed, 14-May-25",12.39,M,A น้าหนาน+ยุทธนา,Exit,Inverter,XT_IV,Fault : 12 (HW OverCurrent),"XT บน Intouch โชว์แดง กินพื้นที่ไป 3 ห้อง คือ
+Optoplex, Dark room, Powder spray
+และไม่มีกระจกอยู่ใน 3 โซนนั้นเลย
+XT Drive was stopped with no alarm on Intouch
+กะดึกเป็นอีก 3 รอบ"
+RFG,"Thu, 15-May-25",9.29,M,A น้าหนาน+ยุทธนา,Exit,Inverter,XT_IV,Fault : 21 (Output Phase loss) XT Drives Is Faulted,"Optoplex_IV ตัวซ้าย alarm
+กระจกคาอยู่ในห้อง Optoplex
+ใน Intouch ไฟ roller XT_IV โชว์เขียว สั่งหมุน แต่ไม่หมุน
+ไม่มี alarm อื่นขึ้นบน Intouch เลย"
+RFG,"Thu, 15-May-25",15.16,M,A น้าหนาน+ยุทธนา,Exit,Inverter,XT_IV,Fault : 12 (HW OverCurrent),
+RFG,"Thu, 15-May-25",16,M,A น้าหนาน+ยุทธนา,Unload,Emergency,Rope switch,Rope switch was contacted by itself,reset and setting new actuation distance
+RFG,"Sat, 17-May-25",1,N,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,AE #8,Power supply ดับ,"CZ1.2 AE#8 ค่า Volt ไม่นิ่ง แล้วก็ดับ
+สลับ MF#7 ใส่แทน กลับมาปกติ"
+RFG,"Tue, 20-May-25",21.55,E,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,MF #8,เปิดไม่ติด ติด alarm: Cooling water flow outside,ท่อน้ำของ AE #9 ดึง flow ไป ทำให้ flow ไม่พอ ต้องปิด AE #9
+RFG,"Tue, 20-May-25",22,E,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,AE #9,Alarm: CZ6 SBB PS AE Coolant flow fault,หรี่วาร์ลช่วย MF #8 จน AE #9 ดับเอง
+RFG,"Wed, 21-May-25",7.04,N,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,AE #8,Power supply ดับ,"ทดลองสลับ
+1.1 AE #5 --> AE #8
+1.2 AE #8 --> AE #5 (ตอนแรกพบว่า 1.2 Arc เยอะ)
+กระพริบหนักกว่าเดิม
+สุดท้าย ใช้ AE#8 ที่ 1.1 ตัวเดียว ไม่ arc"
+RFG,"Thu, 22-May-25",0.15,N,A น้าหนาน+ยุทธนา,Loading,Tilt table,Sensor,Alarm: 916 BIG CHUCK ADVANCE/RETURN,"สายไฟ sensor ลูกถ้วย #1 (X38)ขาดใน
+ใช้สาย core เบอร์ 19 ใส่แทน
+สาย multi core โดนบาด"
+RFG,"Fri, 23-May-25",16,M,B พี่โย่ง+พี่โชค,Loading,Tilt table,Sensor,Alarm: 917 SMALL CHUCK ADVANCE/RETURN,"X039: Small chuck center --> T101
+เจอ Flex ขาด ไม่รู้เครื่องจักรหนีบ หรือ กระจกบาด
+PLC ร้อนมาก
+พัดลมตู้ 9cm x 9cm
+
+28-May-25 ไปเช็คหน้างานพบว่าสายมีรอยโดนจิกบาด"
+RFG,"Sat, 24-May-25",13.01,M,B พี่โย่ง+พี่โชค,Unload,Powder M/C,Motor,Powder พ่นไม่เต็มแผ่น,"ปั้มใบติด ส่งต่อ MECH
+ไฟฟ้า ถอดสายไฟ และช่วย MECH ติดตั้ง"
+RFG,"Sat, 31-May-25",11.12,M,C พี่ออฟ+พี่แดน,Coat zone,Transmission Cam,,CZ 3 ค่าไม่ขึ้น,"ขั้วปลั๊กที่บัดกรีไว้หลุด + Box ครอบเปิดไว้อยู่
+ต้องยกฝา เพื่อบัดกรีสายใหม่"
+RFG,"Mon, 02-Jun-25",10.26,M,A น้าหนาน+ยุทธนา,Washing MC,Benteler,HMI,หน้าจอกดไม่ติด,PLC น่าจะ false หลังจากเพิ่งกลับมาผลิต
+RFG,"Wed, 04-Jun-25",10,M,A น้าหนาน+ยุทธนา,Small temper,T/C,B10,ค่าขึ้นค้างที่ 2000,มีสแปร์แล้ว รอเปลี่ยน
+RFG,"Wed, 04-Jun-25",13.04,M,A น้าหนาน+ยุทธนา,Small temper,Motor,Furnace blower,Inverter F7900: Motor was blocked!? (12mm),ปรับลด Hz ลงหน่อย กระจกอาจจะหนาไป
+RFG,"Thu, 05-Jun-25",13.41,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,AE #8,PS AE Excess ripple (E009 Cable interlock open),"AE #8 Lid 1.2 alarm: Excess ripple --> Restart
+Component aging --> need to replace with MF G2"
+RFG,"Thu, 05-Jun-25",11.45,M,A น้าหนาน+ยุทธนา,Coat zone,Sensor,IG gauge,IG gauges's value all shown = 1 Torr,"We tried to reset the fault from the PLC, as we believe the initial startup after the maintenance day may cause several conflicts. After the reset, the value returned to normal.
+
+P.S. Before the issue occurred, we noticed from the graph that the IG value at CZ-4 was fluctuating periodically."
+RFG,"Thu, 05-Jun-25",15,M,A น้าหนาน+ยุทธนา,Unload,Tilt table,PE Foam,Unload 2 : Alarm Interlock with PE Foam Machine,"Someone use Selector Emergency in front of the panel
+that make interlock with PE Foam"
+RFG,"Thu, 05-Jun-25",16,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #8,MF#8 parameter lost after turn off/restart,"Need assistance from Bellet
+Corrective action: Re-entering the parameter"
+RFG,"Thu, 05-Jun-25",16,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #8,"MF #8 cannot show trend graph for anything such as Volt, current or Power(kW)",Need assistance from Bellet
+RFG,"Thu, 05-Jun-25",23.36,E,B พี่โย่ง+พี่โชค,Coat zone,Cathode,Ethernet cable,U3 communication lost,"Target's front panel  <-->  Point I/O(PLC)
+Corrective action: Replace new ethernet cable"
+RFG,"Fri, 06-Jun-25",10.14,M,A น้าหนาน+ยุทธนา,Coat zone,Cathode,Ethernet cable,C07 communication lost,"Switch hub  <-->  Target's front panel 
+Corrective action: Replace new ethernet cable"
+RFG,"Fri, 06-Jun-25",11,M,A น้าหนาน+ยุทธนา,Loading,Tilt table,Sensor,Alarm: 916 BIG CHUCK ADVANCE/RETURN,"Sensor position of Chuck #5 cannot detect the chuck
+
+Due to poor positioning, the base of the cylinder vacuum pad collided with the sensor support during chucking out.
+→ Mechanical team modified the base of the cylinder."
+RFG,"Fri, 06-Jun-25",13.21,M,A น้าหนาน+ยุทธนา,Coat zone,TMP,C10,"Lid 4.3 C10 Turbo pump 3 Is Faulted.
+Lid 4.3 C10 Turbo pump 3 Communication Faulted",try to Restart --> OK (but recurrence)
+RFG,"Fri, 06-Jun-25",13.41,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,AE #8,PS AE Excess ripple (E009 Cable interlock open),"AE #8 Lid 1.2 alarm: Excess ripple --> Restart
+Component aging --> need to replace with MF G2"
+RFG,"Sat, 07-Jun-25",8.35,M,A น้าหนาน+ยุทธนา,Entry,?,?,"1. The glass signal indicator was shown even there isn't the glass inside the chamber?
+2. Slit valve no.2 was opened by itself
+3. Conveyor(NC_IV from NB1M1) is running at high speed",under investigate
+RFG,"Sat, 07-Jun-25",15,M,A น้าหนาน+ยุทธนา,Coat zone,TMP,C10,"Lid 4.3 C10 Turbo pump 3 Is Faulted.
+Lid 4.3 C10 Turbo pump 3 Communication Faulted","1. try to Restart --> OK (but recurrence)
+2. try to replace Profibus connector --> until now no more occurrence"
+RFG,"Sun, 08-Jun-25",3.28,N,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,MF #7,Fault: 52032 Clamping rate,"MF #7 at 6.B ดับ (TZO, Setpoint: 25kW, Arc:138, water flow: 49.9 l/m, temp: 28C)
+Corrective action: Restart"
+RFG,"Sun, 08-Jun-25",11.52,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #7,"Voltage immediately drop 2 times
+11.52 and 12.10","The voltage is back to normal by itself in short time.
+Corrective action: Switching to MF #8"
+RFG,"Sun, 08-Jun-25",12.2,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #7,"Voltage immediately drop 7 times
+Decide to stop using","Target condition seems good, We've checked from view port.
+But we decide to cancel using MF #7 (high risk to recurrence)
+
+Switch to use only at 6.2 @33kW from MF #8
+(Normally, ITO use 6.2(MF#7 at 25kW and 6.B(M#F8 at 25 kW))"
+RFG,"Mon, 09-Jun-25",3.31,N,C พี่ออฟ+พี่แดน,Coat zone,TMP,C09,"Lid 2.B C09 Turbo pump Is Faulted.
+Lid 2.B C09 Turbo pump Communication Faulted",
+RFG,"Wed, 11-Jun-25",5.45,N,A น้าหนาน+ยุทธนา,Exit,Solenoid Valve,Dry air blow,"Solenoid XL DA PV ""Purge"" of Dry air stem is stuck, cannot operate","The solenoid stem is stuck, so even if we manually operate the solenoid valve from the OP room, the cylinder still cannot open to allow dry air in, because it is being held by air pressure. (It needs to be blown out first.)
+
+Parker 
+Single solenoid P/N: N3557904553
+In / cylinder port 1 inch
+Input 120 VAC"
+RFG,"Wed, 11-Jun-25",7,N,B พี่โย่ง+พี่โชค,Coat zone,Power Supply,MF #8,"Emergency line stop not effect with the MF #8
+(MF#8 still running even emergency was pressed)",Need assistance from Bellet
+RFG,"Wed, 11-Jun-25",7.52,N,B พี่โย่ง+พี่โชค,Coat zone,TMP,U02,"Lid 2.A U02 Turbo pump Is Faulted.
+Alarm code: 51","Code 52 = MB:VIBRATION2 X1
+Possible cause: Continuous excessive vibration of the magnetic bearing
+Protective action: Deceleration"
+RFG,"Thu, 12-Jun-25",23.49,E,A น้าหนาน+ยุทธนา,,,,Sensor Ready LS1 ขาออก ค้าง,ตัวซ้ายสุด ขาออก พี่เอ๊กเปลี่ยน
+RFG,"Fri, 20-Jun-25",10.53,M,C พี่ออฟ+พี่แดน,,,,CM Gauge 4.1 ค่าไม่ขึ้น (คิดว่าปัญหามาจาก สาย),ทดลองสลับตัวแล้ว CM ไม่มีปัญหา
+RFG,"Fri, 20-Jun-25",17.12,E,A น้าหนาน+ยุทธนา,,,,1.1 Roller B ไม่หมุน,Card Inverter หลุด --> ช่างตั้ม จัดการแล้ว
+RFG,"Sat, 21-Jun-25",0,N,B พี่โย่ง+พี่โชค,,,,"รับกะ น้าหนานมา พบว่า
+P05 CZ4.1 ติด Alarm Ground เคลียร์ไม่ได้ ทำให้ ON kW ไม่ได้",สลับไปใช้ P02 Alarm Ground หายไป แต่ ON ไม่ได้เหมือนเดิม
+RFG,"Sat, 21-Jun-25",16.34,E,A น้าหนาน+ยุทธนา,,,,EXIT LOCK PUMPING TIME ABNORMAL,"Exit Lock ปั้มช้า 50-58 วินาที/load
+ซึ่งผิดปกติแน่ๆ เมื่อเปรียบเทียบจากด้าน Entry Lock"
+RFG,"Mon, 23-Jun-25",21.35,E,B พี่โย่ง+พี่โชค,,,,EXIT LOCK PUMPING TIME ABNORMAL,Exit Lock ปั้มช้า 57.8 วินาที/load
+RFG,"Tue, 24-Jun-25",2.51,N,C พี่ออฟ+พี่แดน,,,,EXIT LOCK PUMPING TIME ABNORMAL,"Exit Lock ปั้มช้า 52-58 วินาที/load
+ปรับหน่วงเวลาไว้หน่อย แต่ก็ลดได้อยู่ที่ 52 วินาที/โหลด
+<Pump time>
+27s BP start (delay 6s)
+39s Poppet valve open (delay 4-7s)
+
+<Normal>
+21s BP start
+32-35s Poppet valve open
+PS. Dry air is normal"
+RFG,"Tue, 24-Jun-25",7.28,N,A น้าหนาน+ยุทธนา,Entry,,,ENTRY LOCK DRY AIR LOW PRESSURE ALARM,
+RFG,"Tue, 24-Jun-25",8.41,M,A น้าหนาน+ยุทธนา,Optoplex,,,"Roller at Table1(Optoplex) เป็นสีเหลือง ไม่หมุน
+ทั้งที่ไม่มีกระจกอยู่ด้านหน้า",ต้อง Manual ออก
+RFG,"Tue, 24-Jun-25",11.46,M,A น้าหนาน+ยุทธนา,Exit,,,V4 เปิดช้า ทำให้กระจกออกไม่ทัน เครื่องดับ,
+RFG,"Tue, 24-Jun-25",16.24,E,B พี่โย่ง+พี่โชค,Washing MC,,,ถัง 3 Auto ไม่ทำงาน,เช็คพบว่า มัน detect ขอบถัง --> ต้องขยับออกหน่อย
+RFG,"Wed, 25-Jun-25",9.5,M,A น้าหนาน+ยุทธนา,Loading,,,"Loading table>> no chuck back after shake unload 
+Tilt Loading freeze at last sheet of B-Turn table","ปกติจะรองกระจกเฉพาะ 60,72 (84,96 ไม่รอง)"
+RFG,"Wed, 25-Jun-25",21.47,E,B พี่โย่ง+พี่โชค,Unload,,,Unloading ติด Alarm ไม่สามารถหมุนโต้ะ Turn ได้,พบว่าปัญหา มาจาก Limit Switch เช็คตำแหน่งของ PIN Lock ไม่ขยับตาม
+RFG,"Thu, 26-Jun-25",3.3,N,C พี่ออฟ+พี่แดน,Exit,,,Exit table Fault ไม่มี Alarm แต่ขึ้น สีแดงที่หน้าจอ,
+RFG,"Thu, 26-Jun-25",6.5,N,C พี่ออฟ+พี่แดน,Loading,,,sensor ลูกถ้วย 2 มีปัญหา,ต้องขยับใหม่
+RFG,"Thu, 26-Jun-25",6.5,N,C พี่ออฟ+พี่แดน,Unload,,,กระจกวิ่งจาก Cross --> Unload2 มาแค่ครึ่งแผ่น แต่ Stopper ยกขึ้นเอง,พี่แดน Reset ตู้คอนโทรล
+RFG,"Fri, 27-Jun-25",1.34,N,C พี่ออฟ+พี่แดน,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,
+RFG,"Fri, 27-Jun-25",4.07,N,C พี่ออฟ+พี่แดน,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,"เท่าที่สังเกต เหมือน Roller Exit Buffer -> Exit Lock
+หลังจาก V3 เปิด จังหวะ Hi-Speed เหมือนมีหน่วง กว่ากระจกจะไหลเข้ามาที่ Lock
+
+เช็คจาก CCTV พบว่า หลังจากมีคำสั่ง สั่งเปิด V3
+CZ_Conv. ก็ขึ้น สีส้ม ชั่วขณะ ก่อนที่จะ Alarm"
+RFG,"Sat, 28-Jun-25",1.28,N,C พี่ออฟ+พี่แดน,Coat zone,CM Gauge,,CM Gauge 4.1 ค่าขึ้นสูงผิดปกติ,"เช็ครั่ว พบว่า ข้อต่อที่ใช้ ""ดินน้ำมัน"" ไปพอกไว้ เอาไม่อยู่"
+RFG,"Sat, 28-Jun-25",4.25,N,C พี่ออฟ+พี่แดน,Exit,,,"หลังจากกระจกออกจาก XL ไปแล้ว เริ่มปั้มลง แต่ปั้มช้ามาก
+Exit Lock ปั้มลงช้า ดับ 1 รอบ ทำให้ Cycle เกิน 100 วิ+ (จากปกติประมาณ 81 วิ)",ทำการ Reset ก็กลับมาผลิตได้ต่อ
+RFG,"Tue, 01-Jul-25",5.57,N,C พี่ออฟ+พี่แดน,Washing MC,Level sw.,Sensor,น้ำล้นไม่ตัด sensor ไม่ตัด,Tank 4
+RFG,"Fri, 04-Jul-25",20.59,E,C พี่ออฟ+พี่แดน,Coat zone,CM Gauge,,CM Gauge 1.1 ค่าขึ้นสูงผิดปกติ,น่าจะรั่ว
+RFG,"Sat, 05-Jul-25",2.33,N,A น้าหนาน+ยุทธนา,Coat zone,CM Gauge,,CM Gauge 4.1 ไม่อ่านค่า gas แต่จ่าย gas ได้ ทำให้ on kW ไม่ได้,พี่นาวินเข้าเช็ค แต่ยังแก้ไขไม่ได้
+RFG,"Sat, 05-Jul-25",9.13,M,B พี่โย่ง+พี่โชค,Washing MC,Benteler,Thickness,"Auto start ไม่ได้ ติด Alarm ""Washing machine  not ready""
+Washing machine open. 429mm !?","มีแจ้งเพิ่มเติมมาว่า พี่โย่งอาจจะ Manual สูงขึ้นไป เกิน limit เลยค้าง
+ทีมกะไฟฟ้า เข้าไปเคาะ Thickness แล้วเครื่องก็กลับมาใช้งานได้"
+RFG,"Sat, 05-Jul-25",18.34,E,C พี่ออฟ+พี่แดน,Coat zone,CM Gauge,,CM Gauge 1.1 ค่าไม่นิ่ง ค่า Fluctuate (ทั้ง Pressure/Flow mode),Check Voltage แล้ว ปกติ
+RFG,"Mon, 07-Jul-25",14.49,M,C พี่ออฟ+พี่แดน,Loading,Tilt table,Sensor,Alarm 919 : Glass receiver advance/return,"Auto/Man เวลาTilt เดินหน้าแล้ว สัญญาณเซ็นเซอร์ตัวดันกระจก จะดับเอง
+sensor ตัวดันกระจก ติดขึ้นเอง --> มีสายขาดใน
+sensor ลูกถ้วย#5 ติดตลอด --> มีคนเลื่อนชุด vacuum pad ขึ้นสูงเกิน"
+RFG,"Mon, 07-Jul-25",17.43,E,A น้าหนาน+ยุทธนา,Washing MC,Bilco,Oscilation motor,Rated 0.6 A หลังจาก run ไปประมาณ 30 วินาที วัดกระแสได้ 2.1 A,มีเสียงดังตอนหมุน แปลกๆด้วย
+RFG,"Tue, 08-Jul-25",7.23,N,B พี่โย่ง+พี่โชค,Loading,Tilt table,Vacuum pad,Alarm 920 : Chuck Absorb alarm,
+RFG,"Thu, 17-Jul-25",6.5,N,C พี่ออฟ+พี่แดน,Coat zone,CM Gauge,CM 1.1,Gas Instability Due to Leak at Base Plate 1.2A,Base Plate 1.2A Head (Operator Side): Found a significant leak
+RFG,"Thu, 17-Jul-25",23.45,E,C พี่ออฟ+พี่แดน,Coat zone,CM Gauge,CM 2.1,Gas Supply Failure Caused by Faulty Analog Output Module (4–20 mA),analog output (4–20 mA) 1734-OE4C was broken
+RFG,"Mon, 28-Jul-25",13.45,M,C พี่ออฟ+พี่แดน,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,"พบกระจกออกไม่ทัน เครื่องดับ
+1st glass กำลังออกจาก XL, 2nd ตามมาติดๆ
+พอ 1st ถึง XL_LS2 --> V3 closed
+2nd glass stopped at XB --> Machine cannot VENT intime!?
+Glass size : 100x72
+Timer setpoint = 128, after trouble change to 135."
+RFG,"Fri, 01-Aug-25",,E,A น้าหนาน+ยุทธนา,Loading,,,Loading table cannot operate by auto mode,พี่โชค แก้ไข >> สัญญาณ x03a หายทำให้ Alarms ค้างแก้ไขโดยการลากสายดึงสัญญาณ x03b มาใช้แทน กลับมาใช้งานใด้
+RFG,"Tue, 19-Aug-25",18,E,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,AE #8,PS AE Excess ripple (E009 Cable interlock open),
+RFG,"Tue, 19-Aug-25",18.32,E,A น้าหนาน+ยุทธนา,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,"กระจกอยู่ใน NL จนกระทั่ง
+Pump time 55.2 sec
+Cycle time 84.2 sec
+SV.2 ถึงจะค่อยเปิด
+
+อีกรอบ
+Pump time 50.7 sec
+Cycle time 82.8 sec
+SV.2 ถึงจะค่อยเปิด"
+RFG,"Wed, 20-Aug-25",,E,A น้าหนาน+ยุทธนา,Exit,Inverter,XT_IV,alarm xt drives is fault,
+RFG,"Wed, 20-Aug-25",,N,B พี่โย่ง+พี่โชค,Entry,TMP,,TMP (Entry) shut off 2 round 30+20,
+RFG,"Wed, 20-Aug-25",,N,B พี่โย่ง+พี่โชค,Exit,Valve,Slit Valve V3,V3 ไม่ปิด >> coater ดับ 2 รอบ 30+15,
+RFG,"Fri, 22-Aug-25",,M,C พี่ออฟ+พี่แดน,Exit,Valve,Slit Valve V3,V3 สั่งปิดไม่ได้ ระบบเลยเข้า Manual ต้องไปกดที่ตัวโซลินอยด์ถึงปิด,
+RFG,"Fri, 22-Aug-25",,E,A น้าหนาน+ยุทธนา,Entry,,,Entry Lock Vent ไม่สุดตัดอยู่ที่ 610T.เลยเข้า manual ปั้ม และ Vent ใหม่ กลับมาปกติ (เป็น 3 ครั้ง),
+RFG,"Wed, 10-Sep-25",14.38,M,C พี่ออฟ+พี่แดน,Washing MC,Bilco,,ติดสัญญาณ Emergency ในห้อง Operate reset ไม่ได้,Safety sling ข้าง Bilco โดนดึงไว้
+RFG,"Wed, 10-Sep-25",15,M,C พี่ออฟ+พี่แดน,Washing MC,Benteler,Inverter 3U5,"Inverter 3U5 Oscillator motor 
+main breaker was trip","เปลี่ยน Inverter ใหม่
+copy parameter"
+RFG,"Fri, 12-Sep-25",0.34,N,B พี่โย่ง+พี่โชค,Washing MC,Bilco,MTR6,"MTR6 Oscillator Motor Post spray
+main breaker was trip","Motor was shortage มีกลิ่นไหม้ (แต่มอเตอร์เก่ามากแล้ว)
+Buy another replacement model"
+RFG,"Sat, 13-Sep-25",9.47,M,C พี่ออฟ+พี่แดน,Coat zone,Inverter,C01 Bekeart,Prod. ถอดหน้ากาก เพื่ออยากลองว่า ระบบจะมี alarm หรือไม่,"Parameter หายหมดเลย (380V)
+พี่แจ๊ค + พี่เริง ช่วยกันต้องตั้ง Parameter ใหม่หมด"
+RFG,"Tue, 16-Sep-25",9.31,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,AE #8,PS AE Excess ripple (E009 Cable interlock open),เปิดรันมาตั้งแต่ วันอาทิตย์ กะบ่าย (3451 นาที)
+RFG,"Sat, 20-Sep-25",14.51,M,A น้าหนาน+ยุทธนา,Exit,Inverter,XRT1 (121VF1),XT Drives Is Faulted,Reset กลับมาได้
+RFG,"Sat, 20-Sep-25",17.03,E,B พี่โย่ง+พี่โชค,Exit,Inverter,,Inverter Xfer table 1 and 2 was TRIPPED !?,Reset กลับมาได้
+RFG,"Fri, 03-Oct-25",11.53,M,C พี่ออฟ+พี่แดน,Washing MC,Benteler,Air,ตู้ Benteler ร้อนมาก (แอร์ตู้เสียอยู่ กำลังซ่อม),พิจารณาติดพัดลมระบายความร้อน
+RFG,"Mon, 06-Oct-25",15.38,M,A น้าหนาน+ยุทธนา,Washing MC,Benteler,,Solenoid valve ถัง 2 เปิดปิดไม่สุด,สั่งซื้อตัวใหม่ CKD
+RFG,"Wed, 08-Oct-25",15.06,M,,Operator room,PLC,,ปรับ speed CZ ไม่ได้,ต้องปรับเป็น Cut size จึงจะปรับเกิน 400 cm/min ได้
+RFG,"Fri, 10-Oct-25",9.15,M,A น้าหนาน+ยุทธนา,Operator room,Emergency,E-Stop,E-stop ขึ้นเอง ที่ตัวกลาง แต่ Reset หายได้ Power ดับทั้งหมด,ไปเช็คแล้ว ไม่เจออะไรผิดปกติเลย
+RFG,"Sun, 19-Oct-25",16.09,E,C พี่ออฟ+พี่แดน,Washing MC,Bilco,,Reset ระดับน้ำไม่ได้,sensor level ถัง 3 detect ค้าง เวลาน้ำขึ้นสูงมา high ต้องปรับ/เปลี่ยน sensor รุ่นใหม่
+RFG,"Mon, 20-Oct-25",5.48,N,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #9,Clamp รัดท่อน้ำ ใต้เครื่อง ขันไม่แน่น น้ำรั่วซึมออกมา,
+RFG,"Mon, 20-Oct-25",,,,Exit,Switch hub,,Stratix XL Communication Error 1 รอบ --> Reset ได้,
+RFG,"Wed, 07-Jan-26",7.49,N,B พี่โย่ง+พี่โชค,Utility,Substation,Under voltage,"ตัวจับกระแสไฟตกเสีย (Protection Relay) เลยทำให้โหลดทั้งหมดจากตู้นี้ เช่น Process pump ดับทั้งหมด
+LOW_VOLTAGE_PANEL_1 (ACB#4)","เปลี่ยนแล้วเรียบร้อย W-OP4(3P4W)
+7.49 - 10.28"
+RFG,"Thu, 08-Jan-26",20.36,E,C พี่ออฟ+พี่แดน,Washing MC,Inverter,NT_IV,"HMI: ENTRY TABLE INVERTER FAULT ALARM
+HMI: (NT_IV_FAULT_ALM)
+INV: Port5 Comm Loss
+Roller เครื่องล้าง หยุดทำงาน",reset 2 รอบไม่หาย พี่เกษมมา reset กลับมาใช้งานได้ !?
+RFG,"Thu, 08-Jan-26",22.31,E,C พี่ออฟ+พี่แดน,Washing MC,Inverter,NT_IV,"HMI: ENTRY TABLE INVERTER FAULT ALARM
+HMI: (NT_IV_FAULT_ALM)
+INV: Port5 Comm Loss
+Roller เครื่องล้าง หยุดทำงาน","เป็นอีกรอบ อาการเดิม กลับมา
+พี่เกษม ทำความสะอาด การ์ด Ethernet (port4)
+22.31-23.10"
+RFG,"Sat, 10-Jan-26",18.32,E,C พี่ออฟ+พี่แดน,Washing MC,Inverter,NT_IV,"HMI: ENTRY TABLE INVERTER FAULT ALARM
+HMI: (NT_IV_FAULT_ALM)
+INV: Port5 Comm Loss
+Roller เครื่องล้าง หยุดทำงาน",Reset alarm ที่ INV หาย
+RFG,"Sat, 10-Jan-26",18.55,E,C พี่ออฟ+พี่แดน,Washing MC,Inverter,NT_IV,"HMI: ENTRY TABLE INVERTER FAULT ALARM
+HMI: (NT_IV_FAULT_ALM)
+INV: Port5 Comm Loss
+Roller เครื่องล้าง หยุดทำงาน","กลับมาเป็นอีกรอบ
+พี่เกษม ทำความสะอาด การ์ด Ethernet (port4)
+18.55-19.56"
+RFG,"Sun, 11-Jan-26",0.07,N,A น้าหนาน+ยุทธนา,Washing MC,Inverter,NT_IV,"HMI: ENTRY TABLE INVERTER FAULT ALARM
+HMI: (NT_IV_FAULT_ALM)
+INV: Port5 Comm Loss
+Roller เครื่องล้าง หยุดทำงาน","Reset alarm ที่ INV หาย
+
+Mon 12 Jan 2026
+เช้าวันศุกร์ ไฟฟ้า Daytime เข้าไปดู แล้วถอดการ์ด port 5 ซึ่งเป็นการ์ด analog ออกไปทำความสะอาด"
+RFG,"Thu, 22-Jan-26",0.55,N,C พี่ออฟ+พี่แดน,Loading,Tilt table,ลูกถ้วย,Alarm เครื่องค้าง ในขั้นตอนลูกถ้วยชักกลับ ทำให้กระจกขาดช่วง,Operate ต้องเข้า Manual
+RFG,"Thu, 22-Jan-26",1,N,C พี่ออฟ+พี่แดน,Unload,Tilt table,ลูกถ้วย,ลูกถ้วยขึ้นไม่สุด ,อาจจะน้ำหนักกระจกเยอะ ต้องใช้ไม้ยาวช่วยยก
+RFG,"Sun, 01-Feb-26",1.35,N,A น้าหนาน+ยุทธนา,Coat zone,Shield 5.1,WFS_SB,WFS เข็มค้าง,เอาหนังยางรัด ดึง contact เอาไว้
+RFG,"Sun, 01-Feb-26",9.08,M,A น้าหนาน+ยุทธนา,Utility,Substation,"ACB #2
+2000A","ACB #2 (2000A) was switched off, which also caused ACB #3 (2500A) to switch off, resulting in power loss to the load.","- ไฟดับ หรือ มีพนักงานกะเข้าไปใน sub ก่อนกัน
+- เพราะพนักงานกะผมแจ้งว่า มีคนแจ้งไปว่า ทริป เลยมาเช็คดู
+- มีการพยายาม ON ACB#5 หรือไม่
+- เจอ ACB#3 OFF อยู่ เลยพยายาม ON แต่ไม่สำเร็จ
+- ลองไล่ปิดโหลดทุกตัว
+- พยายาม ON ACB#3 แต่ไม่สำเร็จ
+- เจอว่า ACB#2 OFF อยู่ เลย ON ขึ้นมาก่อน
+- จากนั้นก็ ON ACB#3 ได้ปกติ"
+RFG,"Tue, 03-Feb-26",15.12,M,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,AE #5,PS AE Excess ripple,"- ใช้งานที่ CZ1.1 @48.7kW
+- เพิ่งจะผลิตเป็น DAY2
+- Flow น้ำเต็มหลอด ปกติ"
+RFG,"Tue, 03-Feb-26",18.18,E,A น้าหนาน+ยุทธนา,Unload,Turn table,Limit sw.,ระหว่างกับเปลี่ยนหน้ากระจก A-->B หมุนได้นิดเดียว ค้าง,อาจจะเป็นตำแหน่ง limit ใต้โต้ะ ที่ไม่ดี
+RFG,"Wed, 04-Feb-26",14.2,M,C พี่ออฟ+พี่แดน,Exit,Inverter,XT_IV,XT Drives Is Faulted,Reset กลับมาได้
+RFG,"Thu, 05-Feb-26",9.09,M,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,MF #3,"MF #3
+51950 : water power supply","AV38/NV38 l/min
+สลับไปใช้ MF #7"
+RFG,"Wed, 11-Feb-26",15,M,A น้าหนาน+ยุทธนา,Utility,Chiller,No.2,น้ำยารั่ว ทั้ง 2 คอมเลย เพราะ Seal เสื่อมสภาพ,
+RFG,"Wed, 11-Feb-26",15.47,M,A น้าหนาน+ยุทธนา,Entry,PLC,NL,"หน้าจอ EMO ขึ้น ไฟแดงตัวกลาง = เครื่องไม่พร้อมใช้งาน
+พอเข้าไปดูหน้า PLC Status พบว่า NL loss comms","คาดว่าอาจจะมาจาก
+1. A/B Switch hub
+2. สายแลน CLX <--> NL switch hub"
+RFG,"Sun, 15-Feb-26",13.49,M,พี่ออฟ+ยุทธนา,Washing MC,Benteler,Motor,Breaker 3Q6.0 was tripped,"3M7 ROLLER BRUSH DRIVE BELOW ไม่หมุน แจ้งไฟฟ้ากะเช็ค (พี่แจ็ค)
+มอเตอร์ติด Mech เข้าเปลี่ยนมอเตอร์ใหม่"
+RFG,"Sun, 15-Feb-26",13.53,M,พี่ออฟ+ยุทธนา,Small temper,Furnace,Cylinder,"ประตู Furace ไม่เปิดให้กระจกเข้าไป แจ้งไฟฟ้ากะเช็ค (พี่แจ็ค)
+The furnace door failed to open, preventing the glass from entering.",แกนของ Cylinder ด้านบนหลุดออกจากขายก ทำให้เปิดประตูไม่ได้
+RFG,"Mon, 16-Feb-26",9.19,M,B พี่โย่ง+พี่โชค,Coat zone,Power Supply,MF #3,50017 : AC Dump,"ลองเปลี่ยน Main control board
+1040 1281919 Fuse set TIG/BIG/TruHeat/TruPlasma ซ้ายบนของด้านหน้า"
+RFG,"Mon, 16-Feb-26",10,M,B พี่โย่ง+พี่โชค,Coat zone,Power Supply,MF #7,"Since MF #3 was unavailable, MF #7 (spare unit) was used instead.
+However, MF #7 tripped with alarm 50006 (Temperature Chopper) and 51431 (Reset function disabled).
+After restart, the unit could operate for approximately 5 minutes before tripping again.","เปิดได้แค่ 5 นาที ก็ตัดแล้ว
+>> ลองเปลี่ยน 2 อย่าง 
+1. 1070-1303287 IGBT module
+2. 2000-1605327 PCB power output amplifier
+
+done 13.14
+
+ทั้งหมดมี 4 set
+1st : ขวา เปลี่ยนทั้ง set
+2nd : ซ้าย เป็นแค่บอร์ดบน"
+RFG,"Mon, 16-Feb-26",0.14,N,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #6,"MF #6
+50006 : temperature chopper
+51431 : Reset function is disabled","สลับไปใช้ MF #5
+เปลี่ยน 1070-1303287 IGBT module"
+RFG,"Wed, 18-Feb-26",14.21,M,B พี่โย่ง+พี่โชค,Coat zone,Power Supply,AE #9,PS AE Excess ripple,Restart
+RFG,"Tue, 24-Feb-26",9.47,M,C พี่ออฟ+พี่แดน,Washing MC,Benteler,Motor,"Breaker 3Q6.0 was tripped
+The cable to the 3M6 Roller Brush Drive (Above) shorted to ground.","สายไฟไปหา 3M6 ROLLER BRUSH DRIVE ABOVE ช็อต GND
+โดนน้อตยึด support ของ Thickness บาดสายไฟ ขาด
+
+แก้ไข
+EE ตัดต่อสายไฟใหม่ จัดสายให้เรียบร้อยขึ้น
+ME ทำ support ยึด Thickness ให้ใหม่"
+RFG,"Tue, 24-Feb-26",21.54,E,ยุทธนา,Entry,Valve,Slit Valve No.1,ENTRY LOCK SLIT VALVE FAULT ALARM,Manual valve 1 ที กลับมาใช้งานได้ปกติ
+RFG,"Wed, 25-Feb-26",6.43,N,ยุทธนา+พี่โย่ง,Washing MC,Inverter,NT_IV,"The ENTRY TABLE inverter generated the same alarm as previously reported.
+
+HMI Alarm:
+ENTRY TABLE INVERTER FAULT ALARM (NT_IV_FAULT_ALM)
+INV: Port5 Comm Loss
+
+As a result, the washing machine rollers stopped operating.
+
+Engineering inspected the inverter and found the issue similar to the previous event on 8–10 Jan 2026.
+
+After removing the Analog Card (Port5) and performing cleaning with air blow, the inverter communication was restored and the machine returned to normal operation.","ไฟฟ้ากะ (พี่เอฟ)
+ถอดการ์ด port5 analog ออกมา เอาลมเป่า cleaning
+กลับมาใช้งานได้"
+RFG,"Wed, 25-Feb-26",13.01,M,น้าหนาน + พี่แดน,Loading,Tilt table,,ลูกถ้วยโต้ะโหลดลูกกลาง ขึ้นลงช้า,
+RFG,"Wed, 25-Feb-26",13.25,M,น้าหนาน + พี่แดน,Coat zone,CM Gauge,,CM Gauge 6B ไม่อ่านค่า,
+RFG,"Fri, 27-Feb-26",14.5,M,น้าหนาน + พี่ออฟ,Coat zone,TMP,,TMP no.1 2B ไม่สามารถ on ได้,สายลมแตก + ประเก็นยาง modify ไม่ได้มาตราฐาน
+RFG,"Mon, 16-Mar-26",7.08,N,B พี่โย่ง+พี่โชค,Coat zone,Power Supply,,MF#9 ใช้ไม่ได้ เปิดได้ แต่มี alarm parameter access has failed,"Parameter ""Short circuit detection"" was 5ms --> 10ms
+after consult with Trumpf"
+RFG,"Tue, 17-Mar-26",13.08,M,C พี่ออฟ+พี่แดน,Loading,Tilt table,,ลูกถ้วยโต้ะโหลดลูกกลาง ลงไม่ได้,Solenoind Cup3 ตัวสุดท้ายที่ยังเป็นรุ่นเก่า เสีย เปลี่ยนเป็นรุ่นใหม่ ครบทั้งแผงแล้ว ซ่อมเสร็จ 16.30
+RFG,"Wed, 18-Mar-26",2.55,N,B พี่โย่ง+พี่โชค,Washing MC,Heater,,Heater tank 1 ช็อต,[ชั่วคราว] ไฟฟ้ากะ ปลดสายไฟออก เพื่อให้กลับมาใช้งานได้ก่อน
+RFG,"Thu, 19-Mar-26",17.26,E,A น้าหนาน+ยุทธนา,,,,Unload 2 Tilt table หลังจากดูดกระจกเสร็จแล้ว delay นาน กว่าจะถอยหลัง,mis operate ลูกถ้วยไม่ได้เปิด 1 ถ้วย
+RFG,"Wed, 25-Mar-26",13.21,M,A น้าหนาน+ยุทธนา,Entry,Valve,Slit Valve No.2,Slit valve V2 ไม่ทำงาน สั่งเปิด แล้วไม่ยอมเปิด,กระบอกลมรั่ว --> Mech เปลี่ยน cylinder 27 Mar
+RFG,"Wed, 01-Apr-26",23.18,E,C พี่ออฟ+พี่แดน,Exit,Inverter,XT_IV,Fault : 21 (Output Phase loss) XT Drives Is Faulted,Reset ปิด Breaker เปิดใหม่
+RFG,"Tue, 07-Apr-26",11.57,M,C พี่ออฟ+พี่แดน,Exit,Valve,Slit Valve No.4,Slit valve V4 เปิดช้ามาก,ปรับ set point จาก 750 --> 730 mT
+RFG,"Tue, 07-Apr-26",17.48,E,A น้าหนาน+ยุทธนา,,,,ไฟตก เครื่องดับหมด,
+RFG,"Wed, 08-Apr-26",13.13,M,C พี่ออฟ+พี่แดน,Exit,Inverter,XT_IV,Fault : 21 (Output Phase loss) XT Drives Is Faulted,Reset ปิด Breaker เปิดใหม่
+RFG,"Mon, 20-Apr-26",20.24,E,C พี่ออฟ+พี่แดน,Entry,NB_M1,Clutch,"กระจกอยู่ห้อง Ready (Vent แล้วเรียบร้อย)
+กระจกไม่วิ่งเข้า NL, Manaul ก็ไม่ได้ จึงแจ้ง กะไฟฟ้า","Check1: @00:17 พบว่า Magnetic NB_M1 OVL กระแสเกิน
+Check2: @00:28 พบว่า NB Clutch ไม่สามารถเปลี่ยนสลับความเร็วได้สมบูรณ์ในบางครั้ง"
+RFG,"Thu, 23-Apr-26",9,M,B พี่โย่ง+พี่โชค,Entry,Valve,Slit Valve No.2,เปลี่ยน Solenoid Valve SV. no.2,เจอ solenoid รั่ว จังหวะปิดเป็นบางครั้ง คาดว่า seal ด้านในน่าจะผิดรูป หรือเสื่อมสภาพ คาดน้ำมันเข้าไปด้านใน ทำให้ seal เสื่อมสภาพไวเกิน 15.15
+RFG,"Mon, 04-May-26",13.51,M,A น้าหนาน+ยุทธนา,Loading,Tilt table,,909 Arm level overrun,
+RFG,"Tue, 05-May-26",10.17,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #7,"50006 (Temperature Chopper)
+51431 (Reset function disabled).","70kW, 65kW"
+RFG,"Thu, 07-May-26",14.08,M,A น้าหนาน+ยุทธนา,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,
+RFG,"Tue, 19-May-26",7.34,N,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #7,"50006 (Temperature Chopper)
+51431 (Reset function disabled).",ดับอีก 5 รอบ
+RFG,"Tue, 19-May-26",10.54,M,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,MF #7,"50006 (Temperature Chopper)
+51431 (Reset function disabled).",57kW
+RFG,"Tue, 19-May-26",21.17,E,A น้าหนาน+ยุทธนา,Washing MC,Benteler,HMI,Benteler ระดับความสูง,Operater ปรับผิด ไปปรับค่า prestop แทน ทำให้ค่าไม่ตรง
+RFG,"Tue, 19-May-26",22.05,E,A น้าหนาน+ยุทธนา,,TMP,,Lid C09 TMP no.2 communication fault,
+RFG,"Wed, 20-May-26",13.1,M,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,MF #7,"50006 (Temperature Chopper)
+51431 (Reset function disabled).",
+RFG,"Sun, 24-May-26",14.34,M,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,MF #7,"50006 (Temperature Chopper)
+51431 (Reset function disabled).",
+RFG,"Fri, 29-May-26",9.27,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,MF #7,"50006 (Temperature Chopper)
+51431 (Reset function disabled).",49kW
+RFG,"Mon, 08-Jun-26",21.19,E,A น้าหนาน+ยุทธนา,Dark room,LED,,หลอดไฟช็อต ไม่ติด,
+RFG,"Tue, 09-Jun-26",6.1,N,B พี่โย่ง+พี่โชค,Coat zone,Power Supply,MF #5,แหวนล็อคฝาครอบหลุด ไปโดน terminal ทำให้เกิดช็อต ประกายไฟ หยุดใช้งานชั่วคราว,
+RFG,"Tue, 09-Jun-26",6.57,N,B พี่โย่ง+พี่โชค,Exit,Inverter,XT_IV,Fault : 21 (Output Phase loss) XT Drives Is Faulted,
+RFG,"Tue, 09-Jun-26",9.37,M,C พี่ออฟ+พี่แดน,Coat zone,TMP,P10 #3,Communication loss,Alarm 79 : DEW Warning
+RFG,"Tue, 09-Jun-26",16.22,E,A น้าหนาน+ยุทธนา,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,"Lock exit ปั้มช้ามาก 60sec+, OP ตัดสินใจปรับเพิ่ม timer setpoint เป็น 135 เพื่อให้โหลดห่างขึ้น (Prod. 260 to 200)"
+RFG,"Tue, 09-Jun-26",16.46,E,A น้าหนาน+ยุทธนา,Exit,,,COATER STOP GLASS COULD NOT EXIT FROM XB INTIME,
+RFG,"Wed, 10-Jun-26",20.22,E,A น้าหนาน+ยุทธนา,Exit,Inverter,XT_IV,Fault : 21 (Output Phase loss) XT Drives Is Faulted,
+RFG,"Thu, 11-Jun-26",14.19,M,A น้าหนาน+ยุทธนา,Unload,,Stopper,Stopper ขึ้นข้างเดียว,
+RFG,"Wed, 17-Jun-26",14.5,M,A น้าหนาน+ยุทธนา,Coat zone,Power Supply,AE #9,เจอเศษวัสดุในท่อน้ำ cooling AE #9,
+RFG,"Thu, 18-Jun-26",14.44,M,A น้าหนาน+ยุทธนา,Dark room,LED,,หลอดไฟช็อต ไม่ติด,
+RFG,"Tue, 30-Jun-26",13.33,M,C พี่ออฟ+พี่แดน,Loading,Sensor,ลูกถ้วย,Loading Sensor ไม่ได้ตำแหน่ง ทำให้เครื่องทำงานไม่ได้,หลัง Modify support sensor ลูกถ้วย ไฟฟ้าเข้าติดตั้ง sensor คืน และยังไม่ได้ทดสอบโต๊ะ
+RFG,"Tue, 30-Jun-26",16.16,E,A น้าหนาน+ยุทธนา,Unload,Sensor,unload 1,Unload สัญญาณกระจกค้าง >> เจอปลั๊ก sensors หลุดหลวม น่าจะจาก MTN,หลัง MTN โต้ะ Unload ไม่ได้เปิด breaker sensor คืน
+RFG,"Thu, 02-Jul-26",11.4,M,C พี่ออฟ+พี่แดน,Loading,Sensor,ลูกถ้วย,Loading Sensor ไม่ได้ตำแหน่ง ทำให้เครื่องทำงานไม่ได้,เน้นย้ำ ขันแน่น sensor ให้ดี หลังเปลี่ยน แก้ไข หรือติดตั้ง เครื่องมือต้องพร้อม
+RFG,"Sun, 05-Jul-26",9.08,M,C พี่ออฟ+พี่แดน,Coat zone,Power Supply,AE #5,Power ดับ ไม่มี alarm,
+RFG,"Sat, 11-Jul-26",5.43,N,C พี่ออฟ+พี่แดน,Coat zone,TMP,P10 #3,Communication loss,

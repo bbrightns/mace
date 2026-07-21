@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Core Collections for MACE
+    match /mace_pm_plans/{id} {
+      allow read, write: if true;
+    }
+    match /mace_longterm_plans/{id} {
+      allow read, write: if true;
+    }
+    match /mace_vosf/{id} {
+      allow read, write: if true;
+    }
+    match /mace_trouble_records/{id} {
+      allow read, write: if true;
+    }
+    match /mace_purchasing/{id} {
+      allow read, write: if true;
+    }
+    match /mace_budget_ledger/{id} {
+      allow read, write: if true;
+    }
+    match /mace_project_requests/{id} {
+      allow read, write: if true;
+    }
+    match /mace_project_planning/{id} {
+      allow read, write: if true;
+    }
+    match /mace_drawings/{id} {
+      allow read, write: if true;
+    }
+    match /mace_audits/{id} {
+      allow read, write: if true;
+    }
+    match /mace_pm_logs/{id} {
+      allow read, write: if true;
+    }
+  }
+}

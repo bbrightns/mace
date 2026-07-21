@@ -1,0 +1,237 @@
+{
+  "entities": {
+    "PMPlan": {
+      "title": "PM Plan",
+      "description": "Machine PM schedule item with recurring cycles",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "machineName": { "type": "string" },
+        "responsible": { "type": "string" },
+        "cycle": { "type": "string", "enum": ["monthly", "every 2 months", "every 6 months", "yearly"] },
+        "lastDoneDate": { "type": "string" },
+        "nextDueDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["Open", "In Process", "Closed", "On Hold"] }
+      },
+      "required": ["machineName", "responsible", "cycle", "status"]
+    },
+    "LongTermPlan": {
+      "title": "Long Term Plan",
+      "description": "Plans with a horizon greater than 1 year (e.g., 5-year part replacement)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "item": { "type": "string" },
+        "intervalYears": { "type": "number" },
+        "lastDone": { "type": "string" },
+        "nextDue": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["item", "intervalYears"]
+    },
+    "VoiceOfShopFloor": {
+      "title": "Voice of Shop Floor",
+      "description": "Problem report from shop floor personnel",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "no": { "type": "string" },
+        "problemDetail": { "type": "string" },
+        "reporter": { "type": "string" },
+        "reportedDate": { "type": "string" },
+        "pic": { "type": "string" },
+        "update": { "type": "string" },
+        "lastUpdateDate": { "type": "string" },
+        "status": { "type": "string", "enum": ["Open", "In Process", "Closed", "On Hold"] }
+      },
+      "required": ["problemDetail", "reporter", "reportedDate", "status"]
+    },
+    "TroubleRecord": {
+      "title": "Trouble Record",
+      "description": "Equipment failure logs containing downtime, components, and actions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "no": { "type": "string" },
+        "dateTime": { "type": "string" },
+        "machineEquipment": { "type": "string" },
+        "plant": { "type": "string", "enum": ["RFG", "MIR"] },
+        "problemDescription": { "type": "string" },
+        "rootCause": { "type": "string" },
+        "actionTaken": { "type": "string" },
+        "sparePartsUsed": {
+          "type": "array",
+          "description": "List of used spare parts with name and qty"
+        },
+        "pic": { "type": "string" },
+        "downtimeHrs": { "type": "number" },
+        "status": { "type": "string", "enum": ["Open", "In Process", "Closed", "On Hold"] },
+        "detailNotes": { "type": "string" },
+        "closedDate": { "type": "string" }
+      },
+      "required": ["machineEquipment", "plant", "problemDescription", "pic", "status"]
+    },
+    "Purchasing": {
+      "title": "Purchasing Item",
+      "description": "Items waiting to be purchased or completed",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "item": { "type": "string" },
+        "qty": { "type": "number" },
+        "estimatedPrice": { "type": "number" },
+        "requiredBy": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pending", "Purchased"] },
+        "remarks": { "type": "string" }
+      },
+      "required": ["item", "qty", "status"]
+    },
+    "BudgetLedger": {
+      "title": "Budget Ledger Item",
+      "description": "Financial ledger spreadsheet row entry for project/repair/parts budgets",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "plant": { "type": "string" },
+        "type": { "type": "string" },
+        "plan": { "type": "string" },
+        "price": { "type": "number" },
+        "budget": { "type": "string" },
+        "issueDate": { "type": "string" },
+        "status": { "type": "string" },
+        "remarks": { "type": "string" }
+      },
+      "required": ["name", "price", "status"]
+    },
+    "ProjectRequest": {
+      "title": "Project Request",
+      "description": "Supplier-executed project works details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "no": { "type": "string" },
+        "plant": { "type": "string", "enum": ["RFG", "MIR"] },
+        "item": { "type": "string" },
+        "scope": { "type": "string" },
+        "pr": { "type": "string" },
+        "po": { "type": "string" },
+        "supplier": { "type": "string" },
+        "planOn": { "type": "string" },
+        "price": { "type": "number" },
+        "status": { "type": "string", "enum": ["Open", "In Process", "Closed", "On Hold"] },
+        "remark": { "type": "string" }
+      },
+      "required": ["plant", "item", "scope", "status"]
+    },
+    "ProjectPlanning": {
+      "title": "Project Planning",
+      "description": "Future 5-year views and checklist of engineering work",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["Aging", "Improve"] },
+        "plant": { "type": "string", "enum": ["RFG", "MIR"] },
+        "item": { "type": "string" },
+        "estimatedBudgetMthb": { "type": "number" },
+        "timelineYears": { "type": "object" },
+        "budgetApproved": { "type": "boolean" },
+        "scopeReady": { "type": "boolean" },
+        "prDone": { "type": "boolean" },
+        "poDone": { "type": "boolean" },
+        "workCompleted": { "type": "boolean" }
+      },
+      "required": ["type", "plant", "item", "estimatedBudgetMthb"]
+    },
+    "Drawing": {
+      "title": "Drawing",
+      "description": "Electrical and structural drawings cabinet registry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "drawingNo": { "type": "string" },
+        "title": { "type": "string" },
+        "systemArea": { "type": "string" },
+        "revision": { "type": "string" },
+        "format": { "type": "string" },
+        "locationCabinet": { "type": "string" },
+        "remarks": { "type": "string" }
+      },
+      "required": ["drawingNo", "title", "systemArea", "locationCabinet"]
+    },
+    "Audit": {
+      "title": "Audit Tracker",
+      "description": "Track yearly audit details and checklist of preparations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "year": { "type": "string" },
+        "period": { "type": "string" },
+        "status": { "type": "string" },
+        "notes": { "type": "string" },
+        "checklists": { "type": "object" }
+      },
+      "required": ["year", "period"]
+    },
+    "PMLog": {
+      "title": "PM Log",
+      "description": "Specific month and year PM log for a schedule item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "planId": { "type": "string" },
+        "year": { "type": "number" },
+        "month": { "type": "number" },
+        "doneDate": { "type": "string" },
+        "note": { "type": "string" }
+      },
+      "required": ["planId", "year", "month", "doneDate"]
+    }
+  },
+  "firestore": {
+    "mace_pm_plans": {
+      "schema": "PMPlan",
+      "description": "Machine PM Schedules"
+    },
+    "mace_longterm_plans": {
+      "schema": "LongTermPlan",
+      "description": "Horizon > 1 year plans"
+    },
+    "mace_vosf": {
+      "schema": "VoiceOfShopFloor",
+      "description": "Voice of Shop Floor reporter problems"
+    },
+    "mace_trouble_records": {
+      "schema": "TroubleRecord",
+      "description": "Logs of machine failure, downtime, actions and spare parts"
+    },
+    "mace_purchasing": {
+      "schema": "Purchasing",
+      "description": "Pending and purchased equipment items"
+    },
+    "mace_budget_ledger": {
+      "schema": "BudgetLedger",
+      "description": "Financial ledger spreadsheet row entries"
+    },
+    "mace_project_requests": {
+      "schema": "ProjectRequest",
+      "description": "Supplier project job requests"
+    },
+    "mace_project_planning": {
+      "schema": "ProjectPlanning",
+      "description": "5-year future engineering projects planning"
+    },
+    "mace_drawings": {
+      "schema": "Drawing",
+      "description": "Drawing registry cabinet metadata"
+    },
+    "mace_audits": {
+      "schema": "Audit",
+      "description": "Yearly audit preparations tracker"
+    },
+    "mace_pm_logs": {
+      "schema": "PMLog",
+      "description": "Logs of completed PM checks per plan, year, and month"
+    }
+  }
+}
