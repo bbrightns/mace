@@ -30,6 +30,7 @@ export default function TroubleRecord() {
   // Modal State
   const [isOpen, setIsOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [pendingImportOps, setPendingImportOps] = useState(null);
 
   // Form State
   const [plant, setPlant] = useState('MIR');
@@ -422,8 +423,7 @@ export default function TroubleRecord() {
                   }
 
                   if (operations.length > 0) {
-                    await batchWriteOperations(operations);
-                    showToast(`Imported ${operations.length} records from CSV.`);
+                    setPendingImportOps(operations);
                   } else {
                     showToast('No valid records found to import.', 'error');
                   }
@@ -993,6 +993,72 @@ export default function TroubleRecord() {
             />
           </div>
         </form>
+      </Modal>
+
+      {/* CSV Dry-Run Import Preview Modal */}
+      <Modal
+        isOpen={Boolean(pendingImportOps)}
+        onClose={() => setPendingImportOps(null)}
+        title="CSV Import Dry-Run Validation Preview"
+        footer={
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <button className="btn btn-secondary" onClick={() => setPendingImportOps(null)}>
+              Cancel
+            </button>
+            <button 
+              className="btn btn-primary" 
+              onClick={async () => {
+                if (!pendingImportOps) return;
+                try {
+                  const count = pendingImportOps.length;
+                  await batchWriteOperations(pendingImportOps);
+                  showToast(`Imported ${count} trouble records successfully.`);
+                } catch (err) {
+                  showToast('Failed to write batch records.', 'error');
+                }
+                setPendingImportOps(null);
+              }}
+            >
+              Confirm & Write {pendingImportOps?.length || 0} Records
+            </button>
+          </div>
+        }
+      >
+        <div style={{ padding: '8px 0' }}>
+          <div style={{ marginBottom: '16px', fontSize: '13px', color: 'var(--text2)' }}>
+            Successfully parsed <strong style={{ color: 'var(--text)' }}>{pendingImportOps?.length || 0}</strong> trouble records from CSV file. Please review sample records below before committing to database:
+          </div>
+
+          <div style={{ maxHeight: '240px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '6px', backgroundColor: 'var(--surface2)' }}>
+            <table className="data-table" style={{ width: '100%', fontSize: '12px' }}>
+              <thead>
+                <tr>
+                  <th style={{ padding: '8px' }}>No</th>
+                  <th style={{ padding: '8px' }}>Plant</th>
+                  <th style={{ padding: '8px' }}>Date</th>
+                  <th style={{ padding: '8px' }}>Equipment</th>
+                  <th style={{ padding: '8px' }}>Problem Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingImportOps?.slice(0, 5).map((op, idx) => (
+                  <tr key={idx}>
+                    <td style={{ padding: '8px' }} className="font-mono">{op.data.no}</td>
+                    <td style={{ padding: '8px' }}>{op.data.plant}</td>
+                    <td style={{ padding: '8px' }}>{op.data.dateRaw}</td>
+                    <td style={{ padding: '8px' }}>{op.data.machineEquipment}</td>
+                    <td style={{ padding: '8px' }}>{op.data.problemDescription}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {(pendingImportOps?.length || 0) > 5 && (
+            <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text3)', textAlign: 'center' }}>
+              ... and {(pendingImportOps?.length || 0) - 5} more records ready for batch write.
+            </div>
+          )}
+        </div>
       </Modal>
     </div>
   );
