@@ -24,7 +24,7 @@ export default function StatusBadge({ status }) {
   if (statusLower === 'in process' || statusLower === 'in_process') text = 'Need advice';
 
   return (
-    <span className={`status-badge ${className}`}>
+    <span className={`status-badge ${className}`} style={{ transition: 'transform 0.15s ease, opacity 0.15s ease' }}>
       {text}
     </span>
   );
