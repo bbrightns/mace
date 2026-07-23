@@ -2,21 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, 
   Search, 
-  Edit2, 
   Trash2, 
-  Calendar as CalendarIcon, 
-  User, 
-  Check, 
-  X, 
+  CalendarDays, 
   Clock, 
-  AlertCircle,
-  CalendarDays,
-  ListTodo,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  Save
+  ChevronLeft, 
+  ChevronRight 
 } from 'lucide-react';
 import { 
   subscribeCollection, 
@@ -26,17 +16,63 @@ import {
   batchWriteOperations
 } from '../../firebase/collections';
 import StatusBadge from '../../components/StatusBadge';
-import Modal from '../../components/Modal';
 import { useToast } from '../../components/Toast';
-import { formatDate, toInputDate } from '../../utils';
+import { formatDate } from '../../utils';
 import PageHeader from '../../components/PageHeader';
-import EmptyState from '../../components/EmptyState';
 
 // Helper for Thai/English Date Formatter for header
 const getFormattedHeaderDate = (dateObj) => {
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   return dateObj.toLocaleDateString('en-US', options);
 };
+
+// Section Auto-Suggest List
+const SECTION_SUGGESTIONS = [
+  "Base paint",
+  "Base paint oven",
+  "Benteler W/M",
+  "Billco W/M",
+  "Coater",
+  "Cross-X",
+  "Detergent W/M",
+  "Entry",
+  "Exit",
+  "Facedown",
+  "Load/Unload",
+  "Loading",
+  "Metal dry",
+  "MIR DI water plant 1",
+  "MIR DI water plant 2",
+  "MIR RO water plant",
+  "Mirror line",
+  "Offline",
+  "Operating room",
+  "Optoplex",
+  "Painting",
+  "Passivation",
+  "Polishing",
+  "Power supply",
+  "Ready",
+  "RFG line",
+  "RFG Purified Water plant",
+  "Sand blast room",
+  "Sensitizer",
+  "Shop",
+  "Sliver",
+  "Small temper",
+  "Top paint",
+  "Top paint cooling",
+  "Top paint oven",
+  "Unload",
+  "Unload A",
+  "Unload B",
+  "Unload K-star",
+  "Utility",
+  "Washing machine",
+  "Waste Water Plant",
+  "Office",
+  "Plant"
+];
 
 export default function TaskManagement() {
   const [activeView, setActiveView] = useState('daily'); // 'daily' | 'planning'
@@ -85,11 +121,12 @@ export default function TaskManagement() {
   };
 
   // Blur/Save cell to Firestore automatically
-  const handleCellBlur = async (task, field) => {
+  const handleCellBlur = async (task, field, overrideVal) => {
     const changes = draftEdits[task.id];
-    if (!changes || changes[field] === undefined) return;
+    const newValue = overrideVal !== undefined ? overrideVal : changes?.[field];
 
-    const newValue = changes[field];
+    if (newValue === undefined) return;
+
     try {
       if (task.id.startsWith('temp-')) {
         // Create new document if it's a temp row created inline
@@ -97,8 +134,8 @@ export default function TaskManagement() {
           plantSection: task.plantSection,
           category: task.category,
           taskDate: selectedDate,
-          mtnType: field === 'mtnType' ? newValue : (task.mtnType || ''),
-          refective: field === 'refective' ? newValue : (task.refective || ''),
+          planType: field === 'planType' ? newValue : (task.planType || 'Plan'),
+          safety: field === 'safety' ? newValue : (task.safety || 'LOTO'),
           section: field === 'section' ? newValue : (task.section || ''),
           equipment: field === 'equipment' ? newValue : (task.equipment || ''),
           rank: field === 'rank' ? newValue : (task.rank || ''),
@@ -111,7 +148,7 @@ export default function TaskManagement() {
           location: field === 'location' ? newValue : (task.location || ''),
           pic: field === 'pic' ? newValue : (task.pic || '')
         };
-        const newId = await createDocument('mace_tasks', payload);
+        await createDocument('mace_tasks', payload);
         // Clear temp draft
         setDraftEdits(prev => {
           const next = { ...prev };
@@ -134,8 +171,8 @@ export default function TaskManagement() {
       plantSection,
       category,
       taskDate: selectedDate,
-      mtnType: plantSection === 'RFG' ? 'Plan' : '',
-      refective: '',
+      planType: 'Plan',
+      safety: 'LOTO',
       section: '',
       equipment: '',
       rank: 'B',
@@ -156,17 +193,6 @@ export default function TaskManagement() {
     }
   };
 
-  const handleDeleteTask = async (id, name) => {
-    if (confirm(`Delete task entry?`)) {
-      try {
-        await deleteDocument('mace_tasks', id);
-        showToast('Task deleted successfully');
-      } catch (err) {
-        showToast('Error deleting task', 'error');
-      }
-    }
-  };
-
   // Pre-seed mock data matching exact user screenshots
   const handleSeedMockData = async () => {
     const mockData = [
@@ -174,8 +200,8 @@ export default function TaskManagement() {
       {
         plantSection: 'RFG',
         category: 'MTN',
-        mtnType: 'Urgent',
-        refective: 'LOTO',
+        planType: 'Urgent',
+        safety: 'LOTO',
         section: 'Offline',
         equipment: 'Crane RFG no.10',
         rank: 'B',
@@ -190,8 +216,8 @@ export default function TaskManagement() {
       {
         plantSection: 'RFG',
         category: 'MTN',
-        mtnType: 'Plan',
-        refective: 'LOTO',
+        planType: 'Plan',
+        safety: 'LOTO',
         section: 'Small temper',
         equipment: 'Blower panel',
         rank: 'B',
@@ -206,11 +232,11 @@ export default function TaskManagement() {
       {
         plantSection: 'RFG',
         category: 'MTN',
-        mtnType: '',
-        refective: '',
-        section: '',
-        equipment: '',
-        rank: '',
+        planType: 'Plan',
+        safety: 'PPE',
+        section: 'Cross-X',
+        equipment: 'Air tube',
+        rank: 'A',
         taskName: 'RFG - PM Unload table',
         detail: 'เช้า',
         status: 'Pending',
@@ -222,11 +248,11 @@ export default function TaskManagement() {
       {
         plantSection: 'RFG',
         category: 'MTN',
-        mtnType: '',
-        refective: '',
-        section: '',
-        equipment: '',
-        rank: '',
+        planType: 'Plan',
+        safety: 'LOTO',
+        section: 'Unload A',
+        equipment: 'Unload table A',
+        rank: 'A',
         taskName: 'RFG - PM Cross-X transfer เช้า',
         detail: 'เช้า',
         status: 'Pending',
@@ -235,95 +261,15 @@ export default function TaskManagement() {
         taskDate: '2026-07-23',
         rfgRev: 'MTN'
       },
-      {
-        plantSection: 'RFG',
-        category: 'MTN',
-        mtnType: '',
-        refective: '',
-        section: '',
-        equipment: '',
-        rank: '',
-        taskName: 'RFG - PM Unload table A',
-        detail: 'เช้า',
-        status: 'Pending',
-        mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
-        elecTechnicians: '',
-        taskDate: '2026-07-23',
-        rfgRev: 'MTN'
-      },
-      {
-        plantSection: 'RFG',
-        category: 'MTN',
-        mtnType: '',
-        refective: '',
-        section: '',
-        equipment: '',
-        rank: '',
-        taskName: 'RFG - PM Unload tilt table B',
-        detail: 'เช้า',
-        status: 'Pending',
-        mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
-        elecTechnicians: '',
-        taskDate: '2026-07-23',
-        rfgRev: 'MTN'
-      },
-      {
-        plantSection: 'RFG',
-        category: 'MTN',
-        mtnType: '',
-        refective: '',
-        section: '',
-        equipment: '',
-        rank: '',
-        taskName: 'RFG - PM Vacuum pump No.1,2 Unload tilt table B',
-        detail: 'เช้า',
-        status: 'Pending',
-        mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
-        elecTechnicians: '',
-        taskDate: '2026-07-23',
-        rfgRev: 'MTN'
-      },
-      {
-        plantSection: 'RFG',
-        category: 'MTN',
-        mtnType: '',
-        refective: '',
-        section: '',
-        equipment: '',
-        rank: '',
-        taskName: 'RFG - PM UNLOADING STATION_TURN_TABLE',
-        detail: 'เช้า',
-        status: 'Pending',
-        mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
-        elecTechnicians: '',
-        taskDate: '2026-07-23',
-        rfgRev: 'MTN'
-      },
-      {
-        plantSection: 'RFG',
-        category: 'MTN',
-        mtnType: '',
-        refective: '',
-        section: '',
-        equipment: '',
-        rank: '',
-        taskName: 'RFG - ลองตั้งค่า Armor Block',
-        detail: '',
-        status: 'Pending',
-        mechTechnicians: '',
-        elecTechnicians: 'เริงฤทธิ์, จิราวุธ, ธวัชชัย',
-        taskDate: '2026-07-23',
-        rfgRev: 'MTN'
-      },
       // MIR Block Tasks for 2026-07-23
       {
         plantSection: 'MIR',
         category: 'PROD',
-        mtnType: '',
-        refective: 'Mirror',
-        section: '',
-        equipment: '',
-        rank: '',
+        planType: 'Plan',
+        safety: 'Mirror',
+        section: 'Base paint',
+        equipment: 'Chain',
+        rank: 'A',
         taskName: 'MIR - PM Vacuum chuck',
         detail: 'บ่าย',
         status: 'Pending',
@@ -335,11 +281,11 @@ export default function TaskManagement() {
       {
         plantSection: 'MIR',
         category: 'PROD',
-        mtnType: '',
-        refective: '',
-        section: '',
-        equipment: '',
-        rank: '',
+        planType: 'Plan',
+        safety: 'LOTO',
+        section: 'Base paint',
+        equipment: 'Clutch',
+        rank: 'A',
         taskName: 'MIR - PM overhead clamp',
         detail: 'บ่าย',
         status: 'Pending',
@@ -351,11 +297,11 @@ export default function TaskManagement() {
       {
         plantSection: 'MIR',
         category: 'PROD',
-        mtnType: '',
-        refective: '',
-        section: '',
-        equipment: '',
-        rank: '',
+        planType: 'Plan',
+        safety: 'LOTO',
+        section: 'Mirror line',
+        equipment: 'Cover',
+        rank: 'B',
         taskName: 'MIR - ติดตั้ง Cover ของโต๊ะตัดข้างห้อง มุราคามิ ที่หลุด',
         detail: 'บ่าย',
         status: 'Pending',
@@ -367,11 +313,11 @@ export default function TaskManagement() {
       {
         plantSection: 'MIR',
         category: 'PROD',
-        mtnType: '',
-        refective: '',
-        section: '',
-        equipment: '',
-        rank: '',
+        planType: 'Plan',
+        safety: 'PPE',
+        section: 'Coater',
+        equipment: 'encoder',
+        rank: 'A',
         taskName: 'MIR - ทยอยถอด case แบริ่งมาเปลี่ยนแบริ่ง',
         detail: 'บ่าย',
         status: 'Pending',
@@ -416,97 +362,6 @@ export default function TaskManagement() {
         eeWorkAft: '[MIR] ลองติดตั้ง sensor นับกระจก ด้านโหลด\nติดตั้ง power meter วัด Base paint blower\nถอด/ต่อ สายไฟ มอเตอร์กวาดสี Zone 1 ทั้ง 2 ห้อง\nre-check metal heater พันกันความร้อน',
         mechWorkAft: 'MIR - เปลี่ยนมอเตอร์ห้องกวาดสี 2\nMIR - PM Gear Motor ของ Roller หน้าห้องสี 2\nMIR - PM Blower บนห้องพักพนักงาน',
         taskName: 'LT Power & Sensor installation'
-      },
-      {
-        taskDate: '2026-06-12',
-        rfgRev: 'CSS14',
-        mirRev: 'MTN 2mm',
-        eeWorkAft: 'ติดตั้งกล้องกันระเบิด ตู้ 1\nจัด store',
-        mechWorkAft: 'MIR - PM roller Base,Top',
-        taskName: 'ติดตั้งกล้องกันระเบิด & PM roller Base,Top'
-      },
-      {
-        taskDate: '2026-06-13',
-        rfgRev: 'STOP',
-        mirRev: 'STOP',
-        eeWorkAft: '',
-        mechWorkAft: '',
-        taskName: 'Weekend Standby'
-      },
-      {
-        taskDate: '2026-06-14',
-        rfgRev: 'STOP',
-        mirRev: 'STOP',
-        eeWorkAft: '',
-        mechWorkAft: '',
-        taskName: 'Weekend Standby'
-      },
-      {
-        taskDate: '2026-06-15',
-        rfgRev: 'Maintenance',
-        mirRev: 'Prod',
-        eeWorkAft: 'จัด store',
-        mechWorkAft: 'RFG - PM Process Pump No.1,2,3,4',
-        taskName: 'RFG - PM Process Pump'
-      },
-      {
-        taskDate: '2026-06-16',
-        rfgRev: 'Maintenance',
-        mirRev: 'Prod',
-        eeWorkSupp: 'LT Power เก็บงาน TBM',
-        eeWorkAft: 'PM RFG\n- หน้าจออุณหภูมิ ถังน้ำ Heater อ่านค่าไม่ตรง\n- ซื้อกล่อง หน้าตู้ใส -> ให้ที่เร็วด้านขนาดให้ก่อน',
-        mechWorkAft: '',
-        taskName: 'PM RFG Temperature Screen'
-      },
-      {
-        taskDate: '2026-06-17',
-        rfgRev: 'TSLX',
-        mirRev: 'Prod',
-        eeWorkAft: 'MIR - DI Water shortage (confirm check alarm at DI tank1 LOW ระดับต่ำกว่า 4Q) --> ติดตั้งหลอดไฟ alarm เพิ่ม',
-        mechWorkAft: '',
-        taskName: 'MIR - DI Water shortage alarm'
-      },
-      {
-        taskDate: '2026-06-18',
-        rfgRev: 'TSLX',
-        mirRev: 'Prod',
-        eeWorkAft: 'MIR - ต่อสายปั๊มน้ำ',
-        mechWorkAft: '',
-        taskName: 'MIR - ต่อสายปั๊มน้ำ'
-      },
-      {
-        taskDate: '2026-06-19',
-        rfgRev: 'TSLX',
-        mirRev: 'PM ล้างโต๊ะ*',
-        eeWorkSupp: 'Siamtemp ล้าง AHU ห้องเก็บสีใหม่',
-        eeWorkAft: 'RFG - Check หลอดไฟหมุนของ C7\nMIR - Check ตำแหน่งกล้องที่เสียของ Dahua + วางแผนเปลี่ยน',
-        mechWorkAft: 'MIR - PM roller Base,Top',
-        taskName: 'RFG & MIR Camera / Light Checks'
-      },
-      {
-        taskDate: '2026-06-20',
-        rfgRev: 'TSLX',
-        mirRev: 'STOP',
-        eeWorkSupp: 'N/A',
-        eeWorkAft: 'N/A',
-        mechWorkAft: '',
-        taskName: 'N/A'
-      },
-      {
-        taskDate: '2026-06-21',
-        rfgRev: 'STOP',
-        mirRev: 'STOP',
-        eeWorkAft: '',
-        mechWorkAft: '',
-        taskName: 'Weekend Standby'
-      },
-      {
-        taskDate: '2026-06-22',
-        rfgRev: 'Chamber',
-        mirRev: 'Prod',
-        eeWorkAft: 'MIR - Local Equipment [SF-71-500]\nMIR - Mirror Switch Board [SF-71-501]',
-        mechWorkAft: 'RFG - เคลียร์พื้นที่สำหรับงานเชื่อม chamber Y\nRFG - เปลี่ยน Power Cylinder ของ load table Y\nRFG - PM load table\nRFG - PT Feed through Y',
-        taskName: 'Chamber & Equipment Maintenance'
       }
     ];
 
@@ -554,11 +409,11 @@ export default function TaskManagement() {
         plantSection,
         category,
         taskDate: selectedDate,
-        mtnType: plantSection === 'RFG' ? 'Plan' : '',
-        refective: '',
+        planType: 'Plan',
+        safety: 'LOTO',
         section: '',
         equipment: '',
-        rank: '',
+        rank: 'B',
         taskName: '',
         detail: '',
         status: 'Pending',
@@ -602,10 +457,11 @@ export default function TaskManagement() {
   const selectedDateObj = new Date(selectedDate);
   const formattedSelectedDateHeader = getFormattedHeaderDate(selectedDateObj);
 
-  // Helper to render editable cell
+  // Helper to render editable text input cell
   const renderCell = (task, field, placeholder = '', style = {}) => {
     const currentDraft = draftEdits[task.id]?.[field];
     const val = currentDraft !== undefined ? currentDraft : (task[field] || '');
+    const isUrgent = (draftEdits[task.id]?.planType || task.planType || task.mtnType) === 'Urgent';
 
     return (
       <input 
@@ -623,7 +479,8 @@ export default function TaskManagement() {
           borderRadius: '4px',
           fontSize: '12.5px',
           fontFamily: 'inherit',
-          color: 'var(--text)',
+          color: isUrgent ? '#dc2626' : 'var(--text)',
+          fontWeight: isUrgent ? '700' : 'normal',
           outline: 'none',
           ...style
         }}
@@ -632,6 +489,48 @@ export default function TaskManagement() {
           e.target.style.background = 'var(--surface)';
         }}
       />
+    );
+  };
+
+  // Helper for Section Auto-Suggest Cell
+  const renderSectionCell = (task) => {
+    const field = 'section';
+    const currentDraft = draftEdits[task.id]?.[field];
+    const val = currentDraft !== undefined ? currentDraft : (task.section || '');
+    const isUrgent = (draftEdits[task.id]?.planType || task.planType || task.mtnType) === 'Urgent';
+
+    const listId = `section-suggest-${task.id}`;
+
+    return (
+      <>
+        <input 
+          type="text"
+          list={listId}
+          value={val}
+          placeholder="Section..."
+          onChange={(e) => handleCellChange(task.id, field, e.target.value)}
+          onBlur={(e) => handleCellBlur(task, field, e.target.value)}
+          style={{
+            width: '100%',
+            border: '1px solid transparent',
+            background: 'transparent',
+            padding: '4px 6px',
+            borderRadius: '4px',
+            fontSize: '12.5px',
+            color: isUrgent ? '#dc2626' : 'var(--text)',
+            outline: 'none'
+          }}
+          onFocus={(e) => {
+            e.target.style.borderColor = 'var(--accent)';
+            e.target.style.background = 'var(--surface)';
+          }}
+        />
+        <datalist id={listId}>
+          {SECTION_SUGGESTIONS.map((item, idx) => (
+            <option key={idx} value={item} />
+          ))}
+        </datalist>
+      </>
     );
   };
 
@@ -768,7 +667,7 @@ export default function TaskManagement() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
-              {/* SECTION 1: RFG BLOCK TABLE (Min 4 rows) */}
+              {/* SECTION 1: RFG BLOCK TABLE */}
               <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#fef08a', 
@@ -796,62 +695,110 @@ export default function TaskManagement() {
                 </div>
 
                 <div className="table-container" style={{ margin: 0, borderRadius: 0, border: 'none' }}>
-                  <table className="data-table">
+                  <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#fefce8' }}>
-                        <th style={{ width: '70px', color: '#854d0e', fontWeight: '700' }}>MTN</th>
-                        <th style={{ width: '80px', color: '#854d0e', fontWeight: '700' }}>Refective</th>
-                        <th style={{ width: '110px', color: '#854d0e', fontWeight: '700' }}>Secton</th>
-                        <th style={{ width: '140px', color: '#854d0e', fontWeight: '700' }}>Equipment</th>
-                        <th style={{ width: '60px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Rank</th>
-                        <th style={{ minWidth: '220px', color: '#854d0e', fontWeight: '700' }}>Task Name / Description</th>
-                        <th style={{ minWidth: '200px', color: '#854d0e', fontWeight: '700' }}>Detail</th>
-                        <th style={{ width: '90px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Status</th>
-                        <th style={{ width: '160px', color: '#854d0e', fontWeight: '700' }}>Mech</th>
-                        <th style={{ width: '160px', color: '#854d0e', fontWeight: '700' }}>Elec</th>
-                        <th style={{ width: '60px', textAlign: 'right' }}>Actions</th>
+                        <th style={{ width: '80px', color: '#854d0e', fontWeight: '700' }}>Plan</th>
+                        <th style={{ width: '90px', color: '#854d0e', fontWeight: '700' }}>Safety</th>
+                        <th style={{ width: '150px', color: '#854d0e', fontWeight: '700' }}>Section</th>
+                        <th style={{ width: '130px', color: '#854d0e', fontWeight: '700' }}>Equipment</th>
+                        <th style={{ width: '50px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Rank</th>
+                        <th style={{ minWidth: '350px', color: '#854d0e', fontWeight: '700' }}>Task Name / Description</th>
+                        <th style={{ minWidth: '250px', color: '#854d0e', fontWeight: '700' }}>Detail</th>
+                        <th style={{ width: '100px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Status</th>
+                        <th style={{ width: '150px', color: '#854d0e', fontWeight: '700' }}>Mech</th>
+                        <th style={{ width: '150px', color: '#854d0e', fontWeight: '700' }}>Elec</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {dailyRfgRows.map((t, idx) => (
-                        <tr key={t.id}>
-                          <td>{renderCell(t, 'mtnType', 'Plan', { fontWeight: '700', color: t.mtnType === 'Urgent' ? '#dc2626' : 'var(--text)' })}</td>
-                          <td>{renderCell(t, 'refective', 'LOTO', { color: t.refective === 'LOTO' ? '#dc2626' : 'var(--text)', fontWeight: '600' })}</td>
-                          <td>{renderCell(t, 'section', 'Offline')}</td>
-                          <td>{renderCell(t, 'equipment', 'Equipment', { fontWeight: '600' })}</td>
-                          <td style={{ textAlign: 'center' }}>{renderCell(t, 'rank', 'B', { textAlign: 'center', fontWeight: '700' })}</td>
-                          <td>{renderCell(t, 'taskName', 'Click to add task name...', { fontWeight: '600', color: t.mtnType === 'Urgent' ? '#dc2626' : 'var(--text)' })}</td>
-                          <td>{renderCell(t, 'detail', 'Detail...')}</td>
-                          <td style={{ textAlign: 'center' }}>
-                            <select 
-                              className="form-select font-mono" 
-                              style={{ padding: '2px 4px', fontSize: '11px', height: '26px' }}
-                              value={t.status || 'Pending'} 
-                              onChange={(e) => handleCellBlur(t, 'status', e.target.value)}
-                            >
-                              <option value="Pending">Pending</option>
-                              <option value="Finished">Finished</option>
-                              <option value="Postpone">Postpone</option>
-                              <option value="In Process">In Process</option>
-                            </select>
-                          </td>
-                          <td>{renderCell(t, 'mechTechnicians', 'Mech techs')}</td>
-                          <td>{renderCell(t, 'elecTechnicians', 'Elec techs')}</td>
-                          <td style={{ textAlign: 'right' }}>
-                            {!t.isTemp && (
-                              <button className="btn btn-sm btn-danger" style={{ padding: '4px 6px' }} onClick={() => handleDeleteTask(t.id, t.taskName)}>
-                                <Trash2 size={12} />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {dailyRfgRows.map((t) => {
+                        const planVal = draftEdits[t.id]?.planType || t.planType || t.mtnType || 'Plan';
+                        const safetyVal = draftEdits[t.id]?.safety || t.safety || t.refective || 'LOTO';
+                        const isUrgent = planVal === 'Urgent';
+
+                        return (
+                          <tr key={t.id} style={{ color: isUrgent ? '#dc2626' : 'inherit' }}>
+                            {/* Column 1: Plan Dropdown */}
+                            <td>
+                              <select 
+                                className="form-select font-mono" 
+                                style={{ padding: '2px 4px', fontSize: '11px', height: '26px', fontWeight: '700', color: isUrgent ? '#dc2626' : 'inherit' }}
+                                value={planVal} 
+                                onChange={(e) => {
+                                  handleCellChange(t.id, 'planType', e.target.value);
+                                  handleCellBlur(t, 'planType', e.target.value);
+                                }}
+                              >
+                                <option value="Plan">Plan</option>
+                                <option value="Urgent">Urgent</option>
+                              </select>
+                            </td>
+
+                            {/* Column 2: Safety Dropdown */}
+                            <td>
+                              <select 
+                                className="form-select font-mono" 
+                                style={{ padding: '2px 4px', fontSize: '11px', height: '26px', color: isUrgent ? '#dc2626' : 'inherit' }}
+                                value={safetyVal} 
+                                onChange={(e) => {
+                                  handleCellChange(t.id, 'safety', e.target.value);
+                                  handleCellBlur(t, 'safety', e.target.value);
+                                }}
+                              >
+                                <option value="PPE">PPE</option>
+                                <option value="LOTO">LOTO</option>
+                                <option value="ที่สูง">ที่สูง</option>
+                              </select>
+                            </td>
+
+                            {/* Column 3: Section Auto-Suggest */}
+                            <td>{renderSectionCell(t)}</td>
+
+                            {/* Column 4: Equipment */}
+                            <td>{renderCell(t, 'equipment', 'Equipment', { fontWeight: '600' })}</td>
+
+                            {/* Column 5: Rank */}
+                            <td style={{ textAlign: 'center' }}>{renderCell(t, 'rank', 'B', { textAlign: 'center', fontWeight: '700' })}</td>
+
+                            {/* Column 6: Task Name / Description (WIDER) */}
+                            <td>{renderCell(t, 'taskName', 'Click to add task name...', { fontWeight: '600' })}</td>
+
+                            {/* Column 7: Detail (WIDER) */}
+                            <td>{renderCell(t, 'detail', 'Detail...')}</td>
+
+                            {/* Column 8: Status */}
+                            <td style={{ textAlign: 'center' }}>
+                              <select 
+                                className="form-select font-mono" 
+                                style={{ padding: '2px 4px', fontSize: '11px', height: '26px' }}
+                                value={t.status || 'Pending'} 
+                                onChange={(e) => {
+                                  handleCellChange(t.id, 'status', e.target.value);
+                                  handleCellBlur(t, 'status', e.target.value);
+                                }}
+                              >
+                                <option value="Pending">Pending</option>
+                                <option value="Finished">Finished</option>
+                                <option value="Postpone">Postpone</option>
+                                <option value="Continue">Continue</option>
+                                <option value="In Process">In Process</option>
+                              </select>
+                            </td>
+
+                            {/* Column 9: Mech */}
+                            <td>{renderCell(t, 'mechTechnicians', 'Mech techs')}</td>
+
+                            {/* Column 10: Elec */}
+                            <td>{renderCell(t, 'elecTechnicians', 'Elec techs')}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              {/* SECTION 2: MIR BLOCK TABLE (Min 4 rows) */}
+              {/* SECTION 2: MIR BLOCK TABLE */}
               <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#bbf7d0', 
@@ -879,62 +826,110 @@ export default function TaskManagement() {
                 </div>
 
                 <div className="table-container" style={{ margin: 0, borderRadius: 0, border: 'none' }}>
-                  <table className="data-table">
+                  <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f0fdf4' }}>
-                        <th style={{ width: '70px', color: '#166534', fontWeight: '700' }}>PROD</th>
-                        <th style={{ width: '80px', color: '#166534', fontWeight: '700' }}>Refective</th>
-                        <th style={{ width: '110px', color: '#166534', fontWeight: '700' }}>Secton</th>
-                        <th style={{ width: '140px', color: '#166534', fontWeight: '700' }}>Equipment</th>
-                        <th style={{ width: '60px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Rank</th>
-                        <th style={{ minWidth: '220px', color: '#166534', fontWeight: '700' }}>Task Name / Description</th>
-                        <th style={{ minWidth: '200px', color: '#166534', fontWeight: '700' }}>Detail</th>
-                        <th style={{ width: '90px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Status</th>
-                        <th style={{ width: '160px', color: '#166534', fontWeight: '700' }}>Mech</th>
-                        <th style={{ width: '160px', color: '#166534', fontWeight: '700' }}>Elec</th>
-                        <th style={{ width: '60px', textAlign: 'right' }}>Actions</th>
+                        <th style={{ width: '80px', color: '#166534', fontWeight: '700' }}>Plan</th>
+                        <th style={{ width: '90px', color: '#166534', fontWeight: '700' }}>Safety</th>
+                        <th style={{ width: '150px', color: '#166534', fontWeight: '700' }}>Section</th>
+                        <th style={{ width: '130px', color: '#166534', fontWeight: '700' }}>Equipment</th>
+                        <th style={{ width: '50px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Rank</th>
+                        <th style={{ minWidth: '350px', color: '#166534', fontWeight: '700' }}>Task Name / Description</th>
+                        <th style={{ minWidth: '250px', color: '#166534', fontWeight: '700' }}>Detail</th>
+                        <th style={{ width: '100px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Status</th>
+                        <th style={{ width: '150px', color: '#166534', fontWeight: '700' }}>Mech</th>
+                        <th style={{ width: '150px', color: '#166534', fontWeight: '700' }}>Elec</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {dailyMirRows.map((t, idx) => (
-                        <tr key={t.id}>
-                          <td>{renderCell(t, 'mtnType', 'PROD', { fontWeight: '700', color: '#166534' })}</td>
-                          <td>{renderCell(t, 'refective', 'Mirror', { color: '#166534', fontWeight: '600' })}</td>
-                          <td>{renderCell(t, 'section', 'Section')}</td>
-                          <td>{renderCell(t, 'equipment', 'Equipment', { fontWeight: '600' })}</td>
-                          <td style={{ textAlign: 'center' }}>{renderCell(t, 'rank', 'B', { textAlign: 'center', fontWeight: '700' })}</td>
-                          <td>{renderCell(t, 'taskName', 'Click to add task name...', { fontWeight: '600' })}</td>
-                          <td>{renderCell(t, 'detail', 'Detail...')}</td>
-                          <td style={{ textAlign: 'center' }}>
-                            <select 
-                              className="form-select font-mono" 
-                              style={{ padding: '2px 4px', fontSize: '11px', height: '26px' }}
-                              value={t.status || 'Pending'} 
-                              onChange={(e) => handleCellBlur(t, 'status', e.target.value)}
-                            >
-                              <option value="Pending">Pending</option>
-                              <option value="Finished">Finished</option>
-                              <option value="Postpone">Postpone</option>
-                              <option value="In Process">In Process</option>
-                            </select>
-                          </td>
-                          <td>{renderCell(t, 'mechTechnicians', 'Mech techs')}</td>
-                          <td>{renderCell(t, 'elecTechnicians', 'Elec techs')}</td>
-                          <td style={{ textAlign: 'right' }}>
-                            {!t.isTemp && (
-                              <button className="btn btn-sm btn-danger" style={{ padding: '4px 6px' }} onClick={() => handleDeleteTask(t.id, t.taskName)}>
-                                <Trash2 size={12} />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {dailyMirRows.map((t) => {
+                        const planVal = draftEdits[t.id]?.planType || t.planType || t.mtnType || 'Plan';
+                        const safetyVal = draftEdits[t.id]?.safety || t.safety || t.refective || 'LOTO';
+                        const isUrgent = planVal === 'Urgent';
+
+                        return (
+                          <tr key={t.id} style={{ color: isUrgent ? '#dc2626' : 'inherit' }}>
+                            {/* Column 1: Plan Dropdown */}
+                            <td>
+                              <select 
+                                className="form-select font-mono" 
+                                style={{ padding: '2px 4px', fontSize: '11px', height: '26px', fontWeight: '700', color: isUrgent ? '#dc2626' : 'inherit' }}
+                                value={planVal} 
+                                onChange={(e) => {
+                                  handleCellChange(t.id, 'planType', e.target.value);
+                                  handleCellBlur(t, 'planType', e.target.value);
+                                }}
+                              >
+                                <option value="Plan">Plan</option>
+                                <option value="Urgent">Urgent</option>
+                              </select>
+                            </td>
+
+                            {/* Column 2: Safety Dropdown */}
+                            <td>
+                              <select 
+                                className="form-select font-mono" 
+                                style={{ padding: '2px 4px', fontSize: '11px', height: '26px', color: isUrgent ? '#dc2626' : 'inherit' }}
+                                value={safetyVal} 
+                                onChange={(e) => {
+                                  handleCellChange(t.id, 'safety', e.target.value);
+                                  handleCellBlur(t, 'safety', e.target.value);
+                                }}
+                              >
+                                <option value="PPE">PPE</option>
+                                <option value="LOTO">LOTO</option>
+                                <option value="ที่สูง">ที่สูง</option>
+                              </select>
+                            </td>
+
+                            {/* Column 3: Section Auto-Suggest */}
+                            <td>{renderSectionCell(t)}</td>
+
+                            {/* Column 4: Equipment */}
+                            <td>{renderCell(t, 'equipment', 'Equipment', { fontWeight: '600' })}</td>
+
+                            {/* Column 5: Rank */}
+                            <td style={{ textAlign: 'center' }}>{renderCell(t, 'rank', 'B', { textAlign: 'center', fontWeight: '700' })}</td>
+
+                            {/* Column 6: Task Name / Description (WIDER) */}
+                            <td>{renderCell(t, 'taskName', 'Click to add task name...', { fontWeight: '600' })}</td>
+
+                            {/* Column 7: Detail (WIDER) */}
+                            <td>{renderCell(t, 'detail', 'Detail...')}</td>
+
+                            {/* Column 8: Status */}
+                            <td style={{ textAlign: 'center' }}>
+                              <select 
+                                className="form-select font-mono" 
+                                style={{ padding: '2px 4px', fontSize: '11px', height: '26px' }}
+                                value={t.status || 'Pending'} 
+                                onChange={(e) => {
+                                  handleCellChange(t.id, 'status', e.target.value);
+                                  handleCellBlur(t, 'status', e.target.value);
+                                }}
+                              >
+                                <option value="Pending">Pending</option>
+                                <option value="Finished">Finished</option>
+                                <option value="Postpone">Postpone</option>
+                                <option value="Continue">Continue</option>
+                                <option value="In Process">In Process</option>
+                              </select>
+                            </td>
+
+                            {/* Column 9: Mech */}
+                            <td>{renderCell(t, 'mechTechnicians', 'Mech techs')}</td>
+
+                            {/* Column 10: Elec */}
+                            <td>{renderCell(t, 'elecTechnicians', 'Elec techs')}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              {/* SECTION 3: SUBCONTRACTOR BLOCK TABLE (Min 2 rows) */}
+              {/* SECTION 3: SUBCONTRACTOR BLOCK TABLE */}
               <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#bae6fd', 
@@ -957,32 +952,24 @@ export default function TaskManagement() {
                 </div>
 
                 <div className="table-container" style={{ margin: 0, borderRadius: 0, border: 'none' }}>
-                  <table className="data-table">
+                  <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f0f9ff' }}>
                         <th style={{ width: '140px', color: '#0369a1', fontWeight: '700' }}>Plant</th>
-                        <th style={{ width: '160px', color: '#0369a1', fontWeight: '700' }}>Location</th>
-                        <th style={{ minWidth: '200px', color: '#0369a1', fontWeight: '700' }}>Name</th>
+                        <th style={{ width: '180px', color: '#0369a1', fontWeight: '700' }}>Location</th>
+                        <th style={{ minWidth: '350px', color: '#0369a1', fontWeight: '700' }}>Name</th>
                         <th style={{ minWidth: '250px', color: '#0369a1', fontWeight: '700' }}>Detail</th>
-                        <th style={{ width: '160px', color: '#0369a1', fontWeight: '700' }}>PIC</th>
-                        <th style={{ width: '60px', textAlign: 'right' }}>Actions</th>
+                        <th style={{ width: '180px', color: '#0369a1', fontWeight: '700' }}>PIC</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {dailySubRows.map((t, idx) => (
+                      {dailySubRows.map((t) => (
                         <tr key={t.id}>
                           <td>{renderCell(t, 'plant', 'RFG', { fontWeight: '700' })}</td>
                           <td>{renderCell(t, 'location', 'Location')}</td>
                           <td>{renderCell(t, 'taskName', 'Subcontractor name...')}</td>
                           <td>{renderCell(t, 'detail', 'Detail...')}</td>
                           <td>{renderCell(t, 'pic', 'PIC assignee')}</td>
-                          <td style={{ textAlign: 'right' }}>
-                            {!t.isTemp && (
-                              <button className="btn btn-sm btn-danger" style={{ padding: '4px 6px' }} onClick={() => handleDeleteTask(t.id, t.taskName)}>
-                                <Trash2 size={12} />
-                              </button>
-                            )}
-                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -1008,7 +995,6 @@ export default function TaskManagement() {
                   <th colSpan="2" style={{ textAlign: 'center', backgroundColor: '#bfdbfe', color: '#1e3a8a', border: '1px solid #93c5fd' }}>LINE SCHEDULE</th>
                   <th colSpan="2" style={{ textAlign: 'center', backgroundColor: '#2563eb', color: '#ffffff', border: '1px solid #1d4ed8' }}>EE Work (Electrical)</th>
                   <th colSpan="2" style={{ textAlign: 'center', backgroundColor: '#ec4899', color: '#ffffff', border: '1px solid #db2777' }}>MECH Work (Mechanical)</th>
-                  <th rowSpan="2" style={{ width: '60px', textAlign: 'right', backgroundColor: '#e2e8f0', border: '1px solid #cbd5e1' }}>Actions</th>
                 </tr>
                 <tr>
                   <th style={{ width: '90px', textAlign: 'center', backgroundColor: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' }}>RFG</th>
@@ -1022,7 +1008,7 @@ export default function TaskManagement() {
               <tbody>
                 {planningTasks.length === 0 ? (
                   <tr>
-                    <td colSpan="8" style={{ textAlign: 'center', padding: '32px', color: 'var(--text3)' }}>
+                    <td colSpan="7" style={{ textAlign: 'center', padding: '32px', color: 'var(--text3)' }}>
                       No planning schedule records found.
                     </td>
                   </tr>
@@ -1051,11 +1037,6 @@ export default function TaskManagement() {
                         <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>{renderCell(t, 'eeWorkAft', 'EE work details...')}</td>
                         <td style={{ color: '#db2777', fontSize: '11.5px' }}>{renderCell(t, 'mechWorkSupp', 'Supp...')}</td>
                         <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>{renderCell(t, 'mechWorkAft', 'MECH work details...')}</td>
-                        <td style={{ textAlign: 'right' }}>
-                          <button className="btn btn-sm btn-danger" style={{ padding: '4px 6px' }} onClick={() => handleDeleteTask(t.id, t.taskName)}>
-                            <Trash2 size={12} />
-                          </button>
-                        </td>
                       </tr>
                     );
                   })
