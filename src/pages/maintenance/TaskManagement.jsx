@@ -848,7 +848,7 @@ export default function TaskManagement() {
                         <th style={{ width: '80px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Rank</th>
                         <th style={{ minWidth: '300px', color: '#854d0e', fontWeight: '700' }}>Task Name / Description</th>
                         <th style={{ minWidth: '200px', color: '#854d0e', fontWeight: '700' }}>Detail</th>
-                        <th style={{ width: '90px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Status</th>
+                        <th style={{ width: '110px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Status</th>
                         <th style={{ width: '120px', color: '#854d0e', fontWeight: '700' }}>Mech</th>
                         <th style={{ width: '120px', color: '#854d0e', fontWeight: '700' }}>Elec</th>
                       </tr>
@@ -976,7 +976,7 @@ export default function TaskManagement() {
                         <th style={{ width: '80px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Rank</th>
                         <th style={{ minWidth: '300px', color: '#166534', fontWeight: '700' }}>Task Name / Description</th>
                         <th style={{ minWidth: '200px', color: '#166534', fontWeight: '700' }}>Detail</th>
-                        <th style={{ width: '90px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Status</th>
+                        <th style={{ width: '110px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Status</th>
                         <th style={{ width: '120px', color: '#166534', fontWeight: '700' }}>Mech</th>
                         <th style={{ width: '120px', color: '#166534', fontWeight: '700' }}>Elec</th>
                       </tr>
