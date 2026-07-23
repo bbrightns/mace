@@ -97,6 +97,66 @@ const hasAnyContent = (t) => {
   );
 };
 
+// Standalone EditableCell Component with local state for 60 FPS typing
+const EditableCell = React.memo(({ initialValue, onSave, placeholder = '', style = {}, isUrgent = false }) => {
+  const [value, setValue] = useState(initialValue || '');
+
+  useEffect(() => {
+    setValue(initialValue || '');
+  }, [initialValue]);
+
+  const textareaRef = (node) => {
+    if (node) {
+      node.style.height = 'auto';
+      node.style.height = `${Math.max(24, node.scrollHeight)}px`;
+    }
+  };
+
+  return (
+    <textarea 
+      ref={textareaRef}
+      className="table-cell-input"
+      rows={1}
+      value={value}
+      placeholder={placeholder}
+      onChange={(e) => {
+        setValue(e.target.value);
+        textareaRef(e.target);
+      }}
+      onFocus={(e) => {
+        e.target.style.borderColor = 'var(--accent)';
+        e.target.style.background = 'var(--surface)';
+        textareaRef(e.target);
+      }}
+      onBlur={(e) => {
+        e.target.style.borderColor = 'transparent';
+        e.target.style.background = 'transparent';
+        if (value !== (initialValue || '')) {
+          onSave(e.target.value);
+        }
+      }}
+      style={{
+        width: '100%',
+        border: '1px solid transparent',
+        background: 'transparent',
+        padding: '2px 4px',
+        minHeight: '24px',
+        borderRadius: '4px',
+        fontSize: '12px',
+        fontFamily: 'inherit',
+        color: isUrgent ? '#dc2626' : 'var(--text)',
+        fontWeight: isUrgent ? '700' : 'normal',
+        outline: 'none',
+        resize: 'none',
+        overflow: 'hidden',
+        lineHeight: '1.3',
+        display: 'block',
+        ...style
+      }}
+    />
+  );
+});
+
 // Standalone SectionCell Component to strictly satisfy React Rules of Hooks
 function SectionCell({ task, draftEdits, handleCellChange, handleCellBlur }) {
   const field = 'section';
@@ -992,55 +1052,19 @@ export default function TaskManagement() {
   // Helper to render editable text input/textarea cell (Auto-expanding multiline)
   const renderCell = (task, field, placeholder = '', style = {}) => {
     const currentDraft = draftEdits[task.id]?.[field];
-    const val = currentDraft !== undefined ? currentDraft : (task[field] || '');
+    const initialVal = currentDraft !== undefined ? currentDraft : (task[field] || '');
     const isUrgent = (draftEdits[task.id]?.planType || task.planType || task.mtnType) === 'Urgent';
 
-    // Auto-adjust height callback ref for initial mount and rerenders
-    const textareaRef = (node) => {
-      if (node) {
-        node.style.height = 'auto';
-        node.style.height = `${Math.max(24, node.scrollHeight)}px`;
-      }
-    };
-
     return (
-      <textarea 
-        ref={textareaRef}
-        className="table-cell-input"
-        rows={1}
-        value={val}
+      <EditableCell 
+        key={`${task.id}-${field}`}
+        initialValue={initialVal}
         placeholder={placeholder}
-        onChange={(e) => {
-          handleCellChange(task.id, field, e.target.value);
-          textareaRef(e.target);
-        }}
-        onFocus={(e) => {
-          e.target.style.borderColor = 'var(--accent)';
-          e.target.style.background = 'var(--surface)';
-          textareaRef(e.target);
-        }}
-        onBlur={(e) => {
-          e.target.style.borderColor = 'transparent';
-          e.target.style.background = 'transparent';
-          handleCellBlur(task, field);
-        }}
-        style={{
-          width: '100%',
-          border: '1px solid transparent',
-          background: 'transparent',
-          padding: '2px 4px',
-          minHeight: '24px',
-          borderRadius: '4px',
-          fontSize: '12px',
-          fontFamily: 'inherit',
-          color: isUrgent ? '#dc2626' : 'var(--text)',
-          fontWeight: isUrgent ? '700' : 'normal',
-          outline: 'none',
-          resize: 'none',
-          overflow: 'hidden',
-          lineHeight: '1.3',
-          display: 'block',
-          ...style
+        style={style}
+        isUrgent={isUrgent}
+        onSave={(newVal) => {
+          handleCellChange(task.id, field, newVal);
+          handleCellBlur(task, field, newVal);
         }}
       />
     );
