@@ -196,22 +196,22 @@ const PlanningRow = React.memo(({
     <tr 
       ref={isToday ? todayRowRef : null}
       style={{ 
-        backgroundColor: isToday ? '#fef9c3' : (isWeekend ? '#fef2f2' : 'transparent')
+        backgroundColor: isToday ? '#dcfce7' : (isWeekend ? '#fef2f2' : 'transparent')
       }}
     >
       <td style={{ 
         fontWeight: isToday ? '800' : '700', 
         textAlign: 'center', 
-        backgroundColor: isToday ? '#fde047' : (isWeekend ? '#fee2e2' : '#f8fafc'), 
-        color: isToday ? '#713f12' : (isWeekend ? '#dc2626' : 'var(--text)'), 
+        backgroundColor: isToday ? '#22c55e' : (isWeekend ? '#fee2e2' : '#f8fafc'), 
+        color: isToday ? '#ffffff' : (isWeekend ? '#dc2626' : 'var(--text)'), 
         whiteSpace: 'nowrap',
-        borderLeft: isToday ? '4px solid #ca8a04' : 'none'
+        borderLeft: isToday ? '4px solid #15803d' : 'none'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
           <span>{dateFormatted}</span>
           {isToday && (
             <span style={{ 
-              backgroundColor: '#ca8a04', 
+              backgroundColor: '#15803d', 
               color: '#ffffff', 
               fontSize: '10px', 
               fontWeight: '800', 
@@ -226,7 +226,7 @@ const PlanningRow = React.memo(({
       </td>
       
       {/* RFG */}
-      <td style={{ textAlign: 'center', backgroundColor: rfgVal === 'STOP' ? '#fca5a5' : rfgVal === 'Maintenance' ? '#fef08a' : rfgVal ? '#e0f2fe' : (isToday ? '#fef9c3' : 'transparent'), fontWeight: '600' }}>
+      <td style={{ textAlign: 'center', backgroundColor: rfgVal === 'STOP' ? '#fca5a5' : rfgVal === 'Maintenance' ? '#fef08a' : rfgVal ? '#e0f2fe' : (isToday ? '#dcfce7' : 'transparent'), fontWeight: '600' }}>
         <EditableCell 
           initialValue={rfgVal}
           onSave={(val) => {
@@ -238,7 +238,7 @@ const PlanningRow = React.memo(({
       </td>
 
       {/* MIR */}
-      <td style={{ textAlign: 'center', backgroundColor: mirVal === 'STOP' ? '#fca5a5' : mirVal?.includes('MTN') ? '#fef08a' : mirVal ? '#e0f2fe' : (isToday ? '#fef9c3' : 'transparent'), fontWeight: '600' }}>
+      <td style={{ textAlign: 'center', backgroundColor: mirVal === 'STOP' ? '#fca5a5' : mirVal?.includes('MTN') ? '#fef08a' : mirVal ? '#e0f2fe' : (isToday ? '#dcfce7' : 'transparent'), fontWeight: '600' }}>
         <EditableCell 
           initialValue={mirVal}
           onSave={(val) => {
