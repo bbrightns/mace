@@ -686,7 +686,7 @@ export default function TaskManagement() {
         justify: 'space-between', 
         alignItems: 'center', 
         borderBottom: '1px solid var(--border)',
-        marginBottom: '16px',
+        marginBottom: '8px',
         gap: '12px',
         flexWrap: 'wrap'
       }}>
@@ -732,7 +732,7 @@ export default function TaskManagement() {
       </div>
 
       {/* TOP SEARCH BAR - Moved to top above Blue Date Banner as requested */}
-      <div className="card controls-bar" style={{ padding: '12px 16px', marginBottom: '16px' }}>
+      <div className="card controls-bar" style={{ padding: '8px 16px', marginBottom: '8px' }}>
         <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
           <Search size={14} style={{ position: 'absolute', left: '12px', top: '11px', color: 'var(--text3)' }} />
           <input 
