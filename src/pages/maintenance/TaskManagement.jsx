@@ -74,6 +74,108 @@ const SECTION_SUGGESTIONS = [
   "Plant"
 ];
 
+// Standalone SectionCell Component to strictly satisfy React Rules of Hooks
+function SectionCell({ task, draftEdits, handleCellChange, handleCellBlur }) {
+  const field = 'section';
+  const currentDraft = draftEdits[task.id]?.[field];
+  const val = currentDraft !== undefined ? currentDraft : (task.section || '');
+  const isUrgent = (draftEdits[task.id]?.planType || task.planType || task.mtnType) === 'Urgent';
+
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const filteredSuggestions = useMemo(() => {
+    if (!val) return SECTION_SUGGESTIONS.slice(0, 8);
+    return SECTION_SUGGESTIONS.filter(item => 
+      item.toLowerCase().includes(val.toLowerCase())
+    ).slice(0, 8);
+  }, [val]);
+
+  const handleInput = (e) => {
+    e.target.style.height = 'auto';
+    e.target.style.height = `${Math.max(24, e.target.scrollHeight)}px`;
+  };
+
+  return (
+    <div style={{ position: 'relative', width: '100%' }}>
+      <textarea 
+        className="table-cell-input"
+        rows={1}
+        value={val}
+        placeholder="Section..."
+        onChange={(e) => {
+          handleCellChange(task.id, field, e.target.value);
+          handleInput(e);
+          setShowSuggestions(true);
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = 'var(--accent)';
+          e.target.style.background = 'var(--surface)';
+          handleInput(e);
+          setShowSuggestions(true);
+        }}
+        onBlur={(e) => {
+          setTimeout(() => {
+            setShowSuggestions(false);
+            handleCellBlur(task, field, e.target.value);
+          }, 200);
+        }}
+        style={{
+          width: '100%',
+          border: '1px solid transparent',
+          background: 'transparent',
+          padding: '2px 4px',
+          minHeight: '24px',
+          borderRadius: '4px',
+          fontSize: '12px',
+          fontFamily: 'inherit',
+          color: isUrgent ? '#dc2626' : 'var(--text)',
+          outline: 'none',
+          resize: 'none',
+          overflow: 'hidden',
+          lineHeight: '1.3',
+          display: 'block'
+        }}
+      />
+
+      {showSuggestions && filteredSuggestions.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          backgroundColor: '#ffffff',
+          border: '1px solid var(--border)',
+          borderRadius: '6px',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+          zIndex: 100,
+          maxHeight: '160px',
+          overflowY: 'auto'
+        }}>
+          {filteredSuggestions.map((item, idx) => (
+            <div
+              key={idx}
+              style={{
+                padding: '5px 8px',
+                fontSize: '11.5px',
+                cursor: 'pointer',
+                borderBottom: '1px solid #f1f5f9',
+                color: 'var(--text)'
+              }}
+              onMouseDown={() => {
+                handleCellChange(task.id, field, item);
+                handleCellBlur(task, field, item);
+                setShowSuggestions(false);
+              }}
+            >
+              {item}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TaskManagement() {
   const [activeView, setActiveView] = useState('daily'); // 'daily' | 'planning'
   const [tasks, setTasks] = useState(() => {
@@ -536,106 +638,15 @@ export default function TaskManagement() {
     );
   };
 
-  // Helper for Section Auto-Suggest Cell (Multiline + Custom Interactive Popover Suggestion)
+  // Helper for Section Auto-Suggest Cell
   const renderSectionCell = (task) => {
-    const field = 'section';
-    const currentDraft = draftEdits[task.id]?.[field];
-    const val = currentDraft !== undefined ? currentDraft : (task.section || '');
-    const isUrgent = (draftEdits[task.id]?.planType || task.planType || task.mtnType) === 'Urgent';
-
-    const [showSuggestions, setShowSuggestions] = useState(false);
-
-    const filteredSuggestions = useMemo(() => {
-      if (!val) return SECTION_SUGGESTIONS.slice(0, 8);
-      return SECTION_SUGGESTIONS.filter(item => 
-        item.toLowerCase().includes(val.toLowerCase())
-      ).slice(0, 8);
-    }, [val]);
-
-    const handleInput = (e) => {
-      e.target.style.height = 'auto';
-      e.target.style.height = `${Math.max(24, e.target.scrollHeight)}px`;
-    };
-
     return (
-      <div style={{ position: 'relative', width: '100%' }}>
-        <textarea 
-          className="table-cell-input"
-          rows={1}
-          value={val}
-          placeholder="Section..."
-          onChange={(e) => {
-            handleCellChange(task.id, field, e.target.value);
-            handleInput(e);
-            setShowSuggestions(true);
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = 'var(--accent)';
-            e.target.style.background = 'var(--surface)';
-            handleInput(e);
-            setShowSuggestions(true);
-          }}
-          onBlur={(e) => {
-            // Delay hide to allow suggestion click
-            setTimeout(() => {
-              setShowSuggestions(false);
-              handleCellBlur(task, field, e.target.value);
-            }, 200);
-          }}
-          style={{
-            width: '100%',
-            border: '1px solid transparent',
-            background: 'transparent',
-            padding: '2px 4px',
-            minHeight: '24px',
-            borderRadius: '4px',
-            fontSize: '12px',
-            fontFamily: 'inherit',
-            color: isUrgent ? '#dc2626' : 'var(--text)',
-            outline: 'none',
-            resize: 'none',
-            overflow: 'hidden',
-            lineHeight: '1.3',
-            display: 'block'
-          }}
-        />
-
-        {showSuggestions && filteredSuggestions.length > 0 && (
-          <div style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            right: 0,
-            backgroundColor: '#ffffff',
-            border: '1px solid var(--border)',
-            borderRadius: '6px',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
-            zIndex: 100,
-            maxHeight: '160px',
-            overflowY: 'auto'
-          }}>
-            {filteredSuggestions.map((item, idx) => (
-              <div
-                key={idx}
-                style={{
-                  padding: '5px 8px',
-                  fontSize: '11.5px',
-                  cursor: 'pointer',
-                  borderBottom: '1px solid #f1f5f9',
-                  color: 'var(--text)'
-                }}
-                onMouseDown={() => {
-                  handleCellChange(task.id, field, item);
-                  handleCellBlur(task, field, item);
-                  setShowSuggestions(false);
-                }}
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <SectionCell 
+        task={task} 
+        draftEdits={draftEdits} 
+        handleCellChange={handleCellChange} 
+        handleCellBlur={handleCellBlur} 
+      />
     );
   };
 
