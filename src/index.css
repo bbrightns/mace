@@ -363,13 +363,13 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Pages, Workspace Grid & Sections */
 .workspace-container {
-  padding: 24px;
-  max-width: 1400px;
+  padding: 20px;
+  max-width: 100%;
   width: 100%;
-  margin: 0 auto;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .page-header {
