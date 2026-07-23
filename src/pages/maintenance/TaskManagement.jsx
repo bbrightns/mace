@@ -726,9 +726,9 @@ export default function TaskManagement() {
     return list;
   };
 
-  const dailyRfgRows = useMemo(() => getPaddedRows(existingRfgTasks, rfgMinCount, 'RFG', 'MTN'), [existingRfgTasks, rfgMinCount, selectedDate]);
-  const dailyMirRows = useMemo(() => getPaddedRows(existingMirTasks, mirMinCount, 'MIR', 'PROD'), [existingMirTasks, mirMinCount, selectedDate]);
-  const dailySubRows = useMemo(() => getPaddedRows(existingSubTasks, subMinCount, 'SUBCONTRACTOR', 'SUBCONTRACTOR'), [existingSubTasks, subMinCount, selectedDate]);
+  const dailyRfgRows = useMemo(() => getPaddedRows(existingRfgTasks, searchQuery ? 0 : rfgMinCount, 'RFG', 'MTN'), [existingRfgTasks, rfgMinCount, selectedDate, searchQuery]);
+  const dailyMirRows = useMemo(() => getPaddedRows(existingMirTasks, searchQuery ? 0 : mirMinCount, 'MIR', 'PROD'), [existingMirTasks, mirMinCount, selectedDate, searchQuery]);
+  const dailySubRows = useMemo(() => getPaddedRows(existingSubTasks, searchQuery ? 0 : subMinCount, 'SUBCONTRACTOR', 'SUBCONTRACTOR'), [existingSubTasks, subMinCount, selectedDate, searchQuery]);
 
   // Filter tasks for Planning View
   const planningTasks = useMemo(() => {
@@ -947,13 +947,40 @@ export default function TaskManagement() {
             </div>
           )}
 
+          {searchQuery && (
+            <div style={{ 
+              backgroundColor: '#eff6ff', 
+              border: '1px solid #bfdbfe', 
+              borderRadius: '8px', 
+              padding: '12px 16px', 
+              color: '#1e40af', 
+              fontSize: '13.5px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+            }}>
+              <div>
+                🔍 Showing only results matching <strong>"{searchQuery}"</strong> ({existingRfgTasks.length + existingMirTasks.length + existingSubTasks.length} found)
+              </div>
+              <button 
+                className="btn btn-sm" 
+                style={{ backgroundColor: '#ffffff', color: '#1e40af', border: '1px solid #bfdbfe', fontWeight: '600' }} 
+                onClick={() => setSearchQuery('')}
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
+
           {loading ? (
             <div className="skeleton-row" style={{ height: '200px' }}></div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
               {/* SECTION 1: RFG BLOCK TABLE */}
-              <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
+              {(!searchQuery || existingRfgTasks.length > 0) && (
+                <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#fef08a', 
                   color: '#854d0e', 
@@ -1139,9 +1166,11 @@ export default function TaskManagement() {
                   </table>
                 </div>
               </div>
+              )}
 
               {/* SECTION 2: MIR BLOCK TABLE */}
-              <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
+              {(!searchQuery || existingMirTasks.length > 0) && (
+                <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#bbf7d0', 
                   color: '#166534', 
@@ -1327,9 +1356,11 @@ export default function TaskManagement() {
                   </table>
                 </div>
               </div>
+              )}
 
               {/* SECTION 3: SUBCONTRACTOR BLOCK TABLE */}
-              <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
+              {(!searchQuery || existingSubTasks.length > 0) && (
+                <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#bae6fd', 
                   color: '#0369a1', 
@@ -1448,6 +1479,18 @@ export default function TaskManagement() {
                   </table>
                 </div>
               </div>
+              )}
+
+              {searchQuery && existingRfgTasks.length === 0 && existingMirTasks.length === 0 && existingSubTasks.length === 0 && (
+                <div className="card" style={{ padding: '48px 32px', textAlign: 'center', color: 'var(--text3)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <Search size={40} style={{ margin: '0 auto 16px', display: 'block', opacity: 0.4, color: 'var(--text3)' }} />
+                  <div style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text)', marginBottom: '6px' }}>No tasks found matching "{searchQuery}"</div>
+                  <div style={{ fontSize: '13px', maxWidth: '360px', margin: '0 auto 16px' }}>We couldn't find any matching tasks for this date. Check your spelling or try clearing the filter.</div>
+                  <button className="btn btn-primary btn-sm" onClick={() => setSearchQuery('')}>
+                    Clear Search Query
+                  </button>
+                </div>
+              )}
 
             </div>
           )}
