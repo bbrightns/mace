@@ -123,6 +123,15 @@ const EditableCell = React.memo(({ initialValue, onSave, placeholder = '', style
         setValue(e.target.value);
         textareaRef(e.target);
       }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          if (e.altKey || e.shiftKey) {
+            return; // Alt+Enter or Shift+Enter inserts a new line
+          }
+          e.preventDefault();
+          e.target.blur(); // Plain Enter finishes typing and commits cell
+        }
+      }}
       onFocus={(e) => {
         e.target.style.borderColor = 'var(--accent)';
         e.target.style.background = 'var(--surface)';
@@ -193,6 +202,16 @@ function SectionCell({ task, draftEdits, handleCellChange, handleCellBlur }) {
           handleCellChange(task.id, field, e.target.value);
           textareaRef(e.target);
           setShowSuggestions(true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            if (e.altKey || e.shiftKey) {
+              return; // Alt+Enter or Shift+Enter inserts a new line
+            }
+            e.preventDefault();
+            setShowSuggestions(false);
+            e.target.blur(); // Plain Enter finishes typing
+          }
         }}
         onFocus={(e) => {
           e.target.style.borderColor = 'var(--accent)';
