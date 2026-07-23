@@ -407,6 +407,46 @@ export default function TaskManagement() {
     showToast(`Added new ${plantSection} row`);
   };
 
+  // Delete Row with confirmation
+  const handleDeleteRow = async (task) => {
+    const hasContent = hasAnyContent(task) || (draftEdits[task.id] && Object.values(draftEdits[task.id]).some(val => typeof val === 'string' ? val.trim().length > 0 : !!val));
+    
+    if (task.id.startsWith('temp-') && !tasks.some(t => t.id === task.id)) {
+      if (hasContent) {
+        if (!window.confirm('Are you sure you want to clear this row?')) return;
+      }
+      setDraftEdits(prev => {
+        const next = { ...prev };
+        delete next[task.id];
+        return next;
+      });
+      return;
+    }
+
+    if (hasContent || !task.id.startsWith('temp-')) {
+      if (!window.confirm('Are you sure you want to delete this row?')) return;
+    }
+
+    if (!task.id.startsWith('temp-')) {
+      try {
+        await deleteDocument('mace_tasks', task.id);
+        setTasks(prev => prev.filter(t => t.id !== task.id));
+        showToast('Row deleted successfully');
+      } catch (err) {
+        console.error('Delete error:', err);
+        showToast('Failed to delete row');
+      }
+    } else {
+      setTasks(prev => prev.filter(t => t.id !== task.id));
+    }
+
+    setDraftEdits(prev => {
+      const next = { ...prev };
+      delete next[task.id];
+      return next;
+    });
+  };
+
   // Pre-seed mock data matching exact user screenshots
   const handleSeedMockData = async () => {
     const mockData = [
@@ -916,6 +956,7 @@ export default function TaskManagement() {
                         <th style={{ minWidth: '320px', color: '#854d0e', fontWeight: '700' }}>Task Name / Description</th>
                         <th style={{ minWidth: '220px', color: '#854d0e', fontWeight: '700' }}>Detail</th>
                         <th style={{ width: '100px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Status</th>
+                        <th style={{ width: '50px', textAlign: 'center' }}></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1033,6 +1074,28 @@ export default function TaskManagement() {
                                 <option value="Postpone" style={{ backgroundColor: '#ffffff', color: '#991b1b' }}>Postpone</option>
                               </select>
                             </td>
+
+                            {/* Column 10: Delete Action */}
+                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                              <button 
+                                className="btn-icon" 
+                                style={{ 
+                                  color: '#ef4444', 
+                                  background: 'transparent', 
+                                  border: 'none', 
+                                  cursor: 'pointer',
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  margin: '0 auto'
+                                }}
+                                onClick={() => handleDeleteRow(t)}
+                                title="Delete row"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
                           </tr>
                         );
                       })}
@@ -1081,6 +1144,7 @@ export default function TaskManagement() {
                         <th style={{ minWidth: '320px', color: '#166534', fontWeight: '700' }}>Task Name / Description</th>
                         <th style={{ minWidth: '220px', color: '#166534', fontWeight: '700' }}>Detail</th>
                         <th style={{ width: '100px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Status</th>
+                        <th style={{ width: '50px', textAlign: 'center' }}></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1198,6 +1262,28 @@ export default function TaskManagement() {
                                 <option value="Postpone" style={{ backgroundColor: '#ffffff', color: '#991b1b' }}>Postpone</option>
                               </select>
                             </td>
+
+                            {/* Column 10: Delete Action */}
+                            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                              <button 
+                                className="btn-icon" 
+                                style={{ 
+                                  color: '#ef4444', 
+                                  background: 'transparent', 
+                                  border: 'none', 
+                                  cursor: 'pointer',
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  margin: '0 auto'
+                                }}
+                                onClick={() => handleDeleteRow(t)}
+                                title="Delete row"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
                           </tr>
                         );
                       })}
@@ -1238,6 +1324,7 @@ export default function TaskManagement() {
                         <th style={{ minWidth: '300px', color: '#0369a1', fontWeight: '700' }}>Task Name</th>
                         <th style={{ width: '120px', color: '#0369a1', fontWeight: '700', textAlign: 'center' }}>Progress</th>
                         <th style={{ width: '150px', color: '#0369a1', fontWeight: '700' }}>PIC</th>
+                        <th style={{ width: '50px', textAlign: 'center' }}></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1297,6 +1384,28 @@ export default function TaskManagement() {
 
                           {/* Column 6: PIC */}
                           <td>{renderCell(t, 'pic', '')}</td>
+
+                          {/* Column 7: Delete Action */}
+                          <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                            <button 
+                              className="btn-icon" 
+                              style={{ 
+                                color: '#ef4444', 
+                                background: 'transparent', 
+                                border: 'none', 
+                                cursor: 'pointer',
+                                padding: '4px',
+                                display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  margin: '0 auto'
+                              }}
+                              onClick={() => handleDeleteRow(t)}
+                              title="Delete row"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
