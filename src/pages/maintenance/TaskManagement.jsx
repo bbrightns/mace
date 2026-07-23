@@ -982,12 +982,12 @@ export default function TaskManagement() {
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
             }}>
               <div>
-                🔍 Showing only results matching <strong>"{searchQuery}"</strong> ({existingRfgTasks.length + existingMirTasks.length + existingSubTasks.length} found)
+                🔍 Showing only results matching <strong>"{dailySearchQuery}"</strong> ({existingRfgTasks.length + existingMirTasks.length + existingSubTasks.length} found)
               </div>
               <button 
                 className="btn btn-sm" 
                 style={{ backgroundColor: '#ffffff', color: '#1e40af', border: '1px solid #bfdbfe', fontWeight: '600' }} 
-                onClick={() => setSearchQuery('')}
+                onClick={() => setDailySearchQuery('')}
               >
                 Clear Search
               </button>
@@ -1000,7 +1000,7 @@ export default function TaskManagement() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
               {/* SECTION 1: RFG BLOCK TABLE */}
-              {(!searchQuery || existingRfgTasks.length > 0) && (
+              {(!dailySearchQuery || existingRfgTasks.length > 0) && (
                 <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#fef08a', 
