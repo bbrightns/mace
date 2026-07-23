@@ -92,14 +92,16 @@ export default function TaskManagement() {
 
   useEffect(() => {
     const unsubscribe = subscribeCollection('mace_tasks', (data) => {
-      setTasks(data);
+      if (data && data.length > 0) {
+        setTasks(data);
+      }
       setLoading(false);
     }, (error) => {
-      showToast('Error syncing tasks collection.', 'error');
+      console.warn('mace_tasks sync fallback:', error);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [showToast]);
+  }, []);
 
   // Find planning row status for selected date if available
   const currentPlanningRow = useMemo(() => {
