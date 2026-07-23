@@ -976,15 +976,29 @@ export default function TaskManagement() {
                             <td style={{ textAlign: 'center' }}>
                               <select 
                                 className="table-cell-select font-mono" 
-                                value={t.status || 'Finished'} 
+                                style={{
+                                  backgroundColor: 
+                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Finished' ? '#dcfce7' : 
+                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Continue' ? '#fef08a' : '#fca5a5',
+                                  color: 
+                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Finished' ? '#166534' : 
+                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Continue' ? '#854d0e' : '#991b1b',
+                                  fontWeight: '700',
+                                  padding: '2px 4px',
+                                  borderRadius: '4px',
+                                  border: '1px solid transparent',
+                                  width: '100%',
+                                  boxSizing: 'border-box'
+                                }}
+                                value={draftEdits[t.id]?.status || t.status || 'Finished'} 
                                 onChange={(e) => {
                                   handleCellChange(t.id, 'status', e.target.value);
                                   handleCellBlur(t, 'status', e.target.value);
                                 }}
                               >
-                                <option value="Finished">Finished</option>
-                                <option value="Continue">Continue</option>
-                                <option value="Postpone">Postpone</option>
+                                <option value="Finished" style={{ backgroundColor: '#ffffff', color: '#166534' }}>Finished</option>
+                                <option value="Continue" style={{ backgroundColor: '#ffffff', color: '#854d0e' }}>Continue</option>
+                                <option value="Postpone" style={{ backgroundColor: '#ffffff', color: '#991b1b' }}>Postpone</option>
                               </select>
                             </td>
                           </tr>
@@ -1126,15 +1140,29 @@ export default function TaskManagement() {
                             <td style={{ textAlign: 'center' }}>
                               <select 
                                 className="table-cell-select font-mono" 
-                                value={t.status || 'Finished'} 
+                                style={{
+                                  backgroundColor: 
+                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Finished' ? '#dcfce7' : 
+                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Continue' ? '#fef08a' : '#fca5a5',
+                                  color: 
+                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Finished' ? '#166534' : 
+                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Continue' ? '#854d0e' : '#991b1b',
+                                  fontWeight: '700',
+                                  padding: '2px 4px',
+                                  borderRadius: '4px',
+                                  border: '1px solid transparent',
+                                  width: '100%',
+                                  boxSizing: 'border-box'
+                                }}
+                                value={draftEdits[t.id]?.status || t.status || 'Finished'} 
                                 onChange={(e) => {
                                   handleCellChange(t.id, 'status', e.target.value);
                                   handleCellBlur(t, 'status', e.target.value);
                                 }}
                               >
-                                <option value="Finished">Finished</option>
-                                <option value="Continue">Continue</option>
-                                <option value="Postpone">Postpone</option>
+                                <option value="Finished" style={{ backgroundColor: '#ffffff', color: '#166534' }}>Finished</option>
+                                <option value="Continue" style={{ backgroundColor: '#ffffff', color: '#854d0e' }}>Continue</option>
+                                <option value="Postpone" style={{ backgroundColor: '#ffffff', color: '#991b1b' }}>Postpone</option>
                               </select>
                             </td>
                           </tr>
