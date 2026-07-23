@@ -764,8 +764,8 @@ export default function TaskManagement() {
         id: `temp-plan-${dateStr}`,
         taskDate: dateStr,
         plantSection: 'PLANNING',
-        rfgRev: 'CSS14',
-        mirRev: 'Prod',
+        rfgRev: '',
+        mirRev: '',
         eeWorkSupp: '',
         eeWorkAft: '',
         mechWorkSupp: '',
@@ -1688,16 +1688,16 @@ export default function TaskManagement() {
                         <td style={{ fontWeight: '700', textAlign: 'center', backgroundColor: isWeekend ? '#fee2e2' : '#f8fafc', color: isWeekend ? '#dc2626' : 'var(--text)', whiteSpace: 'nowrap' }}>
                           {dateFormatted}
                         </td>
-                        <td style={{ textAlign: 'center', backgroundColor: t.rfgRev === 'STOP' ? '#fca5a5' : t.rfgRev === 'Maintenance' ? '#fef08a' : '#e0f2fe', fontWeight: '600' }}>
-                          {renderCell(t, 'rfgRev', 'CSS14', { textAlign: 'center', fontWeight: '600' })}
+                        <td style={{ textAlign: 'center', backgroundColor: t.rfgRev === 'STOP' ? '#fca5a5' : t.rfgRev === 'Maintenance' ? '#fef08a' : t.rfgRev ? '#e0f2fe' : 'transparent', fontWeight: '600' }}>
+                          {renderCell(t, 'rfgRev', '', { textAlign: 'center', fontWeight: '600' })}
                         </td>
-                        <td style={{ textAlign: 'center', backgroundColor: t.mirRev === 'STOP' ? '#fca5a5' : t.mirRev?.includes('MTN') ? '#fef08a' : '#e0f2fe', fontWeight: '600' }}>
-                          {renderCell(t, 'mirRev', 'Prod', { textAlign: 'center', fontWeight: '600' })}
+                        <td style={{ textAlign: 'center', backgroundColor: t.mirRev === 'STOP' ? '#fca5a5' : t.mirRev?.includes('MTN') ? '#fef08a' : t.mirRev ? '#e0f2fe' : 'transparent', fontWeight: '600' }}>
+                          {renderCell(t, 'mirRev', '', { textAlign: 'center', fontWeight: '600' })}
                         </td>
-                        <td style={{ color: '#2563eb', fontSize: '11.5px' }}>{renderCell(t, 'eeWorkSupp', 'Supp...')}</td>
-                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>{renderCell(t, 'eeWorkAft', 'EE work details...')}</td>
-                        <td style={{ color: '#db2777', fontSize: '11.5px' }}>{renderCell(t, 'mechWorkSupp', 'Supp...')}</td>
-                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>{renderCell(t, 'mechWorkAft', 'MECH work details...')}</td>
+                        <td style={{ color: '#2563eb', fontSize: '11.5px' }}>{renderCell(t, 'eeWorkSupp', '')}</td>
+                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>{renderCell(t, 'eeWorkAft', '')}</td>
+                        <td style={{ color: '#db2777', fontSize: '11.5px' }}>{renderCell(t, 'mechWorkSupp', '')}</td>
+                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>{renderCell(t, 'mechWorkAft', '')}</td>
                       </tr>
                     );
                   })
