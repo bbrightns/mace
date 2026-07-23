@@ -1126,30 +1126,36 @@ export default function TaskManagement() {
   const dailyMirRows = useMemo(() => getPaddedRows(existingMirTasks, dailySearchQuery ? 0 : mirMinCount, 'MIR', 'PROD'), [existingMirTasks, mirMinCount, selectedDate, dailySearchQuery]);
   const dailySubRows = useMemo(() => getPaddedRows(existingSubTasks, dailySearchQuery ? 0 : subMinCount, 'SUBCONTRACTOR', 'SUBCONTRACTOR'), [existingSubTasks, subMinCount, selectedDate, dailySearchQuery]);
 
-  // Generate all 365 days for the year (from 1 Jan until 31 Dec) in Planning Matrix
+  // Generate 37-day rolling window: Today-7 days to Today+30 days
   const planningTasks = useMemo(() => {
-    const targetYear = selectedDate ? new Date(selectedDate + 'T00:00:00').getFullYear() : 2026;
-    
     // Map existing tasks by date for fast lookup
     const taskMap = new Map();
     tasks.forEach(t => {
       if (t.taskDate) {
-        if (!taskMap.has(t.taskDate) || hasAnyContent(t) || t.eeWorkAft || t.mechWorkAft) {
+        if (!taskMap.has(t.taskDate) || hasAnyContent(t) || t.eeWorkAft || t.mechWorkAft || t.rfgRev || t.mirRev) {
           taskMap.set(t.taskDate, t);
         }
       }
     });
 
     const rows = [];
-    const current = new Date(targetYear, 0, 1);
-    const endDate = new Date(targetYear, 11, 31);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 7); // 7 days before today
+
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + 30); // 30 days after today
+
+    const current = new Date(startDate);
 
     while (current <= endDate) {
       const year = current.getFullYear();
       const month = String(current.getMonth() + 1).padStart(2, '0');
       const day = String(current.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
-      
+
       const existing = taskMap.get(dateStr);
       const row = existing || {
         id: `temp-plan-${dateStr}`,
@@ -1173,7 +1179,7 @@ export default function TaskManagement() {
           year: 'numeric'
         }).toLowerCase();
 
-        const matches = 
+        const matches =
           row.taskName?.toLowerCase().includes(query) ||
           row.eeWorkAft?.toLowerCase().includes(query) ||
           row.mechWorkAft?.toLowerCase().includes(query) ||
@@ -1184,9 +1190,7 @@ export default function TaskManagement() {
           dateStr.includes(query) ||
           formattedDateStr.includes(query);
 
-        if (matches) {
-          rows.push(row);
-        }
+        if (matches) rows.push(row);
       } else {
         rows.push(row);
       }
@@ -1195,7 +1199,7 @@ export default function TaskManagement() {
     }
 
     return rows;
-  }, [tasks, selectedDate, planningSearchQuery]);
+  }, [tasks, planningSearchQuery]);
 
   // Change selected date
   const changeDateByDays = (days) => {
@@ -1328,15 +1332,7 @@ export default function TaskManagement() {
               style={{ display: 'none' }} 
               id="plan-csv-file-input"
             />
-            <button 
-              className="btn btn-sm"
-              onClick={handleJumpToToday}
-              style={{ backgroundColor: '#fef08a', color: '#854d0e', border: '1px solid #fde047', fontWeight: '700', borderRadius: '6px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}
-              title="Jump to Today's work row"
-              id="btn-jump-today"
-            >
-              📅 Jump to Today
-            </button>
+
             <button 
               className="btn btn-sm" 
               onClick={handleImportPlanClick}
