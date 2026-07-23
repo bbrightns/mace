@@ -191,7 +191,7 @@ export default function TaskManagement() {
       rank: 'B',
       taskName: '',
       detail: '',
-      status: 'Pending',
+      status: 'Finished',
       mechTechnicians: '',
       elecTechnicians: '',
       plant: plantSection === 'SUBCONTRACTOR' ? 'RFG' : plantSection,
@@ -784,17 +784,15 @@ export default function TaskManagement() {
                             <td style={{ textAlign: 'center' }}>
                               <select 
                                 className="table-cell-select font-mono" 
-                                value={t.status || 'Pending'} 
+                                value={t.status || 'Finished'} 
                                 onChange={(e) => {
                                   handleCellChange(t.id, 'status', e.target.value);
                                   handleCellBlur(t, 'status', e.target.value);
                                 }}
                               >
-                                <option value="Pending">Pending</option>
                                 <option value="Finished">Finished</option>
-                                <option value="Postpone">Postpone</option>
                                 <option value="Continue">Continue</option>
-                                <option value="In Process">In Process</option>
+                                <option value="Postpone">Postpone</option>
                               </select>
                             </td>
 
@@ -914,17 +912,15 @@ export default function TaskManagement() {
                             <td style={{ textAlign: 'center' }}>
                               <select 
                                 className="table-cell-select font-mono" 
-                                value={t.status || 'Pending'} 
+                                value={t.status || 'Finished'} 
                                 onChange={(e) => {
                                   handleCellChange(t.id, 'status', e.target.value);
                                   handleCellBlur(t, 'status', e.target.value);
                                 }}
                               >
-                                <option value="Pending">Pending</option>
                                 <option value="Finished">Finished</option>
-                                <option value="Postpone">Postpone</option>
                                 <option value="Continue">Continue</option>
-                                <option value="In Process">In Process</option>
+                                <option value="Postpone">Postpone</option>
                               </select>
                             </td>
 
