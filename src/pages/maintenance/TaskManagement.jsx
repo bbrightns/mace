@@ -622,11 +622,7 @@ export default function TaskManagement() {
     return `${year}-${month}-${day}`;
   }, []);
 
-  const handleJumpToToday = () => {
-    if (todayRowRef.current) {
-      todayRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  };
+
 
   useEffect(() => {
     if (activeView === 'planning') {
