@@ -242,7 +242,16 @@ export default function TaskManagement() {
   useEffect(() => {
     const unsubscribe = subscribeCollection('mace_tasks', (data) => {
       if (data) {
-        setTasks(data);
+        setTasks(prev => {
+          const tempRows = prev.filter(t => t.id?.startsWith('temp-') || t.isTemp);
+          const merged = [...data];
+          tempRows.forEach(tr => {
+            if (!merged.some(m => m.id === tr.id)) {
+              merged.push(tr);
+            }
+          });
+          return merged;
+        });
         localStorage.setItem('mace_tasks_cache', JSON.stringify(data));
       }
       setLoading(false);
@@ -867,6 +876,8 @@ export default function TaskManagement() {
                   <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#fefce8' }}>
+                        <th style={{ width: '60px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Mech</th>
+                        <th style={{ width: '60px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Elec</th>
                         <th style={{ width: '70px', color: '#854d0e', fontWeight: '700' }}>Plan</th>
                         <th style={{ width: '80px', color: '#854d0e', fontWeight: '700' }}>Safety</th>
                         <th style={{ width: '160px', color: '#854d0e', fontWeight: '700' }}>Section</th>
@@ -875,8 +886,6 @@ export default function TaskManagement() {
                         <th style={{ minWidth: '300px', color: '#854d0e', fontWeight: '700' }}>Task Name / Description</th>
                         <th style={{ minWidth: '200px', color: '#854d0e', fontWeight: '700' }}>Detail</th>
                         <th style={{ width: '100px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Status</th>
-                        <th style={{ width: '60px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Mech</th>
-                        <th style={{ width: '60px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Elec</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -887,7 +896,35 @@ export default function TaskManagement() {
 
                         return (
                           <tr key={t.id} style={{ color: isUrgent ? '#dc2626' : 'inherit' }}>
-                            {/* Column 1: Plan Dropdown */}
+                            {/* Column 1: Mech */}
+                            <td style={{ textAlign: 'center' }}>
+                              <input 
+                                type="checkbox"
+                                checked={!!(draftEdits[t.id]?.mechTechnicians !== undefined ? draftEdits[t.id]?.mechTechnicians : t.mechTechnicians)}
+                                onChange={(e) => {
+                                  const val = e.target.checked;
+                                  handleCellChange(t.id, 'mechTechnicians', val);
+                                  handleCellBlur(t, 'mechTechnicians', val);
+                                }}
+                                style={{ transform: 'scale(1.25)', cursor: 'pointer', margin: '4px auto', display: 'block' }}
+                              />
+                            </td>
+
+                            {/* Column 2: Elec */}
+                            <td style={{ textAlign: 'center' }}>
+                              <input 
+                                type="checkbox"
+                                checked={!!(draftEdits[t.id]?.elecTechnicians !== undefined ? draftEdits[t.id]?.elecTechnicians : t.elecTechnicians)}
+                                onChange={(e) => {
+                                  const val = e.target.checked;
+                                  handleCellChange(t.id, 'elecTechnicians', val);
+                                  handleCellBlur(t, 'elecTechnicians', val);
+                                }}
+                                style={{ transform: 'scale(1.25)', cursor: 'pointer', margin: '4px auto', display: 'block' }}
+                              />
+                            </td>
+
+                            {/* Column 3: Plan Dropdown */}
                             <td>
                               <select 
                                 className="table-cell-select font-mono" 
@@ -903,7 +940,7 @@ export default function TaskManagement() {
                               </select>
                             </td>
 
-                            {/* Column 2: Safety Dropdown */}
+                            {/* Column 4: Safety Dropdown */}
                             <td>
                               <select 
                                 className="table-cell-select font-mono" 
@@ -920,22 +957,22 @@ export default function TaskManagement() {
                               </select>
                             </td>
 
-                            {/* Column 3: Section Auto-Suggest */}
+                            {/* Column 5: Section Auto-Suggest */}
                             <td>{renderSectionCell(t)}</td>
 
-                            {/* Column 4: Equipment */}
+                            {/* Column 6: Equipment */}
                             <td>{renderCell(t, 'equipment', 'Equipment', { fontWeight: '600' })}</td>
 
-                            {/* Column 5: Rank */}
+                            {/* Column 7: Rank */}
                             <td style={{ textAlign: 'center' }}>{renderCell(t, 'rank', 'B', { textAlign: 'center', fontWeight: '700' })}</td>
 
-                            {/* Column 6: Task Name / Description (WIDER) */}
+                            {/* Column 8: Task Name / Description (WIDER) */}
                             <td>{renderCell(t, 'taskName', 'Click to add task name...', { fontWeight: '600' })}</td>
 
-                            {/* Column 7: Detail (WIDER) */}
+                            {/* Column 9: Detail (WIDER) */}
                             <td>{renderCell(t, 'detail', 'Detail...')}</td>
 
-                            {/* Column 8: Status */}
+                            {/* Column 10: Status */}
                             <td style={{ textAlign: 'center' }}>
                               <select 
                                 className="table-cell-select font-mono" 
@@ -949,34 +986,6 @@ export default function TaskManagement() {
                                 <option value="Continue">Continue</option>
                                 <option value="Postpone">Postpone</option>
                               </select>
-                            </td>
-
-                            {/* Column 9: Mech */}
-                            <td style={{ textAlign: 'center' }}>
-                              <input 
-                                type="checkbox"
-                                checked={!!(draftEdits[t.id]?.mechTechnicians !== undefined ? draftEdits[t.id]?.mechTechnicians : t.mechTechnicians)}
-                                onChange={(e) => {
-                                  const val = e.target.checked;
-                                  handleCellChange(t.id, 'mechTechnicians', val);
-                                  handleCellBlur(t, 'mechTechnicians', val);
-                                }}
-                                style={{ transform: 'scale(1.25)', cursor: 'pointer', margin: '4px auto', display: 'block' }}
-                              />
-                            </td>
-
-                            {/* Column 10: Elec */}
-                            <td style={{ textAlign: 'center' }}>
-                              <input 
-                                type="checkbox"
-                                checked={!!(draftEdits[t.id]?.elecTechnicians !== undefined ? draftEdits[t.id]?.elecTechnicians : t.elecTechnicians)}
-                                onChange={(e) => {
-                                  const val = e.target.checked;
-                                  handleCellChange(t.id, 'elecTechnicians', val);
-                                  handleCellBlur(t, 'elecTechnicians', val);
-                                }}
-                                style={{ transform: 'scale(1.25)', cursor: 'pointer', margin: '4px auto', display: 'block' }}
-                              />
                             </td>
                           </tr>
                         );
@@ -1017,6 +1026,8 @@ export default function TaskManagement() {
                   <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f0fdf4' }}>
+                        <th style={{ width: '60px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Mech</th>
+                        <th style={{ width: '60px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Elec</th>
                         <th style={{ width: '70px', color: '#166534', fontWeight: '700' }}>Plan</th>
                         <th style={{ width: '80px', color: '#166534', fontWeight: '700' }}>Safety</th>
                         <th style={{ width: '160px', color: '#166534', fontWeight: '700' }}>Section</th>
@@ -1025,8 +1036,6 @@ export default function TaskManagement() {
                         <th style={{ minWidth: '300px', color: '#166534', fontWeight: '700' }}>Task Name / Description</th>
                         <th style={{ minWidth: '200px', color: '#166534', fontWeight: '700' }}>Detail</th>
                         <th style={{ width: '100px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Status</th>
-                        <th style={{ width: '60px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Mech</th>
-                        <th style={{ width: '60px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Elec</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1037,7 +1046,35 @@ export default function TaskManagement() {
 
                         return (
                           <tr key={t.id} style={{ color: isUrgent ? '#dc2626' : 'inherit' }}>
-                            {/* Column 1: Plan Dropdown */}
+                            {/* Column 1: Mech */}
+                            <td style={{ textAlign: 'center' }}>
+                              <input 
+                                type="checkbox"
+                                checked={!!(draftEdits[t.id]?.mechTechnicians !== undefined ? draftEdits[t.id]?.mechTechnicians : t.mechTechnicians)}
+                                onChange={(e) => {
+                                  const val = e.target.checked;
+                                  handleCellChange(t.id, 'mechTechnicians', val);
+                                  handleCellBlur(t, 'mechTechnicians', val);
+                                }}
+                                style={{ transform: 'scale(1.25)', cursor: 'pointer', margin: '4px auto', display: 'block' }}
+                              />
+                            </td>
+
+                            {/* Column 2: Elec */}
+                            <td style={{ textAlign: 'center' }}>
+                              <input 
+                                type="checkbox"
+                                checked={!!(draftEdits[t.id]?.elecTechnicians !== undefined ? draftEdits[t.id]?.elecTechnicians : t.elecTechnicians)}
+                                onChange={(e) => {
+                                  const val = e.target.checked;
+                                  handleCellChange(t.id, 'elecTechnicians', val);
+                                  handleCellBlur(t, 'elecTechnicians', val);
+                                }}
+                                style={{ transform: 'scale(1.25)', cursor: 'pointer', margin: '4px auto', display: 'block' }}
+                              />
+                            </td>
+
+                            {/* Column 3: Plan Dropdown */}
                             <td>
                               <select 
                                 className="table-cell-select font-mono" 
@@ -1053,7 +1090,7 @@ export default function TaskManagement() {
                               </select>
                             </td>
 
-                            {/* Column 2: Safety Dropdown */}
+                            {/* Column 4: Safety Dropdown */}
                             <td>
                               <select 
                                 className="table-cell-select font-mono" 
@@ -1070,22 +1107,22 @@ export default function TaskManagement() {
                               </select>
                             </td>
 
-                            {/* Column 3: Section Auto-Suggest */}
+                            {/* Column 5: Section Auto-Suggest */}
                             <td>{renderSectionCell(t)}</td>
 
-                            {/* Column 4: Equipment */}
+                            {/* Column 6: Equipment */}
                             <td>{renderCell(t, 'equipment', 'Equipment', { fontWeight: '600' })}</td>
 
-                            {/* Column 5: Rank */}
+                            {/* Column 7: Rank */}
                             <td style={{ textAlign: 'center' }}>{renderCell(t, 'rank', 'B', { textAlign: 'center', fontWeight: '700' })}</td>
 
-                            {/* Column 6: Task Name / Description (WIDER) */}
+                            {/* Column 8: Task Name / Description (WIDER) */}
                             <td>{renderCell(t, 'taskName', 'Click to add task name...', { fontWeight: '600' })}</td>
 
-                            {/* Column 7: Detail (WIDER) */}
+                            {/* Column 9: Detail (WIDER) */}
                             <td>{renderCell(t, 'detail', 'Detail...')}</td>
 
-                            {/* Column 8: Status */}
+                            {/* Column 10: Status */}
                             <td style={{ textAlign: 'center' }}>
                               <select 
                                 className="table-cell-select font-mono" 
@@ -1099,34 +1136,6 @@ export default function TaskManagement() {
                                 <option value="Continue">Continue</option>
                                 <option value="Postpone">Postpone</option>
                               </select>
-                            </td>
-
-                            {/* Column 9: Mech */}
-                            <td style={{ textAlign: 'center' }}>
-                              <input 
-                                type="checkbox"
-                                checked={!!(draftEdits[t.id]?.mechTechnicians !== undefined ? draftEdits[t.id]?.mechTechnicians : t.mechTechnicians)}
-                                onChange={(e) => {
-                                  const val = e.target.checked;
-                                  handleCellChange(t.id, 'mechTechnicians', val);
-                                  handleCellBlur(t, 'mechTechnicians', val);
-                                }}
-                                style={{ transform: 'scale(1.25)', cursor: 'pointer', margin: '4px auto', display: 'block' }}
-                              />
-                            </td>
-
-                            {/* Column 10: Elec */}
-                            <td style={{ textAlign: 'center' }}>
-                              <input 
-                                type="checkbox"
-                                checked={!!(draftEdits[t.id]?.elecTechnicians !== undefined ? draftEdits[t.id]?.elecTechnicians : t.elecTechnicians)}
-                                onChange={(e) => {
-                                  const val = e.target.checked;
-                                  handleCellChange(t.id, 'elecTechnicians', val);
-                                  handleCellBlur(t, 'elecTechnicians', val);
-                                }}
-                                style={{ transform: 'scale(1.25)', cursor: 'pointer', margin: '4px auto', display: 'block' }}
-                              />
                             </td>
                           </tr>
                         );
