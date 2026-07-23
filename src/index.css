@@ -572,15 +572,25 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text2);
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
   user-select: none;
+}
+
+.data-table th:last-child {
+  border-right: none;
 }
 
 .data-table td {
   padding: 2px 4px;
   vertical-align: middle;
   border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
   color: var(--text2);
   font-size: 12px;
+}
+
+.data-table td:last-child {
+  border-right: none;
 }
 
 .data-table tr:last-child td {
