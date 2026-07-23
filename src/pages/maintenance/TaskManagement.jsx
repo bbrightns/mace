@@ -255,6 +255,20 @@ export default function TaskManagement() {
 
     try {
       if (task.id.startsWith('temp-')) {
+        // Prevent creating a document if there is no actual content entered
+        const isString = typeof newValue === 'string';
+        const newValHasContent = isString ? newValue.trim().length > 0 : !!newValue;
+        
+        const hasContent = newValHasContent || 
+          Object.entries(changes || {}).some(([k, v]) => {
+            if (k === field) return false;
+            return typeof v === 'string' ? v.trim().length > 0 : !!v;
+          });
+          
+        if (!hasContent) {
+          return;
+        }
+
         // Create new document if it's a temp row created inline
         const payload = {
           plantSection: task.plantSection,
