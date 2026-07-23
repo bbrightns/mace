@@ -317,8 +317,10 @@ export default function TaskManagement() {
   };
 
   // Add Row directly to table
-  const handleAddNewRow = async (plantSection, category) => {
-    const payload = {
+  const handleAddNewRow = (plantSection, category) => {
+    const tempId = `temp-${plantSection}-add-${Date.now()}`;
+    const newTempRow = {
+      id: tempId,
       plantSection,
       category,
       taskDate: selectedDate,
@@ -334,14 +336,11 @@ export default function TaskManagement() {
       elecTechnicians: '',
       plant: plantSection === 'SUBCONTRACTOR' ? 'RFG' : plantSection,
       location: '',
-      pic: ''
+      pic: '',
+      isTemp: true
     };
-    try {
-      await createDocument('mace_tasks', payload);
-      showToast(`Added new ${plantSection} row`);
-    } catch (e) {
-      showToast('Failed to add row', 'error');
-    }
+    setTasks(prev => [...prev, newTempRow]);
+    showToast(`Added new ${plantSection} row`);
   };
 
   // Pre-seed mock data matching exact user screenshots
@@ -532,6 +531,12 @@ export default function TaskManagement() {
 
   // Filter tasks for Daily View based on selectedDate
   const rawDailyTasks = tasks.filter(t => t.taskDate === selectedDate && (
+    t.id?.startsWith('temp-') || t.id?.startsWith('local-') || t.isTemp ||
+    (t.plantSection === 'SUBCONTRACTOR' || t.category === 'SUBCONTRACTOR' ? 
+      (t.taskName?.trim() || t.pic?.trim() || t.location?.trim()) : 
+      (t.section?.trim() || t.equipment?.trim() || t.taskName?.trim() || t.detail?.trim() || t.mechTechnicians?.trim() || t.elecTechnicians?.trim())
+    )
+  ) && (
     !searchQuery || 
     t.taskName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.equipment?.toLowerCase().includes(searchQuery.toLowerCase()) ||
