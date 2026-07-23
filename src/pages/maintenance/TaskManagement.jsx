@@ -76,7 +76,13 @@ const SECTION_SUGGESTIONS = [
 
 const hasAnyContent = (t) => {
   if (t.plantSection === 'SUBCONTRACTOR' || t.category === 'SUBCONTRACTOR') {
-    return !!(t.taskName?.trim() || t.pic?.trim() || t.location?.trim());
+    return !!(
+      t.location?.trim() || 
+      t.subcontractorName?.trim() || 
+      t.taskName?.trim() || 
+      t.progress?.toString().trim() || 
+      t.pic?.trim()
+    );
   }
   const checkString = (val) => typeof val === 'string' ? val.trim().length > 0 : !!val;
   return !!(
@@ -315,12 +321,14 @@ export default function TaskManagement() {
           equipment: field === 'equipment' ? newValue : (task.equipment || ''),
           rank: field === 'rank' ? newValue : (task.rank || ''),
           taskName: field === 'taskName' ? newValue : (task.taskName || ''),
+          subcontractorName: field === 'subcontractorName' ? newValue : (task.subcontractorName || ''),
           detail: field === 'detail' ? newValue : (task.detail || ''),
           status: field === 'status' ? newValue : (task.status || ''),
           mechTechnicians: field === 'mechTechnicians' ? newValue : (task.mechTechnicians || ''),
           elecTechnicians: field === 'elecTechnicians' ? newValue : (task.elecTechnicians || ''),
           plant: field === 'plant' ? newValue : (task.plant || 'RFG'),
           location: field === 'location' ? newValue : (task.location || ''),
+          progress: field === 'progress' ? newValue : (task.progress || ''),
           pic: field === 'pic' ? newValue : (task.pic || '')
         };
         
@@ -384,12 +392,14 @@ export default function TaskManagement() {
       equipment: '',
       rank: '',
       taskName: '',
+      subcontractorName: '',
       detail: '',
       status: '',
       mechTechnicians: '',
       elecTechnicians: '',
       plant: plantSection === 'SUBCONTRACTOR' ? 'RFG' : plantSection,
       location: '',
+      progress: '',
       pic: '',
       isTemp: true
     };
@@ -620,12 +630,14 @@ export default function TaskManagement() {
         equipment: '',
         rank: '',
         taskName: '',
+        subcontractorName: '',
         detail: '',
         status: '',
         mechTechnicians: '',
         elecTechnicians: '',
         plant: plantSection === 'SUBCONTRACTOR' ? 'RFG' : plantSection,
         location: '',
+        progress: '',
         pic: '',
         isTemp: true
       });
@@ -1220,21 +1232,71 @@ export default function TaskManagement() {
                   <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f0f9ff' }}>
-                        <th style={{ width: '140px', color: '#0369a1', fontWeight: '700' }}>Plant</th>
-                        <th style={{ width: '180px', color: '#0369a1', fontWeight: '700' }}>Location</th>
-                        <th style={{ minWidth: '350px', color: '#0369a1', fontWeight: '700' }}>Name</th>
-                        <th style={{ minWidth: '250px', color: '#0369a1', fontWeight: '700' }}>Detail</th>
-                        <th style={{ width: '180px', color: '#0369a1', fontWeight: '700' }}>PIC</th>
+                        <th style={{ width: '100px', color: '#0369a1', fontWeight: '700' }}>Plant</th>
+                        <th style={{ width: '150px', color: '#0369a1', fontWeight: '700' }}>Location</th>
+                        <th style={{ width: '150px', color: '#0369a1', fontWeight: '700' }}>Subcontractor Name</th>
+                        <th style={{ minWidth: '300px', color: '#0369a1', fontWeight: '700' }}>Task Name</th>
+                        <th style={{ width: '120px', color: '#0369a1', fontWeight: '700', textAlign: 'center' }}>Progress</th>
+                        <th style={{ width: '150px', color: '#0369a1', fontWeight: '700' }}>PIC</th>
                       </tr>
                     </thead>
                     <tbody>
                       {dailySubRows.map((t) => (
                         <tr key={t.id}>
-                          <td>{renderCell(t, 'plant', 'RFG', { fontWeight: '700' })}</td>
-                          <td>{renderCell(t, 'location', 'Location')}</td>
-                          <td>{renderCell(t, 'taskName', 'Subcontractor name...')}</td>
-                          <td>{renderCell(t, 'detail', 'Detail...')}</td>
-                          <td>{renderCell(t, 'pic', 'PIC assignee')}</td>
+                          {/* Column 1: Plant Dropdown */}
+                          <td>
+                            <select 
+                              className="table-cell-select font-mono" 
+                              style={{ fontWeight: '700' }}
+                              value={draftEdits[t.id]?.plant || t.plant || ''} 
+                              onChange={(e) => {
+                                handleCellChange(t.id, 'plant', e.target.value);
+                                handleCellBlur(t, 'plant', e.target.value);
+                              }}
+                            >
+                              <option value=""></option>
+                              <option value="RFG">RFG</option>
+                              <option value="MIR">MIR</option>
+                            </select>
+                          </td>
+
+                          {/* Column 2: Location */}
+                          <td>{renderCell(t, 'location', '')}</td>
+
+                          {/* Column 3: Subcontractor Name */}
+                          <td>{renderCell(t, 'subcontractorName', '')}</td>
+
+                          {/* Column 4: Task Name */}
+                          <td>{renderCell(t, 'taskName', '')}</td>
+
+                          {/* Column 5: Progress (0-100% color bar) */}
+                          <td style={{ textAlign: 'center' }}>
+                            {(() => {
+                              const currentDraft = draftEdits[t.id]?.progress;
+                              const val = currentDraft !== undefined ? currentDraft : (t.progress || '');
+                              const parsed = parseFloat(val.toString().replace(/[^0-9.]/g, ''));
+                              const p = isNaN(parsed) ? 0 : Math.min(100, Math.max(0, parsed));
+                              
+                              return (
+                                <input 
+                                  className="table-cell-input font-mono"
+                                  style={{
+                                    width: '100%',
+                                    border: '1px solid transparent',
+                                    background: p > 0 ? `linear-gradient(to right, #dcfce7 ${p}%, transparent ${p}%)` : 'transparent',
+                                    fontWeight: '700',
+                                    textAlign: 'center'
+                                  }}
+                                  value={val}
+                                  onChange={(e) => handleCellChange(t.id, 'progress', e.target.value)}
+                                  onBlur={(e) => handleCellBlur(t, 'progress', e.target.value)}
+                                />
+                              );
+                            })()}
+                          </td>
+
+                          {/* Column 6: PIC */}
+                          <td>{renderCell(t, 'pic', '')}</td>
                         </tr>
                       ))}
                     </tbody>
