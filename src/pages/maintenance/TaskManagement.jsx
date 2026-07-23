@@ -760,7 +760,7 @@ export default function TaskManagement() {
                       <tr style={{ backgroundColor: '#fefce8' }}>
                         <th style={{ width: '70px', color: '#854d0e', fontWeight: '700' }}>Plan</th>
                         <th style={{ width: '80px', color: '#854d0e', fontWeight: '700' }}>Safety</th>
-                        <th style={{ width: '120px', color: '#854d0e', fontWeight: '700' }}>Section</th>
+                        <th style={{ width: '160px', color: '#854d0e', fontWeight: '700' }}>Section</th>
                         <th style={{ width: '120px', color: '#854d0e', fontWeight: '700' }}>Equipment</th>
                         <th style={{ width: '80px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Rank</th>
                         <th style={{ minWidth: '300px', color: '#854d0e', fontWeight: '700' }}>Task Name / Description</th>
@@ -888,7 +888,7 @@ export default function TaskManagement() {
                       <tr style={{ backgroundColor: '#f0fdf4' }}>
                         <th style={{ width: '70px', color: '#166534', fontWeight: '700' }}>Plan</th>
                         <th style={{ width: '80px', color: '#166534', fontWeight: '700' }}>Safety</th>
-                        <th style={{ width: '120px', color: '#166534', fontWeight: '700' }}>Section</th>
+                        <th style={{ width: '160px', color: '#166534', fontWeight: '700' }}>Section</th>
                         <th style={{ width: '120px', color: '#166534', fontWeight: '700' }}>Equipment</th>
                         <th style={{ width: '80px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Rank</th>
                         <th style={{ minWidth: '300px', color: '#166534', fontWeight: '700' }}>Task Name / Description</th>
