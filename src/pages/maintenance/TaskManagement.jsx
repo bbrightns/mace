@@ -74,6 +74,21 @@ const SECTION_SUGGESTIONS = [
   "Plant"
 ];
 
+const hasAnyContent = (t) => {
+  if (t.plantSection === 'SUBCONTRACTOR' || t.category === 'SUBCONTRACTOR') {
+    return !!(t.taskName?.trim() || t.pic?.trim() || t.location?.trim());
+  }
+  const checkString = (val) => typeof val === 'string' ? val.trim().length > 0 : !!val;
+  return !!(
+    t.section?.trim() || 
+    t.equipment?.trim() || 
+    t.taskName?.trim() || 
+    t.detail?.trim() || 
+    checkString(t.mechTechnicians) || 
+    checkString(t.elecTechnicians)
+  );
+};
+
 // Standalone SectionCell Component to strictly satisfy React Rules of Hooks
 function SectionCell({ task, draftEdits, handleCellChange, handleCellBlur }) {
   const field = 'section';
@@ -190,11 +205,7 @@ export default function TaskManagement() {
     try {
       const parsed = JSON.parse(localSaved);
       return parsed.filter(t => 
-        !(t.id?.startsWith('temp-') || t.id?.startsWith('local-')) || 
-        (t.plantSection === 'SUBCONTRACTOR' || t.category === 'SUBCONTRACTOR' ? 
-          (t.taskName?.trim() || t.pic?.trim() || t.location?.trim()) : 
-          (t.section?.trim() || t.equipment?.trim() || t.taskName?.trim() || t.detail?.trim() || t.mechTechnicians?.trim() || t.elecTechnicians?.trim())
-        )
+        !(t.id?.startsWith('temp-') || t.id?.startsWith('local-')) || hasAnyContent(t)
       );
     } catch (e) {
       return [];
@@ -214,11 +225,7 @@ export default function TaskManagement() {
   useEffect(() => {
     if (tasks) {
       const tasksToCache = tasks.filter(t => 
-        !(t.id?.startsWith('temp-') || t.id?.startsWith('local-')) || 
-        (t.plantSection === 'SUBCONTRACTOR' || t.category === 'SUBCONTRACTOR' ? 
-          (t.taskName?.trim() || t.pic?.trim() || t.location?.trim()) : 
-          (t.section?.trim() || t.equipment?.trim() || t.taskName?.trim() || t.detail?.trim() || t.mechTechnicians?.trim() || t.elecTechnicians?.trim())
-        )
+        !(t.id?.startsWith('temp-') || t.id?.startsWith('local-')) || hasAnyContent(t)
       );
       localStorage.setItem('mace_tasks_cache', JSON.stringify(tasksToCache));
     }
@@ -548,13 +555,8 @@ export default function TaskManagement() {
     }
   };
 
-  // Filter tasks for Daily View based on selectedDate
   const rawDailyTasks = tasks.filter(t => t.taskDate === selectedDate && (
-    t.id?.startsWith('temp-') || t.id?.startsWith('local-') || t.isTemp ||
-    (t.plantSection === 'SUBCONTRACTOR' || t.category === 'SUBCONTRACTOR' ? 
-      (t.taskName?.trim() || t.pic?.trim() || t.location?.trim()) : 
-      (t.section?.trim() || t.equipment?.trim() || t.taskName?.trim() || t.detail?.trim() || t.mechTechnicians?.trim() || t.elecTechnicians?.trim())
-    )
+    t.id?.startsWith('temp-') || t.id?.startsWith('local-') || t.isTemp || hasAnyContent(t)
   ) && (
     !searchQuery || 
     t.taskName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -873,8 +875,8 @@ export default function TaskManagement() {
                         <th style={{ minWidth: '300px', color: '#854d0e', fontWeight: '700' }}>Task Name / Description</th>
                         <th style={{ minWidth: '200px', color: '#854d0e', fontWeight: '700' }}>Detail</th>
                         <th style={{ width: '100px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Status</th>
-                        <th style={{ width: '120px', color: '#854d0e', fontWeight: '700' }}>Mech</th>
-                        <th style={{ width: '120px', color: '#854d0e', fontWeight: '700' }}>Elec</th>
+                        <th style={{ width: '60px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Mech</th>
+                        <th style={{ width: '60px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Elec</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -950,10 +952,32 @@ export default function TaskManagement() {
                             </td>
 
                             {/* Column 9: Mech */}
-                            <td>{renderCell(t, 'mechTechnicians', 'Mech techs')}</td>
+                            <td style={{ textAlign: 'center' }}>
+                              <input 
+                                type="checkbox"
+                                checked={!!(draftEdits[t.id]?.mechTechnicians !== undefined ? draftEdits[t.id]?.mechTechnicians : t.mechTechnicians)}
+                                onChange={(e) => {
+                                  const val = e.target.checked;
+                                  handleCellChange(t.id, 'mechTechnicians', val);
+                                  handleCellBlur(t, 'mechTechnicians', val);
+                                }}
+                                style={{ transform: 'scale(1.25)', cursor: 'pointer', margin: '4px auto', display: 'block' }}
+                              />
+                            </td>
 
                             {/* Column 10: Elec */}
-                            <td>{renderCell(t, 'elecTechnicians', 'Elec techs')}</td>
+                            <td style={{ textAlign: 'center' }}>
+                              <input 
+                                type="checkbox"
+                                checked={!!(draftEdits[t.id]?.elecTechnicians !== undefined ? draftEdits[t.id]?.elecTechnicians : t.elecTechnicians)}
+                                onChange={(e) => {
+                                  const val = e.target.checked;
+                                  handleCellChange(t.id, 'elecTechnicians', val);
+                                  handleCellBlur(t, 'elecTechnicians', val);
+                                }}
+                                style={{ transform: 'scale(1.25)', cursor: 'pointer', margin: '4px auto', display: 'block' }}
+                              />
+                            </td>
                           </tr>
                         );
                       })}
@@ -1001,8 +1025,8 @@ export default function TaskManagement() {
                         <th style={{ minWidth: '300px', color: '#166534', fontWeight: '700' }}>Task Name / Description</th>
                         <th style={{ minWidth: '200px', color: '#166534', fontWeight: '700' }}>Detail</th>
                         <th style={{ width: '100px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Status</th>
-                        <th style={{ width: '120px', color: '#166534', fontWeight: '700' }}>Mech</th>
-                        <th style={{ width: '120px', color: '#166534', fontWeight: '700' }}>Elec</th>
+                        <th style={{ width: '60px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Mech</th>
+                        <th style={{ width: '60px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Elec</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1078,10 +1102,32 @@ export default function TaskManagement() {
                             </td>
 
                             {/* Column 9: Mech */}
-                            <td>{renderCell(t, 'mechTechnicians', 'Mech techs')}</td>
+                            <td style={{ textAlign: 'center' }}>
+                              <input 
+                                type="checkbox"
+                                checked={!!(draftEdits[t.id]?.mechTechnicians !== undefined ? draftEdits[t.id]?.mechTechnicians : t.mechTechnicians)}
+                                onChange={(e) => {
+                                  const val = e.target.checked;
+                                  handleCellChange(t.id, 'mechTechnicians', val);
+                                  handleCellBlur(t, 'mechTechnicians', val);
+                                }}
+                                style={{ transform: 'scale(1.25)', cursor: 'pointer', margin: '4px auto', display: 'block' }}
+                              />
+                            </td>
 
                             {/* Column 10: Elec */}
-                            <td>{renderCell(t, 'elecTechnicians', 'Elec techs')}</td>
+                            <td style={{ textAlign: 'center' }}>
+                              <input 
+                                type="checkbox"
+                                checked={!!(draftEdits[t.id]?.elecTechnicians !== undefined ? draftEdits[t.id]?.elecTechnicians : t.elecTechnicians)}
+                                onChange={(e) => {
+                                  const val = e.target.checked;
+                                  handleCellChange(t.id, 'elecTechnicians', val);
+                                  handleCellBlur(t, 'elecTechnicians', val);
+                                }}
+                                style={{ transform: 'scale(1.25)', cursor: 'pointer', margin: '4px auto', display: 'block' }}
+                              />
+                            </td>
                           </tr>
                         );
                       })}
