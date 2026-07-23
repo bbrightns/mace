@@ -470,37 +470,51 @@ export default function TaskManagement() {
   const selectedDateObj = new Date(selectedDate);
   const formattedSelectedDateHeader = getFormattedHeaderDate(selectedDateObj);
 
-  // Helper to render editable text input cell
+  // Helper to render editable text input/textarea cell (Auto-expanding multiline)
   const renderCell = (task, field, placeholder = '', style = {}) => {
     const currentDraft = draftEdits[task.id]?.[field];
     const val = currentDraft !== undefined ? currentDraft : (task[field] || '');
     const isUrgent = (draftEdits[task.id]?.planType || task.planType || task.mtnType) === 'Urgent';
 
+    // Auto-adjust height based on content scrollHeight
+    const handleInput = (e) => {
+      e.target.style.height = 'auto';
+      e.target.style.height = `${Math.max(24, e.target.scrollHeight)}px`;
+    };
+
     return (
-      <input 
-        type="text"
+      <textarea 
         className="table-cell-input"
+        rows={1}
         value={val}
         placeholder={placeholder}
-        onChange={(e) => handleCellChange(task.id, field, e.target.value)}
+        onChange={(e) => {
+          handleCellChange(task.id, field, e.target.value);
+          handleInput(e);
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = 'var(--accent)';
+          e.target.style.background = 'var(--surface)';
+          handleInput(e);
+        }}
         onBlur={() => handleCellBlur(task, field)}
         style={{
           width: '100%',
           border: '1px solid transparent',
           background: 'transparent',
           padding: '2px 4px',
-          height: '24px',
+          minHeight: '24px',
           borderRadius: '4px',
           fontSize: '12px',
           fontFamily: 'inherit',
           color: isUrgent ? '#dc2626' : 'var(--text)',
           fontWeight: isUrgent ? '700' : 'normal',
           outline: 'none',
+          resize: 'none',
+          overflow: 'hidden',
+          lineHeight: '1.3',
+          display: 'block',
           ...style
-        }}
-        onFocus={(e) => {
-          e.target.style.borderColor = 'var(--accent)';
-          e.target.style.background = 'var(--surface)';
         }}
       />
     );
