@@ -79,8 +79,14 @@ export default function TaskManagement() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Daily View Date Selector (default to 2026-07-23)
-  const [selectedDate, setSelectedDate] = useState('2026-07-23');
+  // Daily View Date Selector (persisted in localStorage, default to today)
+  const [selectedDate, setSelectedDate] = useState(() => {
+    return localStorage.getItem('mace_task_selected_date') || new Date().toISOString().substring(0, 10);
+  });
+
+  useEffect(() => {
+    localStorage.setItem('mace_task_selected_date', selectedDate);
+  }, [selectedDate]);
 
   // Search filter
   const [searchQuery, setSearchQuery] = useState('');
