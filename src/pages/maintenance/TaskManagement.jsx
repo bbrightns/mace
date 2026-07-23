@@ -415,6 +415,7 @@ export default function TaskManagement() {
 
   // Delete Row with confirmation
   const handleDeleteRow = async (task) => {
+    const isLocalOnly = task.id.startsWith('temp-') || task.id.startsWith('local-');
     const hasContent = hasAnyContent(task) || (draftEdits[task.id] && Object.values(draftEdits[task.id]).some(val => typeof val === 'string' ? val.trim().length > 0 : !!val));
     
     if (task.id.startsWith('temp-') && !tasks.some(t => t.id === task.id)) {
@@ -429,11 +430,11 @@ export default function TaskManagement() {
       return;
     }
 
-    if (hasContent || !task.id.startsWith('temp-')) {
+    if (hasContent || !isLocalOnly) {
       if (!window.confirm('Are you sure you want to delete this row?')) return;
     }
 
-    if (!task.id.startsWith('temp-')) {
+    if (!isLocalOnly) {
       try {
         await deleteDocument('mace_tasks', task.id);
         setTasks(prev => prev.filter(t => t.id !== task.id));
