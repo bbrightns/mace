@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  Filter
+  Filter,
+  Save
 } from 'lucide-react';
 import { 
   subscribeCollection, 
@@ -42,41 +43,14 @@ export default function TaskManagement() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Daily View Date Selector (default to 2026-07-23 to match mockup, or current date)
-  const [selectedDate, setSelectedDate] = useState(() => '2026-07-23');
+  // Daily View Date Selector (default to 2026-07-23)
+  const [selectedDate, setSelectedDate] = useState('2026-07-23');
 
-  // Planning View Date Range / Search
-  const [planningSearch, setPlanningSearch] = useState('');
+  // Search filter
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Daily View Filter
-  const [dailySearch, setDailySearch] = useState('');
-
-  // Modal & Form State for Creating/Editing Task
-  const [isOpen, setIsOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState(null);
-
-  // Form Fields
-  const [plantSection, setPlantSection] = useState('RFG'); // 'RFG', 'MIR', 'SUBCONTRACTOR'
-  const [category, setCategory] = useState('MTN'); // 'MTN', 'PROD', 'SUBCONTRACTOR'
-  const [mtnType, setMtnType] = useState('Plan'); // Urgent, Plan, LOTO, etc.
-  const [refective, setRefective] = useState(''); // LOTO, Mirror, etc.
-  const [section, setSection] = useState(''); // Offline, Small temper, Section name
-  const [equipment, setEquipment] = useState(''); // Blower panel, Crane RFG no.10
-  const [rank, setRank] = useState('B'); // A, B, C
-  const [taskName, setTaskName] = useState(''); // Name / Description
-  const [detail, setDetail] = useState(''); // Detail / Action
-  const [status, setStatus] = useState('Pending'); // 'Finished', 'Postpone', 'In Process', 'Pending'
-  const [mechTechnicians, setMechTechnicians] = useState('');
-  const [elecTechnicians, setElecTechnicians] = useState('');
-  const [pic, setPic] = useState('');
-  const [taskDate, setTaskDate] = useState(() => '2026-07-23');
-  const [rfgRev, setRfgRev] = useState('CSS14'); // For Planning Status (MTN, STOP, CSS14, Maintenance, etc.)
-  const [mirRev, setMirRev] = useState('Prod'); // For Planning Status (Prod, MTN 2mm, STOP, etc.)
-  const [eeWorkSupp, setEeWorkSupp] = useState('');
-  const [eeWorkAft, setEeWorkAft] = useState('');
-  const [mechWorkSupp, setMechWorkSupp] = useState('');
-  const [mechWorkAft, setMechWorkAft] = useState('');
-  const [formError, setFormError] = useState('');
+  // Inline Editing Local Changes state { [taskId]: { field: value } }
+  const [draftEdits, setDraftEdits] = useState({});
 
   const { showToast } = useToast();
 
@@ -99,112 +73,96 @@ export default function TaskManagement() {
   const currentRfgStatus = currentPlanningRow?.rfgRev || 'MTN';
   const currentMirStatus = currentPlanningRow?.mirRev || 'Mirror';
 
-  const handleOpenAdd = () => {
-    setEditingTask(null);
-    setPlantSection('RFG');
-    setCategory('MTN');
-    setMtnType('Plan');
-    setRefective('');
-    setSection('');
-    setEquipment('');
-    setRank('B');
-    setTaskName('');
-    setDetail('');
-    setStatus('Pending');
-    setMechTechnicians('');
-    setElecTechnicians('');
-    setPic('');
-    setTaskDate(selectedDate || '2026-07-23');
-    setRfgRev('CSS14');
-    setMirRev('Prod');
-    setEeWorkSupp('');
-    setEeWorkAft('');
-    setMechWorkSupp('');
-    setMechWorkAft('');
-    setFormError('');
-    setIsOpen(true);
+  // Quick Inline Edit Cell Handler
+  const handleCellChange = (taskId, field, value) => {
+    setDraftEdits(prev => ({
+      ...prev,
+      [taskId]: {
+        ...(prev[taskId] || {}),
+        [field]: value
+      }
+    }));
   };
 
-  const handleOpenEdit = (task) => {
-    setEditingTask(task);
-    setPlantSection(task.plantSection || task.plant || 'RFG');
-    setCategory(task.category || 'MTN');
-    setMtnType(task.mtnType || 'Plan');
-    setRefective(task.refective || '');
-    setSection(task.section || '');
-    setEquipment(task.equipment || '');
-    setRank(task.rank || 'B');
-    setTaskName(task.taskName || task.name || '');
-    setDetail(task.detail || '');
-    setStatus(task.status || 'Pending');
-    setMechTechnicians(task.mechTechnicians || '');
-    setElecTechnicians(task.elecTechnicians || '');
-    setPic(task.pic || '');
-    setTaskDate(toInputDate(task.taskDate) || selectedDate);
-    setRfgRev(task.rfgRev || 'CSS14');
-    setMirRev(task.mirRev || 'Prod');
-    setEeWorkSupp(task.eeWorkSupp || '');
-    setEeWorkAft(task.eeWorkAft || '');
-    setMechWorkSupp(task.mechWorkSupp || '');
-    setMechWorkAft(task.mechWorkAft || '');
-    setFormError('');
-    setIsOpen(true);
-  };
+  // Blur/Save cell to Firestore automatically
+  const handleCellBlur = async (task, field) => {
+    const changes = draftEdits[task.id];
+    if (!changes || changes[field] === undefined) return;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormError('');
-
-    if (!taskName.trim() && !eeWorkAft.trim() && !mechWorkAft.trim()) {
-      setFormError('Task description or work details are required.');
-      return;
+    const newValue = changes[field];
+    try {
+      if (task.id.startsWith('temp-')) {
+        // Create new document if it's a temp row created inline
+        const payload = {
+          plantSection: task.plantSection,
+          category: task.category,
+          taskDate: selectedDate,
+          mtnType: field === 'mtnType' ? newValue : (task.mtnType || ''),
+          refective: field === 'refective' ? newValue : (task.refective || ''),
+          section: field === 'section' ? newValue : (task.section || ''),
+          equipment: field === 'equipment' ? newValue : (task.equipment || ''),
+          rank: field === 'rank' ? newValue : (task.rank || ''),
+          taskName: field === 'taskName' ? newValue : (task.taskName || ''),
+          detail: field === 'detail' ? newValue : (task.detail || ''),
+          status: field === 'status' ? newValue : (task.status || 'Pending'),
+          mechTechnicians: field === 'mechTechnicians' ? newValue : (task.mechTechnicians || ''),
+          elecTechnicians: field === 'elecTechnicians' ? newValue : (task.elecTechnicians || ''),
+          plant: field === 'plant' ? newValue : (task.plant || 'RFG'),
+          location: field === 'location' ? newValue : (task.location || ''),
+          pic: field === 'pic' ? newValue : (task.pic || '')
+        };
+        const newId = await createDocument('mace_tasks', payload);
+        // Clear temp draft
+        setDraftEdits(prev => {
+          const next = { ...prev };
+          delete next[task.id];
+          return next;
+        });
+        showToast('New row saved');
+      } else {
+        await updateDocument('mace_tasks', task.id, { [field]: newValue });
+        showToast('Cell updated');
+      }
+    } catch (e) {
+      showToast('Error saving cell', 'error');
     }
+  };
 
+  // Add Row directly to table
+  const handleAddNewRow = async (plantSection, category) => {
     const payload = {
       plantSection,
-      plant: plantSection,
       category,
-      mtnType,
-      refective: refective.trim(),
-      section: section.trim(),
-      equipment: equipment.trim(),
-      rank,
-      taskName: taskName.trim() || eeWorkAft.trim() || mechWorkAft.trim(),
-      detail: detail.trim(),
-      status,
-      mechTechnicians: mechTechnicians.trim(),
-      elecTechnicians: elecTechnicians.trim(),
-      pic: pic.trim(),
-      taskDate,
-      rfgRev,
-      mirRev,
-      eeWorkSupp: eeWorkSupp.trim(),
-      eeWorkAft: eeWorkAft.trim(),
-      mechWorkSupp: mechWorkSupp.trim(),
-      mechWorkAft: mechWorkAft.trim()
+      taskDate: selectedDate,
+      mtnType: plantSection === 'RFG' ? 'Plan' : '',
+      refective: '',
+      section: '',
+      equipment: '',
+      rank: 'B',
+      taskName: '',
+      detail: '',
+      status: 'Pending',
+      mechTechnicians: '',
+      elecTechnicians: '',
+      plant: plantSection === 'SUBCONTRACTOR' ? 'RFG' : plantSection,
+      location: '',
+      pic: ''
     };
-
     try {
-      if (editingTask) {
-        await updateDocument('mace_tasks', editingTask.id, payload);
-        showToast('Task updated successfully.');
-      } else {
-        await createDocument('mace_tasks', payload);
-        showToast('New task added successfully.');
-      }
-      setIsOpen(false);
-    } catch (err) {
-      showToast('Failed to save task.', 'error');
+      await createDocument('mace_tasks', payload);
+      showToast(`Added new ${plantSection} row`);
+    } catch (e) {
+      showToast('Failed to add row', 'error');
     }
   };
 
-  const handleDelete = async (id, name) => {
-    if (confirm(`Delete task "${name}"?`)) {
+  const handleDeleteTask = async (id, name) => {
+    if (confirm(`Delete task entry?`)) {
       try {
         await deleteDocument('mace_tasks', id);
-        showToast('Task deleted successfully.');
+        showToast('Task deleted successfully');
       } catch (err) {
-        showToast('Error deleting task.', 'error');
+        showToast('Error deleting task', 'error');
       }
     }
   };
@@ -567,32 +525,72 @@ export default function TaskManagement() {
   };
 
   // Filter tasks for Daily View based on selectedDate
-  const dailyTasks = tasks.filter(t => t.taskDate === selectedDate && (
-    !dailySearch || 
-    t.taskName?.toLowerCase().includes(dailySearch.toLowerCase()) ||
-    t.equipment?.toLowerCase().includes(dailySearch.toLowerCase()) ||
-    t.section?.toLowerCase().includes(dailySearch.toLowerCase())
+  const rawDailyTasks = tasks.filter(t => t.taskDate === selectedDate && (
+    !searchQuery || 
+    t.taskName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.equipment?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.section?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.eeWorkAft?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.mechWorkAft?.toLowerCase().includes(searchQuery.toLowerCase())
   ));
 
-  // Partition tasks into RFG, MIR, and SUBCONTRACTOR sections
-  const dailyRfgTasks = dailyTasks.filter(t => t.plantSection === 'RFG' || (!t.plantSection && (t.taskName?.startsWith('RFG') || t.plant === 'RFG' || t.category === 'MTN')));
-  const dailyMirTasks = dailyTasks.filter(t => t.plantSection === 'MIR' || (!t.plantSection && (t.taskName?.startsWith('MIR') || t.plant === 'MIR' || t.category === 'PROD')));
-  const dailySubcontractorTasks = dailyTasks.filter(t => t.plantSection === 'SUBCONTRACTOR' || t.category === 'SUBCONTRACTOR');
+  // Extract tasks or planning details for selected date
+  const planningTasksForDate = useMemo(() => {
+    return tasks.filter(t => t.taskDate === selectedDate && (t.eeWorkAft || t.mechWorkAft || t.eeWorkSupp || t.mechWorkSupp));
+  }, [tasks, selectedDate]);
 
-  // Filter tasks for Planning View (pull all items that have a taskDate or planning content)
+  // Partition tasks into RFG, MIR, and SUBCONTRACTOR sections
+  const existingRfgTasks = rawDailyTasks.filter(t => t.plantSection === 'RFG' || (!t.plantSection && (t.taskName?.startsWith('RFG') || t.plant === 'RFG' || t.category === 'MTN')));
+  const existingMirTasks = rawDailyTasks.filter(t => t.plantSection === 'MIR' || (!t.plantSection && (t.taskName?.startsWith('MIR') || t.plant === 'MIR' || t.category === 'PROD')));
+  const existingSubTasks = rawDailyTasks.filter(t => t.plantSection === 'SUBCONTRACTOR' || t.category === 'SUBCONTRACTOR');
+
+  // Fill up minimum rows: RFG (min 4), MIR (min 4), SUBCONTRACTOR (min 2)
+  const getPaddedRows = (existing, minCount, plantSection, category) => {
+    const list = [...existing];
+    const missing = minCount - list.length;
+    for (let i = 0; i < missing; i++) {
+      list.push({
+        id: `temp-${plantSection}-${i}`,
+        plantSection,
+        category,
+        taskDate: selectedDate,
+        mtnType: plantSection === 'RFG' ? 'Plan' : '',
+        refective: '',
+        section: '',
+        equipment: '',
+        rank: '',
+        taskName: '',
+        detail: '',
+        status: 'Pending',
+        mechTechnicians: '',
+        elecTechnicians: '',
+        plant: plantSection === 'SUBCONTRACTOR' ? 'RFG' : plantSection,
+        location: '',
+        pic: '',
+        isTemp: true
+      });
+    }
+    return list;
+  };
+
+  const dailyRfgRows = useMemo(() => getPaddedRows(existingRfgTasks, 4, 'RFG', 'MTN'), [existingRfgTasks, selectedDate]);
+  const dailyMirRows = useMemo(() => getPaddedRows(existingMirTasks, 4, 'MIR', 'PROD'), [existingMirTasks, selectedDate]);
+  const dailySubRows = useMemo(() => getPaddedRows(existingSubTasks, 2, 'SUBCONTRACTOR', 'SUBCONTRACTOR'), [existingSubTasks, selectedDate]);
+
+  // Filter tasks for Planning View
   const planningTasks = useMemo(() => {
     return tasks.filter(t => {
       if (!t.taskDate) return false;
-      const matchesSearch = !planningSearch || 
-        t.taskName?.toLowerCase().includes(planningSearch.toLowerCase()) ||
-        t.eeWorkAft?.toLowerCase().includes(planningSearch.toLowerCase()) ||
-        t.mechWorkAft?.toLowerCase().includes(planningSearch.toLowerCase()) ||
-        t.rfgRev?.toLowerCase().includes(planningSearch.toLowerCase()) ||
-        t.mirRev?.toLowerCase().includes(planningSearch.toLowerCase()) ||
-        t.taskDate?.toLowerCase().includes(planningSearch.toLowerCase());
+      const matchesSearch = !searchQuery || 
+        t.taskName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.eeWorkAft?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.mechWorkAft?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.rfgRev?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.mirRev?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.taskDate?.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesSearch;
     }).sort((a, b) => new Date(a.taskDate || 0) - new Date(b.taskDate || 0));
-  }, [tasks, planningSearch]);
+  }, [tasks, searchQuery]);
 
   // Change selected date
   const changeDateByDays = (days) => {
@@ -603,6 +601,39 @@ export default function TaskManagement() {
 
   const selectedDateObj = new Date(selectedDate);
   const formattedSelectedDateHeader = getFormattedHeaderDate(selectedDateObj);
+
+  // Helper to render editable cell
+  const renderCell = (task, field, placeholder = '', style = {}) => {
+    const currentDraft = draftEdits[task.id]?.[field];
+    const val = currentDraft !== undefined ? currentDraft : (task[field] || '');
+
+    return (
+      <input 
+        type="text"
+        className="table-cell-input"
+        value={val}
+        placeholder={placeholder}
+        onChange={(e) => handleCellChange(task.id, field, e.target.value)}
+        onBlur={() => handleCellBlur(task, field)}
+        style={{
+          width: '100%',
+          border: '1px solid transparent',
+          background: 'transparent',
+          padding: '4px 6px',
+          borderRadius: '4px',
+          fontSize: '12.5px',
+          fontFamily: 'inherit',
+          color: 'var(--text)',
+          outline: 'none',
+          ...style
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = 'var(--accent)';
+          e.target.style.background = 'var(--surface)';
+        }}
+      />
+    );
+  };
 
   return (
     <div className="workspace-container">
@@ -616,26 +647,22 @@ export default function TaskManagement() {
                 Seed Sample Data
               </button>
             )}
-            <button className="btn btn-primary" onClick={handleOpenAdd} id="add-task-btn">
-              <Plus size={16} />
-              <span>New Task Entry</span>
-            </button>
           </div>
         }
         id="task-mgmt-header"
       />
 
-      {/* Tabs navigation for Daily View vs Planning View */}
+      {/* Tabs navigation & Top Controls Bar */}
       <div style={{ 
         display: 'flex', 
         justify: 'space-between', 
         alignItems: 'center', 
         borderBottom: '1px solid var(--border)',
-        marginBottom: '20px',
+        marginBottom: '16px',
         gap: '12px',
         flexWrap: 'wrap'
       }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button 
             className={`btn ${activeView === 'daily' ? 'btn-primary' : ''}`}
             onClick={() => setActiveView('daily')}
@@ -676,6 +703,25 @@ export default function TaskManagement() {
         )}
       </div>
 
+      {/* TOP SEARCH BAR - Moved to top above Blue Date Banner as requested */}
+      <div className="card controls-bar" style={{ padding: '12px 16px', marginBottom: '16px' }}>
+        <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
+          <Search size={14} style={{ position: 'absolute', left: '12px', top: '11px', color: 'var(--text3)' }} />
+          <input 
+            type="text" 
+            placeholder="Search daily tasks, equipment, planning..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="form-input"
+            style={{ paddingLeft: '34px', width: '100%' }}
+            id="task-mgmt-top-search"
+          />
+        </div>
+        <div className="font-mono text3" style={{ fontSize: '12.5px' }}>
+          {activeView === 'daily' ? `Total ${rawDailyTasks.length} tasks scheduled for ${selectedDate}` : `${planningTasks.length} planning rows`}
+        </div>
+      </div>
+
       {/* VIEW 1: DAILY TASK VIEW */}
       {activeView === 'daily' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -695,30 +741,34 @@ export default function TaskManagement() {
             {formattedSelectedDateHeader}
           </div>
 
-          {/* Controls / Filter Bar */}
-          <div className="card controls-bar" style={{ padding: '12px 16px' }}>
-            <div style={{ position: 'relative', width: '260px' }}>
-              <Search size={14} style={{ position: 'absolute', left: '10px', top: '11px', color: 'var(--text3)' }} />
-              <input 
-                type="text" 
-                placeholder="Search daily tasks, equipment..." 
-                value={dailySearch}
-                onChange={(e) => setDailySearch(e.target.value)}
-                className="form-input"
-                style={{ paddingLeft: '32px', width: '100%' }}
-              />
+          {/* Planning Tasks pull alert for this date if present */}
+          {planningTasksForDate.length > 0 && (
+            <div style={{ 
+              backgroundColor: '#eff6ff', 
+              border: '1px solid #bfdbfe', 
+              borderRadius: '8px', 
+              padding: '12px 16px', 
+              color: '#1e40af', 
+              fontSize: '13px' 
+            }}>
+              <strong style={{ display: 'block', marginBottom: '4px' }}>📋 Planning tasks auto-pulled for {selectedDate}:</strong>
+              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                {planningTasksForDate.map((pt, idx) => (
+                  <li key={idx}>
+                    {pt.eeWorkAft && <span><strong>EE:</strong> {pt.eeWorkAft} </span>}
+                    {pt.mechWorkAft && <span><strong>MECH:</strong> {pt.mechWorkAft}</span>}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="font-mono text3" style={{ fontSize: '12.5px' }}>
-              Total {dailyTasks.length} tasks scheduled for {selectedDate}
-            </div>
-          </div>
+          )}
 
           {loading ? (
             <div className="skeleton-row" style={{ height: '200px' }}></div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
-              {/* SECTION 1: RFG BLOCK TABLE */}
+              {/* SECTION 1: RFG BLOCK TABLE (Min 4 rows) */}
               <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#fef08a', 
@@ -737,7 +787,12 @@ export default function TaskManagement() {
                       Status: {currentRfgStatus}
                     </span>
                   </div>
-                  <span className="font-mono" style={{ fontSize: '12px' }}>{dailyRfgTasks.length} items</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span className="font-mono" style={{ fontSize: '12px' }}>{existingRfgTasks.length} items</span>
+                    <button className="btn btn-sm" style={{ backgroundColor: '#ffffff', color: '#854d0e', border: '1px solid #fde047', fontWeight: '600' }} onClick={() => handleAddNewRow('RFG', 'MTN')}>
+                      <Plus size={12} /> Add Row
+                    </button>
+                  </div>
                 </div>
 
                 <div className="table-container" style={{ margin: 0, borderRadius: 0, border: 'none' }}>
@@ -754,58 +809,49 @@ export default function TaskManagement() {
                         <th style={{ width: '90px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Status</th>
                         <th style={{ width: '160px', color: '#854d0e', fontWeight: '700' }}>Mech</th>
                         <th style={{ width: '160px', color: '#854d0e', fontWeight: '700' }}>Elec</th>
-                        <th style={{ width: '80px', textAlign: 'right' }}>Actions</th>
+                        <th style={{ width: '60px', textAlign: 'right' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {dailyRfgTasks.length === 0 ? (
-                        <tr>
-                          <td colSpan="11" style={{ textAlign: 'center', padding: '24px', color: 'var(--text3)' }}>
-                            No RFG tasks scheduled for this date.
+                      {dailyRfgRows.map((t, idx) => (
+                        <tr key={t.id}>
+                          <td>{renderCell(t, 'mtnType', 'Plan', { fontWeight: '700', color: t.mtnType === 'Urgent' ? '#dc2626' : 'var(--text)' })}</td>
+                          <td>{renderCell(t, 'refective', 'LOTO', { color: t.refective === 'LOTO' ? '#dc2626' : 'var(--text)', fontWeight: '600' })}</td>
+                          <td>{renderCell(t, 'section', 'Offline')}</td>
+                          <td>{renderCell(t, 'equipment', 'Equipment', { fontWeight: '600' })}</td>
+                          <td style={{ textAlign: 'center' }}>{renderCell(t, 'rank', 'B', { textAlign: 'center', fontWeight: '700' })}</td>
+                          <td>{renderCell(t, 'taskName', 'Click to add task name...', { fontWeight: '600', color: t.mtnType === 'Urgent' ? '#dc2626' : 'var(--text)' })}</td>
+                          <td>{renderCell(t, 'detail', 'Detail...')}</td>
+                          <td style={{ textAlign: 'center' }}>
+                            <select 
+                              className="form-select font-mono" 
+                              style={{ padding: '2px 4px', fontSize: '11px', height: '26px' }}
+                              value={t.status || 'Pending'} 
+                              onChange={(e) => handleCellBlur(t, 'status', e.target.value)}
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Finished">Finished</option>
+                              <option value="Postpone">Postpone</option>
+                              <option value="In Process">In Process</option>
+                            </select>
+                          </td>
+                          <td>{renderCell(t, 'mechTechnicians', 'Mech techs')}</td>
+                          <td>{renderCell(t, 'elecTechnicians', 'Elec techs')}</td>
+                          <td style={{ textAlign: 'right' }}>
+                            {!t.isTemp && (
+                              <button className="btn btn-sm btn-danger" style={{ padding: '4px 6px' }} onClick={() => handleDeleteTask(t.id, t.taskName)}>
+                                <Trash2 size={12} />
+                              </button>
+                            )}
                           </td>
                         </tr>
-                      ) : (
-                        dailyRfgTasks.map((t) => (
-                          <tr key={t.id}>
-                            <td style={{ fontWeight: '700', color: t.mtnType === 'Urgent' ? '#dc2626' : 'var(--text)' }}>
-                              {t.mtnType}
-                            </td>
-                            <td style={{ color: t.refective === 'LOTO' ? '#dc2626' : 'var(--text)', fontWeight: '600' }}>
-                              {t.refective}
-                            </td>
-                            <td style={{ color: t.section === 'Offline' ? '#dc2626' : 'var(--text)' }}>
-                              {t.section}
-                            </td>
-                            <td style={{ fontWeight: '600' }}>{t.equipment}</td>
-                            <td style={{ textAlign: 'center', fontWeight: '700' }}>{t.rank}</td>
-                            <td style={{ fontWeight: '600', color: t.mtnType === 'Urgent' ? '#dc2626' : 'var(--text)' }}>
-                              {t.taskName}
-                            </td>
-                            <td style={{ fontSize: '12px' }}>{t.detail}</td>
-                            <td style={{ textAlign: 'center' }}>
-                              <StatusBadge status={t.status} />
-                            </td>
-                            <td style={{ fontSize: '12px' }}>{t.mechTechnicians}</td>
-                            <td style={{ fontSize: '12px' }}>{t.elecTechnicians}</td>
-                            <td style={{ textAlign: 'right' }}>
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
-                                <button className="btn btn-sm" onClick={() => handleOpenEdit(t)}>
-                                  <Edit2 size={12} />
-                                </button>
-                                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(t.id, t.taskName)}>
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
+                      ))}
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              {/* SECTION 2: MIR BLOCK TABLE */}
+              {/* SECTION 2: MIR BLOCK TABLE (Min 4 rows) */}
               <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#bbf7d0', 
@@ -824,7 +870,12 @@ export default function TaskManagement() {
                       Status: {currentMirStatus}
                     </span>
                   </div>
-                  <span className="font-mono" style={{ fontSize: '12px' }}>{dailyMirTasks.length} items</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span className="font-mono" style={{ fontSize: '12px' }}>{existingMirTasks.length} items</span>
+                    <button className="btn btn-sm" style={{ backgroundColor: '#ffffff', color: '#166534', border: '1px solid #86efac', fontWeight: '600' }} onClick={() => handleAddNewRow('MIR', 'PROD')}>
+                      <Plus size={12} /> Add Row
+                    </button>
+                  </div>
                 </div>
 
                 <div className="table-container" style={{ margin: 0, borderRadius: 0, border: 'none' }}>
@@ -841,50 +892,49 @@ export default function TaskManagement() {
                         <th style={{ width: '90px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Status</th>
                         <th style={{ width: '160px', color: '#166534', fontWeight: '700' }}>Mech</th>
                         <th style={{ width: '160px', color: '#166534', fontWeight: '700' }}>Elec</th>
-                        <th style={{ width: '80px', textAlign: 'right' }}>Actions</th>
+                        <th style={{ width: '60px', textAlign: 'right' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {dailyMirTasks.length === 0 ? (
-                        <tr>
-                          <td colSpan="11" style={{ textAlign: 'center', padding: '24px', color: 'var(--text3)' }}>
-                            No MIR tasks scheduled for this date.
+                      {dailyMirRows.map((t, idx) => (
+                        <tr key={t.id}>
+                          <td>{renderCell(t, 'mtnType', 'PROD', { fontWeight: '700', color: '#166534' })}</td>
+                          <td>{renderCell(t, 'refective', 'Mirror', { color: '#166534', fontWeight: '600' })}</td>
+                          <td>{renderCell(t, 'section', 'Section')}</td>
+                          <td>{renderCell(t, 'equipment', 'Equipment', { fontWeight: '600' })}</td>
+                          <td style={{ textAlign: 'center' }}>{renderCell(t, 'rank', 'B', { textAlign: 'center', fontWeight: '700' })}</td>
+                          <td>{renderCell(t, 'taskName', 'Click to add task name...', { fontWeight: '600' })}</td>
+                          <td>{renderCell(t, 'detail', 'Detail...')}</td>
+                          <td style={{ textAlign: 'center' }}>
+                            <select 
+                              className="form-select font-mono" 
+                              style={{ padding: '2px 4px', fontSize: '11px', height: '26px' }}
+                              value={t.status || 'Pending'} 
+                              onChange={(e) => handleCellBlur(t, 'status', e.target.value)}
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Finished">Finished</option>
+                              <option value="Postpone">Postpone</option>
+                              <option value="In Process">In Process</option>
+                            </select>
+                          </td>
+                          <td>{renderCell(t, 'mechTechnicians', 'Mech techs')}</td>
+                          <td>{renderCell(t, 'elecTechnicians', 'Elec techs')}</td>
+                          <td style={{ textAlign: 'right' }}>
+                            {!t.isTemp && (
+                              <button className="btn btn-sm btn-danger" style={{ padding: '4px 6px' }} onClick={() => handleDeleteTask(t.id, t.taskName)}>
+                                <Trash2 size={12} />
+                              </button>
+                            )}
                           </td>
                         </tr>
-                      ) : (
-                        dailyMirTasks.map((t) => (
-                          <tr key={t.id}>
-                            <td style={{ fontWeight: '700', color: '#166534' }}>{t.mtnType || 'PROD'}</td>
-                            <td style={{ color: '#166534', fontWeight: '600' }}>{t.refective || 'Mirror'}</td>
-                            <td>{t.section}</td>
-                            <td style={{ fontWeight: '600' }}>{t.equipment}</td>
-                            <td style={{ textAlign: 'center', fontWeight: '700' }}>{t.rank}</td>
-                            <td style={{ fontWeight: '600' }}>{t.taskName}</td>
-                            <td style={{ fontSize: '12px' }}>{t.detail}</td>
-                            <td style={{ textAlign: 'center' }}>
-                              <StatusBadge status={t.status} />
-                            </td>
-                            <td style={{ fontSize: '12px' }}>{t.mechTechnicians}</td>
-                            <td style={{ fontSize: '12px' }}>{t.elecTechnicians}</td>
-                            <td style={{ textAlign: 'right' }}>
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
-                                <button className="btn btn-sm" onClick={() => handleOpenEdit(t)}>
-                                  <Edit2 size={12} />
-                                </button>
-                                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(t.id, t.taskName)}>
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
+                      ))}
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              {/* SECTION 3: SUBCONTRACTOR BLOCK TABLE */}
+              {/* SECTION 3: SUBCONTRACTOR BLOCK TABLE (Min 2 rows) */}
               <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#bae6fd', 
@@ -898,7 +948,12 @@ export default function TaskManagement() {
                   borderBottom: '1px solid #7dd3fc'
                 }}>
                   <span>SUBCONTRACTOR</span>
-                  <span className="font-mono" style={{ fontSize: '12px' }}>{dailySubcontractorTasks.length} items</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span className="font-mono" style={{ fontSize: '12px' }}>{existingSubTasks.length} items</span>
+                    <button className="btn btn-sm" style={{ backgroundColor: '#ffffff', color: '#0369a1', border: '1px solid #7dd3fc', fontWeight: '600' }} onClick={() => handleAddNewRow('SUBCONTRACTOR', 'SUBCONTRACTOR')}>
+                      <Plus size={12} /> Add Row
+                    </button>
+                  </div>
                 </div>
 
                 <div className="table-container" style={{ margin: 0, borderRadius: 0, border: 'none' }}>
@@ -910,37 +965,26 @@ export default function TaskManagement() {
                         <th style={{ minWidth: '200px', color: '#0369a1', fontWeight: '700' }}>Name</th>
                         <th style={{ minWidth: '250px', color: '#0369a1', fontWeight: '700' }}>Detail</th>
                         <th style={{ width: '160px', color: '#0369a1', fontWeight: '700' }}>PIC</th>
-                        <th style={{ width: '80px', textAlign: 'right' }}>Actions</th>
+                        <th style={{ width: '60px', textAlign: 'right' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {dailySubcontractorTasks.length === 0 ? (
-                        <tr>
-                          <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: 'var(--text3)' }}>
-                            No Subcontractor tasks scheduled for this date.
+                      {dailySubRows.map((t, idx) => (
+                        <tr key={t.id}>
+                          <td>{renderCell(t, 'plant', 'RFG', { fontWeight: '700' })}</td>
+                          <td>{renderCell(t, 'location', 'Location')}</td>
+                          <td>{renderCell(t, 'taskName', 'Subcontractor name...')}</td>
+                          <td>{renderCell(t, 'detail', 'Detail...')}</td>
+                          <td>{renderCell(t, 'pic', 'PIC assignee')}</td>
+                          <td style={{ textAlign: 'right' }}>
+                            {!t.isTemp && (
+                              <button className="btn btn-sm btn-danger" style={{ padding: '4px 6px' }} onClick={() => handleDeleteTask(t.id, t.taskName)}>
+                                <Trash2 size={12} />
+                              </button>
+                            )}
                           </td>
                         </tr>
-                      ) : (
-                        dailySubcontractorTasks.map((t) => (
-                          <tr key={t.id}>
-                            <td style={{ fontWeight: '700' }}>{t.plant || 'RFG'}</td>
-                            <td>{t.section || t.location}</td>
-                            <td style={{ fontWeight: '600' }}>{t.taskName}</td>
-                            <td style={{ fontSize: '12px' }}>{t.detail}</td>
-                            <td style={{ fontSize: '12px' }}>{t.pic || t.elecTechnicians || t.mechTechnicians}</td>
-                            <td style={{ textAlign: 'right' }}>
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
-                                <button className="btn btn-sm" onClick={() => handleOpenEdit(t)}>
-                                  <Edit2 size={12} />
-                                </button>
-                                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(t.id, t.taskName)}>
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -955,24 +999,6 @@ export default function TaskManagement() {
       {activeView === 'planning' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          {/* Controls Bar */}
-          <div className="card controls-bar" style={{ padding: '12px 16px' }}>
-            <div style={{ position: 'relative', width: '260px' }}>
-              <Search size={14} style={{ position: 'absolute', left: '10px', top: '11px', color: 'var(--text3)' }} />
-              <input 
-                type="text" 
-                placeholder="Search planning schedule..." 
-                value={planningSearch}
-                onChange={(e) => setPlanningSearch(e.target.value)}
-                className="form-input"
-                style={{ paddingLeft: '32px', width: '100%' }}
-              />
-            </div>
-            <div className="font-mono text3" style={{ fontSize: '12.5px' }}>
-              Showing {planningTasks.length} planning schedule rows
-            </div>
-          </div>
-
           {/* Planning Matrix Table - Matching Excel Layout 2 */}
           <div className="table-container" style={{ margin: 0, overflowX: 'auto' }}>
             <table className="data-table font-mono" style={{ fontSize: '12px', borderCollapse: 'collapse' }}>
@@ -982,7 +1008,7 @@ export default function TaskManagement() {
                   <th colSpan="2" style={{ textAlign: 'center', backgroundColor: '#bfdbfe', color: '#1e3a8a', border: '1px solid #93c5fd' }}>LINE SCHEDULE</th>
                   <th colSpan="2" style={{ textAlign: 'center', backgroundColor: '#2563eb', color: '#ffffff', border: '1px solid #1d4ed8' }}>EE Work (Electrical)</th>
                   <th colSpan="2" style={{ textAlign: 'center', backgroundColor: '#ec4899', color: '#ffffff', border: '1px solid #db2777' }}>MECH Work (Mechanical)</th>
-                  <th rowSpan="2" style={{ width: '80px', textAlign: 'right', backgroundColor: '#e2e8f0', border: '1px solid #cbd5e1' }}>Actions</th>
+                  <th rowSpan="2" style={{ width: '60px', textAlign: 'right', backgroundColor: '#e2e8f0', border: '1px solid #cbd5e1' }}>Actions</th>
                 </tr>
                 <tr>
                   <th style={{ width: '90px', textAlign: 'center', backgroundColor: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' }}>RFG</th>
@@ -997,7 +1023,7 @@ export default function TaskManagement() {
                 {planningTasks.length === 0 ? (
                   <tr>
                     <td colSpan="8" style={{ textAlign: 'center', padding: '32px', color: 'var(--text3)' }}>
-                      No planning schedule records found. Click "New Task Entry" to add.
+                      No planning schedule records found.
                     </td>
                   </tr>
                 ) : (
@@ -1016,24 +1042,19 @@ export default function TaskManagement() {
                           {dateFormatted}
                         </td>
                         <td style={{ textAlign: 'center', backgroundColor: t.rfgRev === 'STOP' ? '#fca5a5' : t.rfgRev === 'Maintenance' ? '#fef08a' : '#e0f2fe', fontWeight: '600' }}>
-                          {t.rfgRev || (t.plantSection === 'RFG' ? 'CSS14' : '')}
+                          {renderCell(t, 'rfgRev', 'CSS14', { textAlign: 'center', fontWeight: '600' })}
                         </td>
                         <td style={{ textAlign: 'center', backgroundColor: t.mirRev === 'STOP' ? '#fca5a5' : t.mirRev?.includes('MTN') ? '#fef08a' : '#e0f2fe', fontWeight: '600' }}>
-                          {t.mirRev || (t.plantSection === 'MIR' ? 'Prod' : '')}
+                          {renderCell(t, 'mirRev', 'Prod', { textAlign: 'center', fontWeight: '600' })}
                         </td>
-                        <td style={{ color: '#2563eb', fontSize: '11.5px' }}>{t.eeWorkSupp}</td>
-                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>{t.eeWorkAft || t.taskName}</td>
-                        <td style={{ color: '#db2777', fontSize: '11.5px' }}>{t.mechWorkSupp}</td>
-                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>{t.mechWorkAft || t.detail}</td>
+                        <td style={{ color: '#2563eb', fontSize: '11.5px' }}>{renderCell(t, 'eeWorkSupp', 'Supp...')}</td>
+                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>{renderCell(t, 'eeWorkAft', 'EE work details...')}</td>
+                        <td style={{ color: '#db2777', fontSize: '11.5px' }}>{renderCell(t, 'mechWorkSupp', 'Supp...')}</td>
+                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>{renderCell(t, 'mechWorkAft', 'MECH work details...')}</td>
                         <td style={{ textAlign: 'right' }}>
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
-                            <button className="btn btn-sm" onClick={() => handleOpenEdit(t)}>
-                              <Edit2 size={12} />
-                            </button>
-                            <button className="btn btn-sm btn-danger" onClick={() => handleDelete(t.id, t.taskName)}>
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
+                          <button className="btn btn-sm btn-danger" style={{ padding: '4px 6px' }} onClick={() => handleDeleteTask(t.id, t.taskName)}>
+                            <Trash2 size={12} />
+                          </button>
                         </td>
                       </tr>
                     );
@@ -1044,200 +1065,6 @@ export default function TaskManagement() {
           </div>
         </div>
       )}
-
-      {/* Task Modal for Adding / Editing */}
-      <Modal 
-        isOpen={isOpen} 
-        onClose={() => setIsOpen(false)} 
-        title={editingTask ? 'Edit Task Entry' : 'New Task Entry'}
-        footerActions={
-          <>
-            <button className="btn" onClick={() => setIsOpen(false)}>Cancel</button>
-            <button className="btn btn-primary" onClick={handleSubmit}>
-              {editingTask ? 'Save Changes' : 'Create Task'}
-            </button>
-          </>
-        }
-      >
-        <form onSubmit={handleSubmit} className="form-grid">
-          {formError && (
-            <div className="form-full" style={{ padding: '8px 12px', background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '6px', color: 'var(--red)', fontSize: '12px' }}>
-              {formError}
-            </div>
-          )}
-
-          <div className="form-group">
-            <label className="form-label">Plant Block / Section *</label>
-            <select 
-              className="form-select" 
-              value={plantSection} 
-              onChange={(e) => setPlantSection(e.target.value)}
-            >
-              <option value="RFG">RFG Block</option>
-              <option value="MIR">MIR Block</option>
-              <option value="SUBCONTRACTOR">SUBCONTRACTOR</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Task Date *</label>
-            <input 
-              type="date" 
-              className="form-input font-mono" 
-              value={taskDate}
-              onChange={(e) => setTaskDate(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">RFG Line Status (Planning)</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="e.g. CSS14, MTN, STOP, Maintenance" 
-              value={rfgRev}
-              onChange={(e) => setRfgRev(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">MIR Line Status (Planning)</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="e.g. Prod, MTN 2mm, STOP" 
-              value={mirRev}
-              onChange={(e) => setMirRev(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">MTN Type / Tag</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="e.g. Urgent, Plan, PROD" 
-              value={mtnType}
-              onChange={(e) => setMtnType(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Refective</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="e.g. LOTO, Mirror" 
-              value={refective}
-              onChange={(e) => setRefective(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Section / Sub-location</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="e.g. Offline, Small temper" 
-              value={section}
-              onChange={(e) => setSection(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Equipment</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="e.g. Crane RFG no.10, Blower panel" 
-              value={equipment}
-              onChange={(e) => setEquipment(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Rank</label>
-            <select className="form-select" value={rank} onChange={(e) => setRank(e.target.value)}>
-              <option value="A">Rank A</option>
-              <option value="B">Rank B</option>
-              <option value="C">Rank C</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Status</label>
-            <select className="form-select" value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="Pending">Pending</option>
-              <option value="Finished">Finished</option>
-              <option value="Postpone">Postpone</option>
-              <option value="In Process">In Process</option>
-            </select>
-          </div>
-
-          <div className="form-group form-full">
-            <label className="form-label">Task Name / Main Description *</label>
-            <textarea 
-              className="form-textarea" 
-              placeholder="e.g. RFG - Check Crane RFG no.10 (Hoist ไม่สามารถ ขึ้น ลง ได้)" 
-              value={taskName}
-              onChange={(e) => setTaskName(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group form-full">
-            <label className="form-label">Task Detail / Action Log</label>
-            <textarea 
-              className="form-textarea" 
-              placeholder="e.g. ถอด PCB, ถอด Magnetic ออกมา cleaning หน้า contact" 
-              value={detail}
-              onChange={(e) => setDetail(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Mechanical Techs (Mech)</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="e.g. วานิช, บุญวัง, จิรายุ" 
-              value={mechTechnicians}
-              onChange={(e) => setMechTechnicians(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Electrical Techs (Elec)</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="e.g. เริงฤทธิ์, จิราวุธ, ธวัชชัย" 
-              value={elecTechnicians}
-              onChange={(e) => setElecTechnicians(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group form-full">
-            <label className="form-label">Electrical Work Detail (EE Work AFT)</label>
-            <textarea 
-              className="form-textarea" 
-              placeholder="Detail for Planning view EE column" 
-              value={eeWorkAft}
-              onChange={(e) => setEeWorkAft(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group form-full">
-            <label className="form-label">Mechanical Work Detail (MECH Work AFT)</label>
-            <textarea 
-              className="form-textarea" 
-              placeholder="Detail for Planning view MECH column" 
-              value={mechWorkAft}
-              onChange={(e) => setMechWorkAft(e.target.value)}
-            />
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }
