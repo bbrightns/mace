@@ -579,16 +579,20 @@ export default function TaskManagement() {
   const dailyMirTasks = dailyTasks.filter(t => t.plantSection === 'MIR' || (!t.plantSection && (t.taskName?.startsWith('MIR') || t.plant === 'MIR' || t.category === 'PROD')));
   const dailySubcontractorTasks = dailyTasks.filter(t => t.plantSection === 'SUBCONTRACTOR' || t.category === 'SUBCONTRACTOR');
 
-  // Filter tasks for Planning View
-  const planningTasks = tasks.filter(t => {
-    const matchesSearch = !planningSearch || 
-      t.taskName?.toLowerCase().includes(planningSearch.toLowerCase()) ||
-      t.eeWorkAft?.toLowerCase().includes(planningSearch.toLowerCase()) ||
-      t.mechWorkAft?.toLowerCase().includes(planningSearch.toLowerCase()) ||
-      t.rfgRev?.toLowerCase().includes(planningSearch.toLowerCase()) ||
-      t.mirRev?.toLowerCase().includes(planningSearch.toLowerCase());
-    return matchesSearch;
-  }).sort((a, b) => new Date(a.taskDate || 0) - new Date(b.taskDate || 0));
+  // Filter tasks for Planning View (pull all items that have a taskDate or planning content)
+  const planningTasks = useMemo(() => {
+    return tasks.filter(t => {
+      if (!t.taskDate) return false;
+      const matchesSearch = !planningSearch || 
+        t.taskName?.toLowerCase().includes(planningSearch.toLowerCase()) ||
+        t.eeWorkAft?.toLowerCase().includes(planningSearch.toLowerCase()) ||
+        t.mechWorkAft?.toLowerCase().includes(planningSearch.toLowerCase()) ||
+        t.rfgRev?.toLowerCase().includes(planningSearch.toLowerCase()) ||
+        t.mirRev?.toLowerCase().includes(planningSearch.toLowerCase()) ||
+        t.taskDate?.toLowerCase().includes(planningSearch.toLowerCase());
+      return matchesSearch;
+    }).sort((a, b) => new Date(a.taskDate || 0) - new Date(b.taskDate || 0));
+  }, [tasks, planningSearch]);
 
   // Change selected date
   const changeDateByDays = (days) => {
@@ -699,7 +703,7 @@ export default function TaskManagement() {
                 type="text" 
                 placeholder="Search daily tasks, equipment..." 
                 value={dailySearch}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => setDailySearch(e.target.value)}
                 className="form-input"
                 style={{ paddingLeft: '32px', width: '100%' }}
               />
