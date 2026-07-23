@@ -623,6 +623,40 @@ export default function TaskManagement() {
   const [dailySearchQuery, setDailySearchQuery] = useState('');
   const [planningSearchQuery, setPlanningSearchQuery] = useState('');
 
+  // Planning Matrix date range state (default: Today-7 to Today+30)
+  const getDefaultPlanningStart = () => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().substring(0, 10);
+  };
+  const getDefaultPlanningEnd = () => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().substring(0, 10);
+  };
+  const [planningRangeStart, setPlanningRangeStart] = useState(getDefaultPlanningStart);
+  const [planningRangeEnd, setPlanningRangeEnd] = useState(getDefaultPlanningEnd);
+
+  const shiftPlanningRange = (days) => {
+    setPlanningRangeStart(prev => {
+      const d = new Date(prev + 'T00:00:00');
+      d.setDate(d.getDate() + days);
+      return d.toISOString().substring(0, 10);
+    });
+    setPlanningRangeEnd(prev => {
+      const d = new Date(prev + 'T00:00:00');
+      d.setDate(d.getDate() + days);
+      return d.toISOString().substring(0, 10);
+    });
+  };
+
+  const resetPlanningRange = () => {
+    setPlanningRangeStart(getDefaultPlanningStart());
+    setPlanningRangeEnd(getDefaultPlanningEnd());
+  };
+
   // Inline Editing Local Changes state { [taskId]: { field: value } }
   const [draftEdits, setDraftEdits] = useState({});
 
@@ -1126,7 +1160,7 @@ export default function TaskManagement() {
   const dailyMirRows = useMemo(() => getPaddedRows(existingMirTasks, dailySearchQuery ? 0 : mirMinCount, 'MIR', 'PROD'), [existingMirTasks, mirMinCount, selectedDate, dailySearchQuery]);
   const dailySubRows = useMemo(() => getPaddedRows(existingSubTasks, dailySearchQuery ? 0 : subMinCount, 'SUBCONTRACTOR', 'SUBCONTRACTOR'), [existingSubTasks, subMinCount, selectedDate, dailySearchQuery]);
 
-  // Generate 37-day rolling window: Today-7 days to Today+30 days
+  // Generate date range rows for Planning Matrix (controlled by planningRangeStart/End)
   const planningTasks = useMemo(() => {
     // Map existing tasks by date for fast lookup
     const taskMap = new Map();
@@ -1139,15 +1173,8 @@ export default function TaskManagement() {
     });
 
     const rows = [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - 7); // 7 days before today
-
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + 30); // 30 days after today
-
+    const startDate = new Date(planningRangeStart + 'T00:00:00');
+    const endDate = new Date(planningRangeEnd + 'T00:00:00');
     const current = new Date(startDate);
 
     while (current <= endDate) {
@@ -1199,7 +1226,7 @@ export default function TaskManagement() {
     }
 
     return rows;
-  }, [tasks, planningSearchQuery]);
+  }, [tasks, planningRangeStart, planningRangeEnd, planningSearchQuery]);
 
   // Change selected date
   const changeDateByDays = (days) => {
@@ -1323,7 +1350,7 @@ export default function TaskManagement() {
             </div>
           </>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto', flexWrap: 'wrap' }}>
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -1332,6 +1359,61 @@ export default function TaskManagement() {
               style={{ display: 'none' }} 
               id="plan-csv-file-input"
             />
+
+            {/* ← shift back 7 days */}
+            <button
+              className="btn btn-sm"
+              onClick={() => shiftPlanningRange(-7)}
+              title="Shift view back 7 days"
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', padding: '5px 9px' }}
+              id="btn-plan-prev"
+            >
+              <ChevronLeft size={14} /> 7d
+            </button>
+
+            {/* From date picker */}
+            <input
+              type="date"
+              className="form-input font-mono"
+              value={planningRangeStart}
+              onChange={(e) => e.target.value && setPlanningRangeStart(e.target.value)}
+              style={{ width: '135px', padding: '4px 6px', fontSize: '12px' }}
+              id="plan-range-start"
+              title="Range start date"
+            />
+            <span style={{ fontSize: '12px', color: 'var(--text3)', flexShrink: 0 }}>→</span>
+            {/* To date picker */}
+            <input
+              type="date"
+              className="form-input font-mono"
+              value={planningRangeEnd}
+              onChange={(e) => e.target.value && setPlanningRangeEnd(e.target.value)}
+              style={{ width: '135px', padding: '4px 6px', fontSize: '12px' }}
+              id="plan-range-end"
+              title="Range end date"
+            />
+
+            {/* → shift forward 7 days */}
+            <button
+              className="btn btn-sm"
+              onClick={() => shiftPlanningRange(7)}
+              title="Shift view forward 7 days"
+              style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', padding: '5px 9px' }}
+              id="btn-plan-next"
+            >
+              7d <ChevronRight size={14} />
+            </button>
+
+            {/* Reset to default range */}
+            <button
+              className="btn btn-sm"
+              onClick={resetPlanningRange}
+              title="Reset to default (Today −7 / +30)"
+              style={{ fontSize: '12px', padding: '5px 9px', whiteSpace: 'nowrap' }}
+              id="btn-plan-reset"
+            >
+              ↺ Today
+            </button>
 
             <button 
               className="btn btn-sm" 
@@ -1351,11 +1433,12 @@ export default function TaskManagement() {
             >
               <Download size={14} /> Export Plan
             </button>
-            <div style={{ position: 'relative', width: '250px' }}>
+
+            <div style={{ position: 'relative', width: '180px' }}>
               <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
               <input 
                 type="text" 
-                placeholder="Search planning schedule..." 
+                placeholder="Search..."
                 value={planningSearchQuery}
                 onChange={(e) => setPlanningSearchQuery(e.target.value)}
                 className="form-input"
