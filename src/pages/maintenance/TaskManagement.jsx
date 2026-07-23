@@ -339,11 +339,30 @@ export default function TaskManagement() {
           return next;
         });
       } else {
-        try {
-          await updateDocument('mace_tasks', task.id, { [field]: newValue });
-        } catch (err) {
-          // Local fallback update
-          setTasks(prev => prev.map(t => t.id === task.id ? { ...t, [field]: newValue } : t));
+        const updatedTask = {
+          ...task,
+          ...changes,
+          [field]: newValue
+        };
+        if (!hasAnyContent(updatedTask)) {
+          try {
+            await deleteDocument('mace_tasks', task.id);
+            setTasks(prev => prev.filter(t => t.id !== task.id));
+            setDraftEdits(prev => {
+              const next = { ...prev };
+              delete next[task.id];
+              return next;
+            });
+          } catch (err) {
+            console.error('Delete empty task error:', err);
+          }
+        } else {
+          try {
+            await updateDocument('mace_tasks', task.id, { [field]: newValue });
+          } catch (err) {
+            // Local fallback update
+            setTasks(prev => prev.map(t => t.id === task.id ? { ...t, [field]: newValue } : t));
+          }
         }
       }
     } catch (e) {
