@@ -64,7 +64,7 @@ function MainApp() {
   const [pmPlans, setPmPlans] = useState([]);
   const [pmLogs, setPmLogs] = useState([]);
   const [longTermPlans, setLongTermPlans] = useState([]);
-  const [vosfItems, setVosfItems] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [troubleRecords, setTroubleRecords] = useState([]);
   const [purchasingItems, setPurchasingItems] = useState([]);
   const [projectRequests, setProjectRequests] = useState([]);
@@ -88,8 +88,8 @@ function MainApp() {
       setLongTermPlans(data);
     }, () => {});
 
-    const unsub3 = subscribeCollection('mace_vosf', (data) => {
-      setVosfItems(data);
+    const unsub3 = subscribeCollection('mace_tasks', (data) => {
+      setTasks(data);
     }, () => {});
 
     const unsub4 = subscribeCollection('mace_trouble_records', (data) => {
@@ -142,7 +142,7 @@ function MainApp() {
             pmPlans={pmPlans}
             pmLogs={pmLogs}
             longTermPlans={longTermPlans}
-            vosfItems={vosfItems}
+            vosfItems={tasks}
             troubleRecords={troubleRecords}
             purchasingItems={purchasingItems}
             projectRequests={projectRequests}

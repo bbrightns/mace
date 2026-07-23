@@ -39,5 +39,8 @@ service cloud.firestore {
     match /mace_pm_logs/{id} {
       allow read, write: if true;
     }
+    match /mace_tasks/{id} {
+      allow read, write: if true;
+    }
   }
 }
