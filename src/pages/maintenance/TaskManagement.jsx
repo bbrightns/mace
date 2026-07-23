@@ -689,7 +689,7 @@ export default function TaskManagement() {
                       Status: {currentRfgStatus}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
                     <span className="font-mono" style={{ fontSize: '12px' }}>{existingRfgTasks.length} items</span>
                     <button className="btn btn-sm" style={{ backgroundColor: '#ffffff', color: '#854d0e', border: '1px solid #fde047', fontWeight: '600' }} onClick={() => handleAddNewRow('RFG', 'MTN')}>
                       <Plus size={12} /> Add Row
@@ -820,7 +820,7 @@ export default function TaskManagement() {
                       Status: {currentMirStatus}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
                     <span className="font-mono" style={{ fontSize: '12px' }}>{existingMirTasks.length} items</span>
                     <button className="btn btn-sm" style={{ backgroundColor: '#ffffff', color: '#166534', border: '1px solid #86efac', fontWeight: '600' }} onClick={() => handleAddNewRow('MIR', 'PROD')}>
                       <Plus size={12} /> Add Row
@@ -946,7 +946,7 @@ export default function TaskManagement() {
                   borderBottom: '1px solid #7dd3fc'
                 }}>
                   <span>SUBCONTRACTOR</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
                     <span className="font-mono" style={{ fontSize: '12px' }}>{existingSubTasks.length} items</span>
                     <button className="btn btn-sm" style={{ backgroundColor: '#ffffff', color: '#0369a1', border: '1px solid #7dd3fc', fontWeight: '600' }} onClick={() => handleAddNewRow('SUBCONTRACTOR', 'SUBCONTRACTOR')}>
                       <Plus size={12} /> Add Row
