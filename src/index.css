@@ -170,9 +170,10 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateX(3px);
 }
 .nav-item.theme-general.active {
-  background: rgba(0, 102, 255, 0.16);
-  color: #ffffff;
-  font-weight: 600;
+  background: rgba(96, 165, 250, 0.22);
+  color: #93c5fd;
+  font-weight: 700;
+  border-left-color: #3b82f6;
 }
 
 /* Group 2: Maintenance Work (Blue) */
@@ -182,9 +183,10 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateX(3px);
 }
 .nav-item.theme-maintenance.active {
-  background: rgba(0, 102, 255, 0.16);
-  color: #ffffff;
-  font-weight: 600;
+  background: rgba(96, 165, 250, 0.22);
+  color: #93c5fd;
+  font-weight: 700;
+  border-left-color: #3b82f6;
 }
 
 /* Group 3: Project Work (Yellow/Amber) */
@@ -194,9 +196,10 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateX(3px);
 }
 .nav-item.theme-project.active {
-  background: rgba(245, 158, 11, 0.16);
-  color: #ffffff;
-  font-weight: 600;
+  background: rgba(245, 158, 11, 0.22);
+  color: #fbbf24;
+  font-weight: 700;
+  border-left-color: #f59e0b;
 }
 
 /* Group 4: Document Work (Green/Emerald) */
@@ -206,9 +209,10 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateX(3px);
 }
 .nav-item.theme-document.active {
-  background: rgba(16, 185, 129, 0.16);
-  color: #ffffff;
-  font-weight: 600;
+  background: rgba(16, 185, 129, 0.22);
+  color: #6ee7b7;
+  font-weight: 700;
+  border-left-color: #10b981;
 }
 
 .nav-item-icon {

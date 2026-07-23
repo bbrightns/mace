@@ -53,9 +53,9 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
     {
       title: 'Maintenance Work',
       items: [
+        { id: 'task-management', label: 'Task Management', icon: MessageSquare },
         { id: 'pm-plan', label: 'PM Plan', icon: Calendar },
         { id: 'long-term-plan', label: 'Long Term Plan', icon: Clock },
-        { id: 'task-management', label: 'Task Management', icon: MessageSquare },
         { id: 'trouble-record', label: 'Trouble Record', icon: AlertTriangle },
         { id: 'purchasing', label: 'Purchasing', icon: ShoppingBag }
       ]
