@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, 
   Search, 
@@ -42,12 +42,11 @@ export default function TaskManagement() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Daily View Date Selector (default to current date: Thursday, July 23, 2026 or today)
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().substring(0, 10));
+  // Daily View Date Selector (default to 2026-07-23 to match mockup, or current date)
+  const [selectedDate, setSelectedDate] = useState(() => '2026-07-23');
 
-  // Planning View Date Range / Month
+  // Planning View Date Range / Search
   const [planningSearch, setPlanningSearch] = useState('');
-  const [planningSectionFilter, setPlanningSectionFilter] = useState('all');
 
   // Daily View Filter
   const [dailySearch, setDailySearch] = useState('');
@@ -57,7 +56,8 @@ export default function TaskManagement() {
   const [editingTask, setEditingTask] = useState(null);
 
   // Form Fields
-  const [category, setCategory] = useState('MTN'); // MTN, PROD, SUBCONTRACTOR
+  const [plantSection, setPlantSection] = useState('RFG'); // 'RFG', 'MIR', 'SUBCONTRACTOR'
+  const [category, setCategory] = useState('MTN'); // 'MTN', 'PROD', 'SUBCONTRACTOR'
   const [mtnType, setMtnType] = useState('Plan'); // Urgent, Plan, LOTO, etc.
   const [refective, setRefective] = useState(''); // LOTO, Mirror, etc.
   const [section, setSection] = useState(''); // Offline, Small temper, Section name
@@ -65,13 +65,17 @@ export default function TaskManagement() {
   const [rank, setRank] = useState('B'); // A, B, C
   const [taskName, setTaskName] = useState(''); // Name / Description
   const [detail, setDetail] = useState(''); // Detail / Action
-  const [timeOfDay, setTimeOfDay] = useState('เช้า'); // 'เช้า', 'บ่าย', 'ดึก', 'Supp', 'AFT'
   const [status, setStatus] = useState('Pending'); // 'Finished', 'Postpone', 'In Process', 'Pending'
   const [mechTechnicians, setMechTechnicians] = useState('');
   const [elecTechnicians, setElecTechnicians] = useState('');
   const [pic, setPic] = useState('');
-  const [plant, setPlant] = useState('RFG'); // 'RFG', 'MIR'
-  const [taskDate, setTaskDate] = useState(() => new Date().toISOString().substring(0, 10));
+  const [taskDate, setTaskDate] = useState(() => '2026-07-23');
+  const [rfgRev, setRfgRev] = useState('CSS14'); // For Planning Status (MTN, STOP, CSS14, Maintenance, etc.)
+  const [mirRev, setMirRev] = useState('Prod'); // For Planning Status (Prod, MTN 2mm, STOP, etc.)
+  const [eeWorkSupp, setEeWorkSupp] = useState('');
+  const [eeWorkAft, setEeWorkAft] = useState('');
+  const [mechWorkSupp, setMechWorkSupp] = useState('');
+  const [mechWorkAft, setMechWorkAft] = useState('');
   const [formError, setFormError] = useState('');
 
   const { showToast } = useToast();
@@ -87,8 +91,17 @@ export default function TaskManagement() {
     return () => unsubscribe();
   }, [showToast]);
 
+  // Find planning row status for selected date if available
+  const currentPlanningRow = useMemo(() => {
+    return tasks.find(t => t.taskDate === selectedDate && (t.rfgRev || t.mirRev));
+  }, [tasks, selectedDate]);
+
+  const currentRfgStatus = currentPlanningRow?.rfgRev || 'MTN';
+  const currentMirStatus = currentPlanningRow?.mirRev || 'Mirror';
+
   const handleOpenAdd = () => {
     setEditingTask(null);
+    setPlantSection('RFG');
     setCategory('MTN');
     setMtnType('Plan');
     setRefective('');
@@ -97,19 +110,24 @@ export default function TaskManagement() {
     setRank('B');
     setTaskName('');
     setDetail('');
-    setTimeOfDay('เช้า');
     setStatus('Pending');
     setMechTechnicians('');
     setElecTechnicians('');
     setPic('');
-    setPlant('RFG');
-    setTaskDate(selectedDate || new Date().toISOString().substring(0, 10));
+    setTaskDate(selectedDate || '2026-07-23');
+    setRfgRev('CSS14');
+    setMirRev('Prod');
+    setEeWorkSupp('');
+    setEeWorkAft('');
+    setMechWorkSupp('');
+    setMechWorkAft('');
     setFormError('');
     setIsOpen(true);
   };
 
   const handleOpenEdit = (task) => {
     setEditingTask(task);
+    setPlantSection(task.plantSection || task.plant || 'RFG');
     setCategory(task.category || 'MTN');
     setMtnType(task.mtnType || 'Plan');
     setRefective(task.refective || '');
@@ -118,13 +136,17 @@ export default function TaskManagement() {
     setRank(task.rank || 'B');
     setTaskName(task.taskName || task.name || '');
     setDetail(task.detail || '');
-    setTimeOfDay(task.timeOfDay || 'เช้า');
     setStatus(task.status || 'Pending');
     setMechTechnicians(task.mechTechnicians || '');
     setElecTechnicians(task.elecTechnicians || '');
     setPic(task.pic || '');
-    setPlant(task.plant || 'RFG');
     setTaskDate(toInputDate(task.taskDate) || selectedDate);
+    setRfgRev(task.rfgRev || 'CSS14');
+    setMirRev(task.mirRev || 'Prod');
+    setEeWorkSupp(task.eeWorkSupp || '');
+    setEeWorkAft(task.eeWorkAft || '');
+    setMechWorkSupp(task.mechWorkSupp || '');
+    setMechWorkAft(task.mechWorkAft || '');
     setFormError('');
     setIsOpen(true);
   };
@@ -133,27 +155,33 @@ export default function TaskManagement() {
     e.preventDefault();
     setFormError('');
 
-    if (!taskName.trim()) {
-      setFormError('Task name / description is required.');
+    if (!taskName.trim() && !eeWorkAft.trim() && !mechWorkAft.trim()) {
+      setFormError('Task description or work details are required.');
       return;
     }
 
     const payload = {
+      plantSection,
+      plant: plantSection,
       category,
       mtnType,
       refective: refective.trim(),
       section: section.trim(),
       equipment: equipment.trim(),
       rank,
-      taskName: taskName.trim(),
+      taskName: taskName.trim() || eeWorkAft.trim() || mechWorkAft.trim(),
       detail: detail.trim(),
-      timeOfDay,
       status,
       mechTechnicians: mechTechnicians.trim(),
       elecTechnicians: elecTechnicians.trim(),
       pic: pic.trim(),
-      plant,
-      taskDate
+      taskDate,
+      rfgRev,
+      mirRev,
+      eeWorkSupp: eeWorkSupp.trim(),
+      eeWorkAft: eeWorkAft.trim(),
+      mechWorkSupp: mechWorkSupp.trim(),
+      mechWorkAft: mechWorkAft.trim()
     };
 
     try {
@@ -181,11 +209,12 @@ export default function TaskManagement() {
     }
   };
 
-  // Pre-seed mock data if empty
+  // Pre-seed mock data matching exact user screenshots
   const handleSeedMockData = async () => {
     const mockData = [
-      // MTN Tasks for 2026-07-23
+      // RFG Block Tasks for 2026-07-23
       {
+        plantSection: 'RFG',
         category: 'MTN',
         mtnType: 'Urgent',
         refective: 'LOTO',
@@ -198,9 +227,10 @@ export default function TaskManagement() {
         mechTechnicians: 'วานิช',
         elecTechnicians: 'เริงฤทธิ์, จิราวุธ, ธวัชชัย',
         taskDate: '2026-07-23',
-        plant: 'RFG'
+        rfgRev: 'MTN'
       },
       {
+        plantSection: 'RFG',
         category: 'MTN',
         mtnType: 'Plan',
         refective: 'LOTO',
@@ -213,9 +243,10 @@ export default function TaskManagement() {
         mechTechnicians: '',
         elecTechnicians: 'เริงฤทธิ์, จิราวุธ, ธวัชชัย',
         taskDate: '2026-07-23',
-        plant: 'RFG'
+        rfgRev: 'MTN'
       },
       {
+        plantSection: 'RFG',
         category: 'MTN',
         mtnType: '',
         refective: '',
@@ -228,9 +259,10 @@ export default function TaskManagement() {
         mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
         elecTechnicians: '',
         taskDate: '2026-07-23',
-        plant: 'RFG'
+        rfgRev: 'MTN'
       },
       {
+        plantSection: 'RFG',
         category: 'MTN',
         mtnType: '',
         refective: '',
@@ -243,9 +275,10 @@ export default function TaskManagement() {
         mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
         elecTechnicians: '',
         taskDate: '2026-07-23',
-        plant: 'RFG'
+        rfgRev: 'MTN'
       },
       {
+        plantSection: 'RFG',
         category: 'MTN',
         mtnType: '',
         refective: '',
@@ -258,9 +291,10 @@ export default function TaskManagement() {
         mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
         elecTechnicians: '',
         taskDate: '2026-07-23',
-        plant: 'RFG'
+        rfgRev: 'MTN'
       },
       {
+        plantSection: 'RFG',
         category: 'MTN',
         mtnType: '',
         refective: '',
@@ -273,9 +307,10 @@ export default function TaskManagement() {
         mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
         elecTechnicians: '',
         taskDate: '2026-07-23',
-        plant: 'RFG'
+        rfgRev: 'MTN'
       },
       {
+        plantSection: 'RFG',
         category: 'MTN',
         mtnType: '',
         refective: '',
@@ -288,9 +323,10 @@ export default function TaskManagement() {
         mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
         elecTechnicians: '',
         taskDate: '2026-07-23',
-        plant: 'RFG'
+        rfgRev: 'MTN'
       },
       {
+        plantSection: 'RFG',
         category: 'MTN',
         mtnType: '',
         refective: '',
@@ -303,9 +339,10 @@ export default function TaskManagement() {
         mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
         elecTechnicians: '',
         taskDate: '2026-07-23',
-        plant: 'RFG'
+        rfgRev: 'MTN'
       },
       {
+        plantSection: 'RFG',
         category: 'MTN',
         mtnType: '',
         refective: '',
@@ -318,10 +355,11 @@ export default function TaskManagement() {
         mechTechnicians: '',
         elecTechnicians: 'เริงฤทธิ์, จิราวุธ, ธวัชชัย',
         taskDate: '2026-07-23',
-        plant: 'RFG'
+        rfgRev: 'MTN'
       },
-      // PROD Tasks for 2026-07-23
+      // MIR Block Tasks for 2026-07-23
       {
+        plantSection: 'MIR',
         category: 'PROD',
         mtnType: '',
         refective: 'Mirror',
@@ -334,9 +372,10 @@ export default function TaskManagement() {
         mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
         elecTechnicians: 'เริงฤทธิ์, จิราวุธ, ธวัชชัย',
         taskDate: '2026-07-23',
-        plant: 'MIR'
+        mirRev: 'Mirror'
       },
       {
+        plantSection: 'MIR',
         category: 'PROD',
         mtnType: '',
         refective: '',
@@ -349,9 +388,10 @@ export default function TaskManagement() {
         mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
         elecTechnicians: '',
         taskDate: '2026-07-23',
-        plant: 'MIR'
+        mirRev: 'Mirror'
       },
       {
+        plantSection: 'MIR',
         category: 'PROD',
         mtnType: '',
         refective: '',
@@ -364,9 +404,10 @@ export default function TaskManagement() {
         mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
         elecTechnicians: '',
         taskDate: '2026-07-23',
-        plant: 'MIR'
+        mirRev: 'Mirror'
       },
       {
+        plantSection: 'MIR',
         category: 'PROD',
         mtnType: '',
         refective: '',
@@ -379,12 +420,22 @@ export default function TaskManagement() {
         mechTechnicians: 'บุญวัง, จิรายุ, วานิช, อำนาจ',
         elecTechnicians: '',
         taskDate: '2026-07-23',
-        plant: 'MIR'
+        mirRev: 'Mirror'
       },
-      // Planning View Mock Data
+      // SUBCONTRACTOR Tasks
+      {
+        plantSection: 'SUBCONTRACTOR',
+        category: 'SUBCONTRACTOR',
+        plant: 'RFG',
+        location: 'Plant 1',
+        taskName: '',
+        detail: '',
+        pic: '',
+        taskDate: '2026-07-23'
+      },
+      // Planning View Mock Data matching screenshot 2
       {
         taskDate: '2026-06-09',
-        plant: 'RFG',
         rfgRev: 'CSS14',
         mirRev: 'Prod',
         eeWorkAft: 'ทำใบ Cert. pH EC ทั้งหมด 28 รายการ\nSF-72-818 pH\nSF-72-819 EC',
@@ -393,7 +444,6 @@ export default function TaskManagement() {
       },
       {
         taskDate: '2026-06-10',
-        plant: 'RFG',
         rfgRev: 'CSS14',
         mirRev: 'MTN 2mm',
         eeWorkAft: 'จัด store\nCheck heater metal dry ถังขึ้นลงอลูมิเนียม',
@@ -402,7 +452,6 @@ export default function TaskManagement() {
       },
       {
         taskDate: '2026-06-11',
-        plant: 'RFG',
         rfgRev: 'CSS14',
         mirRev: 'MTN 2mm',
         eeWorkSupp: 'LT Power เก็บงาน TBM',
@@ -412,7 +461,6 @@ export default function TaskManagement() {
       },
       {
         taskDate: '2026-06-12',
-        plant: 'RFG',
         rfgRev: 'CSS14',
         mirRev: 'MTN 2mm',
         eeWorkAft: 'ติดตั้งกล้องกันระเบิด ตู้ 1\nจัด store',
@@ -421,16 +469,22 @@ export default function TaskManagement() {
       },
       {
         taskDate: '2026-06-13',
-        plant: 'RFG',
         rfgRev: 'STOP',
         mirRev: 'STOP',
         eeWorkAft: '',
         mechWorkAft: '',
-        taskName: 'Weekend Maintenance Standby'
+        taskName: 'Weekend Standby'
+      },
+      {
+        taskDate: '2026-06-14',
+        rfgRev: 'STOP',
+        mirRev: 'STOP',
+        eeWorkAft: '',
+        mechWorkAft: '',
+        taskName: 'Weekend Standby'
       },
       {
         taskDate: '2026-06-15',
-        plant: 'RFG',
         rfgRev: 'Maintenance',
         mirRev: 'Prod',
         eeWorkAft: 'จัด store',
@@ -439,13 +493,62 @@ export default function TaskManagement() {
       },
       {
         taskDate: '2026-06-16',
-        plant: 'RFG',
         rfgRev: 'Maintenance',
         mirRev: 'Prod',
         eeWorkSupp: 'LT Power เก็บงาน TBM',
         eeWorkAft: 'PM RFG\n- หน้าจออุณหภูมิ ถังน้ำ Heater อ่านค่าไม่ตรง\n- ซื้อกล่อง หน้าตู้ใส -> ให้ที่เร็วด้านขนาดให้ก่อน',
         mechWorkAft: '',
         taskName: 'PM RFG Temperature Screen'
+      },
+      {
+        taskDate: '2026-06-17',
+        rfgRev: 'TSLX',
+        mirRev: 'Prod',
+        eeWorkAft: 'MIR - DI Water shortage (confirm check alarm at DI tank1 LOW ระดับต่ำกว่า 4Q) --> ติดตั้งหลอดไฟ alarm เพิ่ม',
+        mechWorkAft: '',
+        taskName: 'MIR - DI Water shortage alarm'
+      },
+      {
+        taskDate: '2026-06-18',
+        rfgRev: 'TSLX',
+        mirRev: 'Prod',
+        eeWorkAft: 'MIR - ต่อสายปั๊มน้ำ',
+        mechWorkAft: '',
+        taskName: 'MIR - ต่อสายปั๊มน้ำ'
+      },
+      {
+        taskDate: '2026-06-19',
+        rfgRev: 'TSLX',
+        mirRev: 'PM ล้างโต๊ะ*',
+        eeWorkSupp: 'Siamtemp ล้าง AHU ห้องเก็บสีใหม่',
+        eeWorkAft: 'RFG - Check หลอดไฟหมุนของ C7\nMIR - Check ตำแหน่งกล้องที่เสียของ Dahua + วางแผนเปลี่ยน',
+        mechWorkAft: 'MIR - PM roller Base,Top',
+        taskName: 'RFG & MIR Camera / Light Checks'
+      },
+      {
+        taskDate: '2026-06-20',
+        rfgRev: 'TSLX',
+        mirRev: 'STOP',
+        eeWorkSupp: 'N/A',
+        eeWorkAft: 'N/A',
+        mechWorkAft: '',
+        taskName: 'N/A'
+      },
+      {
+        taskDate: '2026-06-21',
+        rfgRev: 'STOP',
+        mirRev: 'STOP',
+        eeWorkAft: '',
+        mechWorkAft: '',
+        taskName: 'Weekend Standby'
+      },
+      {
+        taskDate: '2026-06-22',
+        rfgRev: 'Chamber',
+        mirRev: 'Prod',
+        eeWorkAft: 'MIR - Local Equipment [SF-71-500]\nMIR - Mirror Switch Board [SF-71-501]',
+        mechWorkAft: 'RFG - เคลียร์พื้นที่สำหรับงานเชื่อม chamber Y\nRFG - เปลี่ยน Power Cylinder ของ load table Y\nRFG - PM load table\nRFG - PT Feed through Y',
+        taskName: 'Chamber & Equipment Maintenance'
       }
     ];
 
@@ -471,16 +574,19 @@ export default function TaskManagement() {
     t.section?.toLowerCase().includes(dailySearch.toLowerCase())
   ));
 
-  const dailyMtnTasks = dailyTasks.filter(t => t.category === 'MTN' || !t.category);
-  const dailyProdTasks = dailyTasks.filter(t => t.category === 'PROD');
-  const dailySubcontractorTasks = dailyTasks.filter(t => t.category === 'SUBCONTRACTOR');
+  // Partition tasks into RFG, MIR, and SUBCONTRACTOR sections
+  const dailyRfgTasks = dailyTasks.filter(t => t.plantSection === 'RFG' || (!t.plantSection && (t.taskName?.startsWith('RFG') || t.plant === 'RFG' || t.category === 'MTN')));
+  const dailyMirTasks = dailyTasks.filter(t => t.plantSection === 'MIR' || (!t.plantSection && (t.taskName?.startsWith('MIR') || t.plant === 'MIR' || t.category === 'PROD')));
+  const dailySubcontractorTasks = dailyTasks.filter(t => t.plantSection === 'SUBCONTRACTOR' || t.category === 'SUBCONTRACTOR');
 
   // Filter tasks for Planning View
   const planningTasks = tasks.filter(t => {
     const matchesSearch = !planningSearch || 
       t.taskName?.toLowerCase().includes(planningSearch.toLowerCase()) ||
       t.eeWorkAft?.toLowerCase().includes(planningSearch.toLowerCase()) ||
-      t.mechWorkAft?.toLowerCase().includes(planningSearch.toLowerCase());
+      t.mechWorkAft?.toLowerCase().includes(planningSearch.toLowerCase()) ||
+      t.rfgRev?.toLowerCase().includes(planningSearch.toLowerCase()) ||
+      t.mirRev?.toLowerCase().includes(planningSearch.toLowerCase());
     return matchesSearch;
   }).sort((a, b) => new Date(a.taskDate || 0) - new Date(b.taskDate || 0));
 
@@ -593,7 +699,7 @@ export default function TaskManagement() {
                 type="text" 
                 placeholder="Search daily tasks, equipment..." 
                 value={dailySearch}
-                onChange={(e) => setDailySearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 className="form-input"
                 style={{ paddingLeft: '32px', width: '100%' }}
               />
@@ -608,7 +714,7 @@ export default function TaskManagement() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
-              {/* SECTION 1: MTN TASKS TABLE */}
+              {/* SECTION 1: RFG BLOCK TABLE */}
               <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#fef08a', 
@@ -621,8 +727,13 @@ export default function TaskManagement() {
                   alignItems: 'center',
                   borderBottom: '1px solid #fde047'
                 }}>
-                  <span>MTN (Maintenance Tasks)</span>
-                  <span className="font-mono" style={{ fontSize: '12px' }}>{dailyMtnTasks.length} items</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span>RFG</span>
+                    <span className="badge font-mono" style={{ backgroundColor: currentRfgStatus === 'STOP' ? '#fca5a5' : '#fef9c3', color: currentRfgStatus === 'STOP' ? '#991b1b' : '#854d0e', border: '1px solid #fde047', fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}>
+                      Status: {currentRfgStatus}
+                    </span>
+                  </div>
+                  <span className="font-mono" style={{ fontSize: '12px' }}>{dailyRfgTasks.length} items</span>
                 </div>
 
                 <div className="table-container" style={{ margin: 0, borderRadius: 0, border: 'none' }}>
@@ -643,14 +754,14 @@ export default function TaskManagement() {
                       </tr>
                     </thead>
                     <tbody>
-                      {dailyMtnTasks.length === 0 ? (
+                      {dailyRfgTasks.length === 0 ? (
                         <tr>
                           <td colSpan="11" style={{ textAlign: 'center', padding: '24px', color: 'var(--text3)' }}>
-                            No MTN tasks scheduled for this date.
+                            No RFG tasks scheduled for this date.
                           </td>
                         </tr>
                       ) : (
-                        dailyMtnTasks.map((t) => (
+                        dailyRfgTasks.map((t) => (
                           <tr key={t.id}>
                             <td style={{ fontWeight: '700', color: t.mtnType === 'Urgent' ? '#dc2626' : 'var(--text)' }}>
                               {t.mtnType}
@@ -690,7 +801,7 @@ export default function TaskManagement() {
                 </div>
               </div>
 
-              {/* SECTION 2: PROD TASKS TABLE */}
+              {/* SECTION 2: MIR BLOCK TABLE */}
               <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#bbf7d0', 
@@ -703,8 +814,13 @@ export default function TaskManagement() {
                   alignItems: 'center',
                   borderBottom: '1px solid #86efac'
                 }}>
-                  <span>PROD (Production / Line Tasks)</span>
-                  <span className="font-mono" style={{ fontSize: '12px' }}>{dailyProdTasks.length} items</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span>MIR</span>
+                    <span className="badge font-mono" style={{ backgroundColor: currentMirStatus === 'STOP' ? '#fca5a5' : '#dcfce7', color: currentMirStatus === 'STOP' ? '#991b1b' : '#166534', border: '1px solid #86efac', fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}>
+                      Status: {currentMirStatus}
+                    </span>
+                  </div>
+                  <span className="font-mono" style={{ fontSize: '12px' }}>{dailyMirTasks.length} items</span>
                 </div>
 
                 <div className="table-container" style={{ margin: 0, borderRadius: 0, border: 'none' }}>
@@ -725,17 +841,17 @@ export default function TaskManagement() {
                       </tr>
                     </thead>
                     <tbody>
-                      {dailyProdTasks.length === 0 ? (
+                      {dailyMirTasks.length === 0 ? (
                         <tr>
                           <td colSpan="11" style={{ textAlign: 'center', padding: '24px', color: 'var(--text3)' }}>
-                            No Production tasks scheduled for this date.
+                            No MIR tasks scheduled for this date.
                           </td>
                         </tr>
                       ) : (
-                        dailyProdTasks.map((t) => (
+                        dailyMirTasks.map((t) => (
                           <tr key={t.id}>
-                            <td style={{ fontWeight: '700' }}>{t.mtnType || 'PROD'}</td>
-                            <td>{t.refective}</td>
+                            <td style={{ fontWeight: '700', color: '#166534' }}>{t.mtnType || 'PROD'}</td>
+                            <td style={{ color: '#166534', fontWeight: '600' }}>{t.refective || 'Mirror'}</td>
                             <td>{t.section}</td>
                             <td style={{ fontWeight: '600' }}>{t.equipment}</td>
                             <td style={{ textAlign: 'center', fontWeight: '700' }}>{t.rank}</td>
@@ -764,7 +880,7 @@ export default function TaskManagement() {
                 </div>
               </div>
 
-              {/* SECTION 3: SUBCONTRACTOR TASKS TABLE */}
+              {/* SECTION 3: SUBCONTRACTOR BLOCK TABLE */}
               <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#bae6fd', 
@@ -777,7 +893,7 @@ export default function TaskManagement() {
                   alignItems: 'center',
                   borderBottom: '1px solid #7dd3fc'
                 }}>
-                  <span>SUBCONTRACTOR (External Vendors / Projects)</span>
+                  <span>SUBCONTRACTOR</span>
                   <span className="font-mono" style={{ fontSize: '12px' }}>{dailySubcontractorTasks.length} items</span>
                 </div>
 
@@ -803,7 +919,7 @@ export default function TaskManagement() {
                       ) : (
                         dailySubcontractorTasks.map((t) => (
                           <tr key={t.id}>
-                            <td style={{ fontWeight: '700' }}>{t.plant}</td>
+                            <td style={{ fontWeight: '700' }}>{t.plant || 'RFG'}</td>
                             <td>{t.section || t.location}</td>
                             <td style={{ fontWeight: '600' }}>{t.taskName}</td>
                             <td style={{ fontSize: '12px' }}>{t.detail}</td>
@@ -868,7 +984,7 @@ export default function TaskManagement() {
                   <th style={{ width: '90px', textAlign: 'center', backgroundColor: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' }}>RFG</th>
                   <th style={{ width: '90px', textAlign: 'center', backgroundColor: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' }}>MIR</th>
                   <th style={{ width: '140px', backgroundColor: '#93c5fd', color: '#1e3a8a', border: '1px solid #60a5fa' }}>SUPP</th>
-                  <th style={{ minWidth: '220px', backgroundColor: '#bfdbfe', color: '#1e3a8a', border: '1px solid #60a5fa' }}>AFT</th>
+                  <th style={{ minWidth: '220px', backgroundColor: '#bfdbfe', color: '#1e40af', border: '1px solid #60a5fa' }}>AFT</th>
                   <th style={{ width: '140px', backgroundColor: '#fbcfe8', color: '#831843', border: '1px solid #f472b6' }}>SUPP</th>
                   <th style={{ minWidth: '220px', backgroundColor: '#fce7f3', color: '#831843', border: '1px solid #f472b6' }}>AFT</th>
                 </tr>
@@ -896,10 +1012,10 @@ export default function TaskManagement() {
                           {dateFormatted}
                         </td>
                         <td style={{ textAlign: 'center', backgroundColor: t.rfgRev === 'STOP' ? '#fca5a5' : t.rfgRev === 'Maintenance' ? '#fef08a' : '#e0f2fe', fontWeight: '600' }}>
-                          {t.rfgRev || (t.plant === 'RFG' ? 'CSS14' : '')}
+                          {t.rfgRev || (t.plantSection === 'RFG' ? 'CSS14' : '')}
                         </td>
                         <td style={{ textAlign: 'center', backgroundColor: t.mirRev === 'STOP' ? '#fca5a5' : t.mirRev?.includes('MTN') ? '#fef08a' : '#e0f2fe', fontWeight: '600' }}>
-                          {t.mirRev || (t.plant === 'MIR' ? 'Prod' : '')}
+                          {t.mirRev || (t.plantSection === 'MIR' ? 'Prod' : '')}
                         </td>
                         <td style={{ color: '#2563eb', fontSize: '11.5px' }}>{t.eeWorkSupp}</td>
                         <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>{t.eeWorkAft || t.taskName}</td>
@@ -947,15 +1063,15 @@ export default function TaskManagement() {
           )}
 
           <div className="form-group">
-            <label className="form-label">Category *</label>
+            <label className="form-label">Plant Block / Section *</label>
             <select 
               className="form-select" 
-              value={category} 
-              onChange={(e) => setCategory(e.target.value)}
+              value={plantSection} 
+              onChange={(e) => setPlantSection(e.target.value)}
             >
-              <option value="MTN">MTN (Maintenance)</option>
-              <option value="PROD">PROD (Production)</option>
-              <option value="SUBCONTRACTOR">SUBCONTRACTOR (External)</option>
+              <option value="RFG">RFG Block</option>
+              <option value="MIR">MIR Block</option>
+              <option value="SUBCONTRACTOR">SUBCONTRACTOR</option>
             </select>
           </div>
 
@@ -971,11 +1087,33 @@ export default function TaskManagement() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">MTN Type / Status Tag</label>
+            <label className="form-label">RFG Line Status (Planning)</label>
             <input 
               type="text" 
               className="form-input" 
-              placeholder="e.g. Urgent, Plan, LOTO" 
+              placeholder="e.g. CSS14, MTN, STOP, Maintenance" 
+              value={rfgRev}
+              onChange={(e) => setRfgRev(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">MIR Line Status (Planning)</label>
+            <input 
+              type="text" 
+              className="form-input" 
+              placeholder="e.g. Prod, MTN 2mm, STOP" 
+              value={mirRev}
+              onChange={(e) => setMirRev(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">MTN Type / Tag</label>
+            <input 
+              type="text" 
+              className="form-input" 
+              placeholder="e.g. Urgent, Plan, PROD" 
               value={mtnType}
               onChange={(e) => setMtnType(e.target.value)}
             />
@@ -993,11 +1131,11 @@ export default function TaskManagement() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Section / Plant</label>
+            <label className="form-label">Section / Sub-location</label>
             <input 
               type="text" 
               className="form-input" 
-              placeholder="e.g. Offline, Small temper, RFG, MIR" 
+              placeholder="e.g. Offline, Small temper" 
               value={section}
               onChange={(e) => setSection(e.target.value)}
             />
@@ -1040,7 +1178,6 @@ export default function TaskManagement() {
               placeholder="e.g. RFG - Check Crane RFG no.10 (Hoist ไม่สามารถ ขึ้น ลง ได้)" 
               value={taskName}
               onChange={(e) => setTaskName(e.target.value)}
-              required
             />
           </div>
 
@@ -1073,6 +1210,26 @@ export default function TaskManagement() {
               placeholder="e.g. เริงฤทธิ์, จิราวุธ, ธวัชชัย" 
               value={elecTechnicians}
               onChange={(e) => setElecTechnicians(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group form-full">
+            <label className="form-label">Electrical Work Detail (EE Work AFT)</label>
+            <textarea 
+              className="form-textarea" 
+              placeholder="Detail for Planning view EE column" 
+              value={eeWorkAft}
+              onChange={(e) => setEeWorkAft(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group form-full">
+            <label className="form-label">Mechanical Work Detail (MECH Work AFT)</label>
+            <textarea 
+              className="form-textarea" 
+              placeholder="Detail for Planning view MECH column" 
+              value={mechWorkAft}
+              onChange={(e) => setMechWorkAft(e.target.value)}
             />
           </div>
         </form>
