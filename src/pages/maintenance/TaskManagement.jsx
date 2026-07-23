@@ -237,8 +237,9 @@ export default function TaskManagement() {
     }
   }, [tasks]);
 
-  // Search filter
-  const [searchQuery, setSearchQuery] = useState('');
+  // Search filters (separated for Daily Tasks and Planning Matrix)
+  const [dailySearchQuery, setDailySearchQuery] = useState('');
+  const [planningSearchQuery, setPlanningSearchQuery] = useState('');
 
   // Inline Editing Local Changes state { [taskId]: { field: value } }
   const [draftEdits, setDraftEdits] = useState({});
@@ -675,18 +676,18 @@ export default function TaskManagement() {
   };
 
   const rawDailyTasks = tasks.filter(t => (
-    !searchQuery ? (t.taskDate === selectedDate) : true
+    !dailySearchQuery ? (t.taskDate === selectedDate) : true
   ) && (
     t.id?.startsWith('temp-') || t.id?.startsWith('local-') || t.isTemp || hasAnyContent(t)
   ) && (
-    !searchQuery || 
-    t.taskName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.equipment?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.section?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.eeWorkAft?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.mechWorkAft?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.subcontractorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.pic?.toLowerCase().includes(searchQuery.toLowerCase())
+    !dailySearchQuery || 
+    t.taskName?.toLowerCase().includes(dailySearchQuery.toLowerCase()) ||
+    t.equipment?.toLowerCase().includes(dailySearchQuery.toLowerCase()) ||
+    t.section?.toLowerCase().includes(dailySearchQuery.toLowerCase()) ||
+    t.eeWorkAft?.toLowerCase().includes(dailySearchQuery.toLowerCase()) ||
+    t.mechWorkAft?.toLowerCase().includes(dailySearchQuery.toLowerCase()) ||
+    t.subcontractorName?.toLowerCase().includes(dailySearchQuery.toLowerCase()) ||
+    t.pic?.toLowerCase().includes(dailySearchQuery.toLowerCase())
   ));
 
   // Extract tasks or planning details for selected date
@@ -730,24 +731,26 @@ export default function TaskManagement() {
     return list;
   };
 
-  const dailyRfgRows = useMemo(() => getPaddedRows(existingRfgTasks, searchQuery ? 0 : rfgMinCount, 'RFG', 'MTN'), [existingRfgTasks, rfgMinCount, selectedDate, searchQuery]);
-  const dailyMirRows = useMemo(() => getPaddedRows(existingMirTasks, searchQuery ? 0 : mirMinCount, 'MIR', 'PROD'), [existingMirTasks, mirMinCount, selectedDate, searchQuery]);
-  const dailySubRows = useMemo(() => getPaddedRows(existingSubTasks, searchQuery ? 0 : subMinCount, 'SUBCONTRACTOR', 'SUBCONTRACTOR'), [existingSubTasks, subMinCount, selectedDate, searchQuery]);
+  const dailyRfgRows = useMemo(() => getPaddedRows(existingRfgTasks, dailySearchQuery ? 0 : rfgMinCount, 'RFG', 'MTN'), [existingRfgTasks, rfgMinCount, selectedDate, dailySearchQuery]);
+  const dailyMirRows = useMemo(() => getPaddedRows(existingMirTasks, dailySearchQuery ? 0 : mirMinCount, 'MIR', 'PROD'), [existingMirTasks, mirMinCount, selectedDate, dailySearchQuery]);
+  const dailySubRows = useMemo(() => getPaddedRows(existingSubTasks, dailySearchQuery ? 0 : subMinCount, 'SUBCONTRACTOR', 'SUBCONTRACTOR'), [existingSubTasks, subMinCount, selectedDate, dailySearchQuery]);
 
   // Filter tasks for Planning View
   const planningTasks = useMemo(() => {
     return tasks.filter(t => {
       if (!t.taskDate) return false;
-      const matchesSearch = !searchQuery || 
-        t.taskName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.eeWorkAft?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.mechWorkAft?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.rfgRev?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.mirRev?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.taskDate?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = !planningSearchQuery || 
+        t.taskName?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
+        t.eeWorkAft?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
+        t.mechWorkAft?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
+        t.eeWorkSupp?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
+        t.mechWorkSupp?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
+        t.rfgRev?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
+        t.mirRev?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
+        t.taskDate?.toLowerCase().includes(planningSearchQuery.toLowerCase());
       return matchesSearch;
     }).sort((a, b) => new Date(a.taskDate || 0) - new Date(b.taskDate || 0));
-  }, [tasks, searchQuery]);
+  }, [tasks, planningSearchQuery]);
 
   // Change selected date
   const changeDateByDays = (days) => {
@@ -874,37 +877,52 @@ export default function TaskManagement() {
           </button>
         </div>
 
-        {activeView === 'daily' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button className="btn btn-sm" onClick={() => changeDateByDays(-1)}>
-              <ChevronLeft size={16} />
-            </button>
+        {activeView === 'daily' ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button className="btn btn-sm" onClick={() => changeDateByDays(-1)}>
+                <ChevronLeft size={16} />
+              </button>
+              <input 
+                type="date" 
+                className="form-input font-mono" 
+                style={{ width: '150px', padding: '4px 8px' }}
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                id="daily-date-picker"
+              />
+              <button className="btn btn-sm" onClick={() => changeDateByDays(1)}>
+                <ChevronRight size={16} />
+              </button>
+            </div>
+
+            <div style={{ position: 'relative', width: '280px' }}>
+              <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
+              <input 
+                type="text" 
+                placeholder="Search daily tasks, equipment..." 
+                value={dailySearchQuery}
+                onChange={(e) => setDailySearchQuery(e.target.value)}
+                className="form-input"
+                style={{ paddingLeft: '32px', width: '100%', height: '34px', fontSize: '12px' }}
+                id="task-mgmt-daily-search"
+              />
+            </div>
+          </>
+        ) : (
+          <div style={{ position: 'relative', width: '320px', marginLeft: 'auto' }}>
+            <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
             <input 
-              type="date" 
-              className="form-input font-mono" 
-              style={{ width: '150px', padding: '4px 8px' }}
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              id="daily-date-picker"
+              type="text" 
+              placeholder="Search planning schedule, EE, MECH..." 
+              value={planningSearchQuery}
+              onChange={(e) => setPlanningSearchQuery(e.target.value)}
+              className="form-input"
+              style={{ paddingLeft: '32px', width: '100%', height: '34px', fontSize: '12px' }}
+              id="task-mgmt-planning-search"
             />
-            <button className="btn btn-sm" onClick={() => changeDateByDays(1)}>
-              <ChevronRight size={16} />
-            </button>
           </div>
         )}
-
-        <div style={{ position: 'relative', width: '280px' }}>
-          <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
-          <input 
-            type="text" 
-            placeholder="Search daily tasks, equipment..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="form-input"
-            style={{ paddingLeft: '32px', width: '100%', height: '34px', fontSize: '12px' }}
-            id="task-mgmt-top-search"
-          />
-        </div>
       </div>
 
 
@@ -950,7 +968,7 @@ export default function TaskManagement() {
             </div>
           )}
 
-          {searchQuery && (
+          {dailySearchQuery && (
             <div style={{ 
               backgroundColor: '#eff6ff', 
               border: '1px solid #bfdbfe', 
@@ -1013,7 +1031,7 @@ export default function TaskManagement() {
                   <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#fefce8' }}>
-                        {searchQuery && <th style={{ width: '95px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Date</th>}
+                        {dailySearchQuery && <th style={{ width: '95px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Date</th>}
                         <th style={{ width: '60px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Mech</th>
                         <th style={{ width: '60px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Elec</th>
                         <th style={{ width: '75px', color: '#854d0e', fontWeight: '700' }}>Plan</th>
@@ -1034,7 +1052,7 @@ export default function TaskManagement() {
 
                         return (
                           <tr key={t.id} style={{ color: isUrgent ? '#dc2626' : 'inherit' }}>
-                            {searchQuery && (
+                            {dailySearchQuery && (
                               <td style={{ 
                                 textAlign: 'center', 
                                 fontWeight: '700', 
@@ -1185,7 +1203,7 @@ export default function TaskManagement() {
               )}
 
               {/* SECTION 2: MIR BLOCK TABLE */}
-              {(!searchQuery || existingMirTasks.length > 0) && (
+              {(!dailySearchQuery || existingMirTasks.length > 0) && (
                 <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#bbf7d0', 
@@ -1216,7 +1234,7 @@ export default function TaskManagement() {
                   <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f0fdf4' }}>
-                        {searchQuery && <th style={{ width: '95px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Date</th>}
+                        {dailySearchQuery && <th style={{ width: '95px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Date</th>}
                         <th style={{ width: '60px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Mech</th>
                         <th style={{ width: '60px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Elec</th>
                         <th style={{ width: '75px', color: '#166534', fontWeight: '700' }}>Plan</th>
@@ -1237,7 +1255,7 @@ export default function TaskManagement() {
 
                         return (
                           <tr key={t.id} style={{ color: isUrgent ? '#dc2626' : 'inherit' }}>
-                            {searchQuery && (
+                            {dailySearchQuery && (
                               <td style={{ 
                                 textAlign: 'center', 
                                 fontWeight: '700', 
@@ -1388,7 +1406,7 @@ export default function TaskManagement() {
               )}
 
               {/* SECTION 3: SUBCONTRACTOR BLOCK TABLE */}
-              {(!searchQuery || existingSubTasks.length > 0) && (
+              {(!dailySearchQuery || existingSubTasks.length > 0) && (
                 <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
                 <div style={{ 
                   backgroundColor: '#bae6fd', 
@@ -1414,7 +1432,7 @@ export default function TaskManagement() {
                   <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f0f9ff' }}>
-                        {searchQuery && <th style={{ width: '95px', color: '#0369a1', fontWeight: '700', textAlign: 'center' }}>Date</th>}
+                        {dailySearchQuery && <th style={{ width: '95px', color: '#0369a1', fontWeight: '700', textAlign: 'center' }}>Date</th>}
                         <th style={{ width: '100px', color: '#0369a1', fontWeight: '700' }}>Plant</th>
                         <th style={{ width: '150px', color: '#0369a1', fontWeight: '700' }}>Location</th>
                         <th style={{ width: '150px', color: '#0369a1', fontWeight: '700' }}>Subcontractor Name</th>
@@ -1427,7 +1445,7 @@ export default function TaskManagement() {
                     <tbody>
                        {dailySubRows.map((t) => (
                         <tr key={t.id}>
-                          {searchQuery && (
+                          {dailySearchQuery && (
                             <td style={{ 
                               textAlign: 'center', 
                               fontWeight: '700', 
@@ -1523,12 +1541,12 @@ export default function TaskManagement() {
               </div>
               )}
 
-              {searchQuery && existingRfgTasks.length === 0 && existingMirTasks.length === 0 && existingSubTasks.length === 0 && (
+              {dailySearchQuery && existingRfgTasks.length === 0 && existingMirTasks.length === 0 && existingSubTasks.length === 0 && (
                 <div className="card" style={{ padding: '48px 32px', textAlign: 'center', color: 'var(--text3)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   <Search size={40} style={{ margin: '0 auto 16px', display: 'block', opacity: 0.4, color: 'var(--text3)' }} />
-                  <div style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text)', marginBottom: '6px' }}>No tasks found matching "{searchQuery}"</div>
-                  <div style={{ fontSize: '13px', maxWidth: '360px', margin: '0 auto 16px' }}>We couldn't find any matching tasks for this date. Check your spelling or try clearing the filter.</div>
-                  <button className="btn btn-primary btn-sm" onClick={() => setSearchQuery('')}>
+                  <div style={{ fontWeight: '700', fontSize: '16px', color: 'var(--text)', marginBottom: '6px' }}>No tasks found matching "{dailySearchQuery}"</div>
+                  <div style={{ fontSize: '13px', maxWidth: '360px', margin: '0 auto 16px' }}>We couldn't find any matching tasks. Check your spelling or try clearing the filter.</div>
+                  <button className="btn btn-primary btn-sm" onClick={() => setDailySearchQuery('')}>
                     Clear Search Query
                   </button>
                 </div>
@@ -1543,6 +1561,32 @@ export default function TaskManagement() {
       {activeView === 'planning' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
+          {planningSearchQuery && (
+            <div style={{ 
+              backgroundColor: '#eff6ff', 
+              border: '1px solid #bfdbfe', 
+              borderRadius: '8px', 
+              padding: '12px 16px', 
+              color: '#1e40af', 
+              fontSize: '13.5px',
+              display: 'flex',
+              justify: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+            }}>
+              <div>
+                🔍 Showing planning schedule records matching <strong>"{planningSearchQuery}"</strong> ({planningTasks.length} found)
+              </div>
+              <button 
+                className="btn btn-sm" 
+                style={{ backgroundColor: '#ffffff', color: '#1e40af', border: '1px solid #bfdbfe', fontWeight: '600' }} 
+                onClick={() => setPlanningSearchQuery('')}
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
+
           {/* Planning Matrix Table - Matching Excel Layout 2 */}
           <div className="table-container" style={{ margin: 0, overflowX: 'auto' }}>
             <table className="data-table font-mono" style={{ fontSize: '12px', borderCollapse: 'collapse' }}>
