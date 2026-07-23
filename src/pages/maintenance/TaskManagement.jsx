@@ -80,7 +80,7 @@ const hasAnyContent = (t) => {
       t.location?.trim() || 
       t.subcontractorName?.trim() || 
       t.taskName?.trim() || 
-      (t.progress !== undefined && t.progress !== '0' && t.progress !== 0 && t.progress?.toString().trim() !== '') || 
+      t.progress?.toString().trim() || 
       t.pic?.trim()
     );
   }
@@ -336,9 +336,9 @@ export default function TaskManagement() {
           status: field === 'status' ? newValue : (task.status || ''),
           mechTechnicians: field === 'mechTechnicians' ? newValue : (task.mechTechnicians || ''),
           elecTechnicians: field === 'elecTechnicians' ? newValue : (task.elecTechnicians || ''),
-          plant: field === 'plant' ? newValue : (task.plant || 'RFG'),
+          plant: field === 'plant' ? newValue : (task.plant || (task.plantSection === 'SUBCONTRACTOR' ? '' : 'RFG')),
           location: field === 'location' ? newValue : (task.location || ''),
-          progress: field === 'progress' ? newValue : (task.progress !== undefined ? task.progress : '0'),
+          progress: field === 'progress' ? newValue : (task.progress || ''),
           pic: field === 'pic' ? newValue : (task.pic || '')
         };
         
@@ -420,9 +420,9 @@ export default function TaskManagement() {
       status: '',
       mechTechnicians: '',
       elecTechnicians: '',
-      plant: plantSection === 'SUBCONTRACTOR' ? 'RFG' : plantSection,
+      plant: plantSection === 'SUBCONTRACTOR' ? '' : plantSection,
       location: '',
-      progress: '0',
+      progress: '',
       pic: '',
       isTemp: true
     };
@@ -716,9 +716,9 @@ export default function TaskManagement() {
         status: '',
         mechTechnicians: '',
         elecTechnicians: '',
-        plant: plantSection === 'SUBCONTRACTOR' ? 'RFG' : plantSection,
+        plant: plantSection === 'SUBCONTRACTOR' ? '' : plantSection,
         location: '',
-        progress: '0',
+        progress: '',
         pic: '',
         isTemp: true
       });
