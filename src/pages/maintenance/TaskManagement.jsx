@@ -735,22 +735,76 @@ export default function TaskManagement() {
   const dailyMirRows = useMemo(() => getPaddedRows(existingMirTasks, dailySearchQuery ? 0 : mirMinCount, 'MIR', 'PROD'), [existingMirTasks, mirMinCount, selectedDate, dailySearchQuery]);
   const dailySubRows = useMemo(() => getPaddedRows(existingSubTasks, dailySearchQuery ? 0 : subMinCount, 'SUBCONTRACTOR', 'SUBCONTRACTOR'), [existingSubTasks, subMinCount, selectedDate, dailySearchQuery]);
 
-  // Filter tasks for Planning View
+  // Generate all 365 days for the year (from 1 Jan until 31 Dec) in Planning Matrix
   const planningTasks = useMemo(() => {
-    return tasks.filter(t => {
-      if (!t.taskDate) return false;
-      const matchesSearch = !planningSearchQuery || 
-        t.taskName?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
-        t.eeWorkAft?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
-        t.mechWorkAft?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
-        t.eeWorkSupp?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
-        t.mechWorkSupp?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
-        t.rfgRev?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
-        t.mirRev?.toLowerCase().includes(planningSearchQuery.toLowerCase()) ||
-        t.taskDate?.toLowerCase().includes(planningSearchQuery.toLowerCase());
-      return matchesSearch;
-    }).sort((a, b) => new Date(a.taskDate || 0) - new Date(b.taskDate || 0));
-  }, [tasks, planningSearchQuery]);
+    const targetYear = selectedDate ? new Date(selectedDate + 'T00:00:00').getFullYear() : 2026;
+    
+    // Map existing tasks by date for fast lookup
+    const taskMap = new Map();
+    tasks.forEach(t => {
+      if (t.taskDate) {
+        if (!taskMap.has(t.taskDate) || hasAnyContent(t) || t.eeWorkAft || t.mechWorkAft) {
+          taskMap.set(t.taskDate, t);
+        }
+      }
+    });
+
+    const rows = [];
+    const current = new Date(targetYear, 0, 1);
+    const endDate = new Date(targetYear, 11, 31);
+
+    while (current <= endDate) {
+      const year = current.getFullYear();
+      const month = String(current.getMonth() + 1).padStart(2, '0');
+      const day = String(current.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
+      const existing = taskMap.get(dateStr);
+      const row = existing || {
+        id: `temp-plan-${dateStr}`,
+        taskDate: dateStr,
+        plantSection: 'PLANNING',
+        rfgRev: 'CSS14',
+        mirRev: 'Prod',
+        eeWorkSupp: '',
+        eeWorkAft: '',
+        mechWorkSupp: '',
+        mechWorkAft: '',
+        isTemp: true
+      };
+
+      if (planningSearchQuery) {
+        const query = planningSearchQuery.toLowerCase();
+        const formattedDateStr = current.toLocaleDateString('en-GB', {
+          weekday: 'short',
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }).toLowerCase();
+
+        const matches = 
+          row.taskName?.toLowerCase().includes(query) ||
+          row.eeWorkAft?.toLowerCase().includes(query) ||
+          row.mechWorkAft?.toLowerCase().includes(query) ||
+          row.eeWorkSupp?.toLowerCase().includes(query) ||
+          row.mechWorkSupp?.toLowerCase().includes(query) ||
+          row.rfgRev?.toLowerCase().includes(query) ||
+          row.mirRev?.toLowerCase().includes(query) ||
+          dateStr.includes(query) ||
+          formattedDateStr.includes(query);
+
+        if (matches) {
+          rows.push(row);
+        }
+      } else {
+        rows.push(row);
+      }
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    return rows;
+  }, [tasks, selectedDate, planningSearchQuery]);
 
   // Change selected date
   const changeDateByDays = (days) => {
@@ -1592,7 +1646,7 @@ export default function TaskManagement() {
             <table className="data-table font-mono" style={{ fontSize: '12px', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th rowSpan="2" style={{ width: '100px', textAlign: 'center', backgroundColor: '#e2e8f0', border: '1px solid #cbd5e1' }}>DATE</th>
+                  <th rowSpan="2" style={{ width: '140px', textAlign: 'center', backgroundColor: '#e2e8f0', border: '1px solid #cbd5e1' }}>DATE</th>
                   <th colSpan="2" style={{ textAlign: 'center', backgroundColor: '#bfdbfe', color: '#1e3a8a', border: '1px solid #93c5fd' }}>LINE SCHEDULE</th>
                   <th colSpan="2" style={{ textAlign: 'center', backgroundColor: '#2563eb', color: '#ffffff', border: '1px solid #1d4ed8' }}>EE Work (Electrical)</th>
                   <th colSpan="2" style={{ textAlign: 'center', backgroundColor: '#ec4899', color: '#ffffff', border: '1px solid #db2777' }}>MECH Work (Mechanical)</th>
@@ -1615,8 +1669,14 @@ export default function TaskManagement() {
                   </tr>
                 ) : (
                   planningTasks.map((t) => {
-                    const isWeekend = t.taskDate ? (new Date(t.taskDate).getDay() === 0 || new Date(t.taskDate).getDay() === 6) : false;
-                    const dateFormatted = formatDate(t.taskDate);
+                    const dObj = t.taskDate ? new Date(t.taskDate + 'T00:00:00') : null;
+                    const isWeekend = dObj ? (dObj.getDay() === 0 || dObj.getDay() === 6) : false;
+                    const dateFormatted = dObj ? dObj.toLocaleDateString('en-GB', {
+                      weekday: 'short',
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric'
+                    }) : '';
                     
                     return (
                       <tr 
@@ -1625,7 +1685,7 @@ export default function TaskManagement() {
                           backgroundColor: isWeekend ? '#fef2f2' : 'transparent'
                         }}
                       >
-                        <td style={{ fontWeight: '700', textAlign: 'center', backgroundColor: isWeekend ? '#fee2e2' : '#f8fafc', color: isWeekend ? '#dc2626' : 'var(--text)' }}>
+                        <td style={{ fontWeight: '700', textAlign: 'center', backgroundColor: isWeekend ? '#fee2e2' : '#f8fafc', color: isWeekend ? '#dc2626' : 'var(--text)', whiteSpace: 'nowrap' }}>
                           {dateFormatted}
                         </td>
                         <td style={{ textAlign: 'center', backgroundColor: t.rfgRev === 'STOP' ? '#fca5a5' : t.rfgRev === 'Maintenance' ? '#fef08a' : '#e0f2fe', fontWeight: '600' }}>
