@@ -186,7 +186,19 @@ export default function TaskManagement() {
   const [activeView, setActiveView] = useState('daily'); // 'daily' | 'planning'
   const [tasks, setTasks] = useState(() => {
     const localSaved = localStorage.getItem('mace_tasks_cache');
-    return localSaved ? JSON.parse(localSaved) : [];
+    if (!localSaved) return [];
+    try {
+      const parsed = JSON.parse(localSaved);
+      return parsed.filter(t => 
+        !(t.id?.startsWith('temp-') || t.id?.startsWith('local-')) || 
+        (t.plantSection === 'SUBCONTRACTOR' || t.category === 'SUBCONTRACTOR' ? 
+          (t.taskName?.trim() || t.pic?.trim() || t.location?.trim()) : 
+          (t.section?.trim() || t.equipment?.trim() || t.taskName?.trim() || t.detail?.trim() || t.mechTechnicians?.trim() || t.elecTechnicians?.trim())
+        )
+      );
+    } catch (e) {
+      return [];
+    }
   });
   const [loading, setLoading] = useState(true);
 
@@ -200,8 +212,15 @@ export default function TaskManagement() {
   }, [selectedDate]);
 
   useEffect(() => {
-    if (tasks && tasks.length > 0) {
-      localStorage.setItem('mace_tasks_cache', JSON.stringify(tasks));
+    if (tasks) {
+      const tasksToCache = tasks.filter(t => 
+        !(t.id?.startsWith('temp-') || t.id?.startsWith('local-')) || 
+        (t.plantSection === 'SUBCONTRACTOR' || t.category === 'SUBCONTRACTOR' ? 
+          (t.taskName?.trim() || t.pic?.trim() || t.location?.trim()) : 
+          (t.section?.trim() || t.equipment?.trim() || t.taskName?.trim() || t.detail?.trim() || t.mechTechnicians?.trim() || t.elecTechnicians?.trim())
+        )
+      );
+      localStorage.setItem('mace_tasks_cache', JSON.stringify(tasksToCache));
     }
   }, [tasks]);
 
@@ -215,7 +234,7 @@ export default function TaskManagement() {
 
   useEffect(() => {
     const unsubscribe = subscribeCollection('mace_tasks', (data) => {
-      if (data && data.length > 0) {
+      if (data) {
         setTasks(data);
         localStorage.setItem('mace_tasks_cache', JSON.stringify(data));
       }
