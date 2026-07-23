@@ -565,22 +565,22 @@ h1, h2, h3, h4, h5, h6 {
 
 .data-table th {
   background-color: #fafbfc;
-  padding: 12px 16px;
+  padding: 6px 8px;
   font-weight: 700;
   font-size: 11px;
   text-transform: uppercase;
   color: var(--text2);
-  letter-spacing: 0.6px;
+  letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border);
   user-select: none;
 }
 
 .data-table td {
-  padding: 12px 16px;
+  padding: 2px 4px;
   vertical-align: middle;
   border-bottom: 1px solid var(--border);
   color: var(--text2);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .data-table tr:last-child td {
