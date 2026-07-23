@@ -1059,39 +1059,11 @@ export default function TaskManagement() {
         title="Task Management"
         subtitle="Daily shop floor task execution board and schedule planning matrix."
         actions={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileUpload} 
-              accept=".csv" 
-              style={{ display: 'none' }} 
-              id="plan-csv-file-input"
-            />
-            <button 
-              className="btn btn-sm" 
-              onClick={handleImportPlanClick}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '5px 12px', borderRadius: '6px' }}
-              id="btn-import-plan"
-              title="Import planning schedule from CSV file"
-            >
-              <Upload size={14} /> Import Plan
+          tasks.length === 0 ? (
+            <button className="btn btn-sm" onClick={handleSeedMockData}>
+              Seed Sample Data
             </button>
-            <button 
-              className="btn btn-sm" 
-              onClick={handleExportPlanClick}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '5px 12px', borderRadius: '6px' }}
-              id="btn-export-plan"
-              title="Export planning schedule to CSV file"
-            >
-              <Download size={14} /> Export Plan
-            </button>
-            {tasks.length === 0 && (
-              <button className="btn btn-sm" onClick={handleSeedMockData}>
-                Seed Sample Data
-              </button>
-            )}
-          </div>
+          ) : null
         }
         id="task-mgmt-header"
       />
@@ -1161,6 +1133,14 @@ export default function TaskManagement() {
           </>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+              accept=".csv" 
+              style={{ display: 'none' }} 
+              id="plan-csv-file-input"
+            />
             <button 
               className="btn btn-sm"
               onClick={handleJumpToToday}
@@ -1170,11 +1150,29 @@ export default function TaskManagement() {
             >
               📅 Jump to Today
             </button>
-            <div style={{ position: 'relative', width: '280px' }}>
+            <button 
+              className="btn btn-sm" 
+              onClick={handleImportPlanClick}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '5px 10px', borderRadius: '6px' }}
+              id="btn-import-plan"
+              title="Import planning schedule from CSV file"
+            >
+              <Upload size={14} /> Import Plan
+            </button>
+            <button 
+              className="btn btn-sm" 
+              onClick={handleExportPlanClick}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '5px 10px', borderRadius: '6px' }}
+              id="btn-export-plan"
+              title="Export planning schedule to CSV file"
+            >
+              <Download size={14} /> Export Plan
+            </button>
+            <div style={{ position: 'relative', width: '250px' }}>
               <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
               <input 
                 type="text" 
-                placeholder="Search planning schedule, EE, MECH..." 
+                placeholder="Search planning schedule..." 
                 value={planningSearchQuery}
                 onChange={(e) => setPlanningSearchQuery(e.target.value)}
                 className="form-input"
