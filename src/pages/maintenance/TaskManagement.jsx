@@ -243,6 +243,16 @@ export default function TaskManagement() {
   // Inline Editing Local Changes state { [taskId]: { field: value } }
   const [draftEdits, setDraftEdits] = useState({});
 
+  const [rfgMinCount, setRfgMinCount] = useState(4);
+  const [mirMinCount, setMirMinCount] = useState(4);
+  const [subMinCount, setSubMinCount] = useState(2);
+
+  useEffect(() => {
+    setRfgMinCount(4);
+    setMirMinCount(4);
+    setSubMinCount(2);
+  }, [selectedDate]);
+
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -384,8 +394,15 @@ export default function TaskManagement() {
     }
   };
 
-  // Add Row directly to table
   const handleAddNewRow = (plantSection, category) => {
+    if (plantSection === 'RFG') {
+      setRfgMinCount(prev => prev + 1);
+    } else if (plantSection === 'MIR') {
+      setMirMinCount(prev => prev + 1);
+    } else if (plantSection === 'SUBCONTRACTOR') {
+      setSubMinCount(prev => prev + 1);
+    }
+    
     const tempId = `temp-${plantSection}-add-${Date.now()}`;
     const newTempRow = {
       id: tempId,
@@ -418,10 +435,25 @@ export default function TaskManagement() {
     const isLocalOnly = task.id.startsWith('temp-') || task.id.startsWith('local-');
     const hasContent = hasAnyContent(task) || (draftEdits[task.id] && Object.values(draftEdits[task.id]).some(val => typeof val === 'string' ? val.trim().length > 0 : !!val));
     
+    // Determine the section of the row being deleted
+    const section = task.plantSection || (task.plant === 'MIR' ? 'MIR' : task.plant === 'RFG' ? 'RFG' : 'RFG');
+    
+    // Decrement the minimum count for that section so the layout shrinks
+    const decrementMinCount = () => {
+      if (section === 'RFG') {
+        setRfgMinCount(prev => Math.max(1, prev - 1)); // Keep at least 1 row
+      } else if (section === 'MIR') {
+        setMirMinCount(prev => Math.max(1, prev - 1));
+      } else if (section === 'SUBCONTRACTOR') {
+        setSubMinCount(prev => Math.max(1, prev - 1));
+      }
+    };
+
     if (task.id.startsWith('temp-') && !tasks.some(t => t.id === task.id)) {
       if (hasContent) {
         if (!window.confirm('Are you sure you want to clear this row?')) return;
       }
+      decrementMinCount();
       setDraftEdits(prev => {
         const next = { ...prev };
         delete next[task.id];
@@ -433,6 +465,8 @@ export default function TaskManagement() {
     if (hasContent || !isLocalOnly) {
       if (!window.confirm('Are you sure you want to delete this row?')) return;
     }
+
+    decrementMinCount();
 
     if (!isLocalOnly) {
       try {
@@ -693,9 +727,9 @@ export default function TaskManagement() {
     return list;
   };
 
-  const dailyRfgRows = useMemo(() => getPaddedRows(existingRfgTasks, 4, 'RFG', 'MTN'), [existingRfgTasks, selectedDate]);
-  const dailyMirRows = useMemo(() => getPaddedRows(existingMirTasks, 4, 'MIR', 'PROD'), [existingMirTasks, selectedDate]);
-  const dailySubRows = useMemo(() => getPaddedRows(existingSubTasks, 2, 'SUBCONTRACTOR', 'SUBCONTRACTOR'), [existingSubTasks, selectedDate]);
+  const dailyRfgRows = useMemo(() => getPaddedRows(existingRfgTasks, rfgMinCount, 'RFG', 'MTN'), [existingRfgTasks, rfgMinCount, selectedDate]);
+  const dailyMirRows = useMemo(() => getPaddedRows(existingMirTasks, mirMinCount, 'MIR', 'PROD'), [existingMirTasks, mirMinCount, selectedDate]);
+  const dailySubRows = useMemo(() => getPaddedRows(existingSubTasks, subMinCount, 'SUBCONTRACTOR', 'SUBCONTRACTOR'), [existingSubTasks, subMinCount, selectedDate]);
 
   // Filter tasks for Planning View
   const planningTasks = useMemo(() => {
