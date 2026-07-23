@@ -118,6 +118,8 @@ function SectionCell({ task, draftEdits, handleCellChange, handleCellBlur }) {
           setShowSuggestions(true);
         }}
         onBlur={(e) => {
+          e.target.style.borderColor = 'transparent';
+          e.target.style.background = 'transparent';
           setTimeout(() => {
             setShowSuggestions(false);
             handleCellBlur(task, field, e.target.value);
@@ -622,7 +624,11 @@ export default function TaskManagement() {
           e.target.style.background = 'var(--surface)';
           textareaRef(e.target);
         }}
-        onBlur={() => handleCellBlur(task, field)}
+        onBlur={(e) => {
+          e.target.style.borderColor = 'transparent';
+          e.target.style.background = 'transparent';
+          handleCellBlur(task, field);
+        }}
         style={{
           width: '100%',
           border: '1px solid transparent',
