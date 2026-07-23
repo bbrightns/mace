@@ -6,7 +6,9 @@ import {
   CalendarDays, 
   Clock, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  Upload,
+  Download
 } from 'lucide-react';
 import { 
   subscribeCollection, 
@@ -236,6 +238,145 @@ export default function TaskManagement() {
       localStorage.setItem('mace_tasks_cache', JSON.stringify(tasksToCache));
     }
   }, [tasks]);
+
+  // Import & Export Plan logic
+  const fileInputRef = useRef(null);
+
+  const handleImportPlanClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const text = evt.target.result;
+        const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+        if (lines.length <= 1) {
+          showToast('Import file is empty or missing data rows', 'warning');
+          return;
+        }
+
+        const parseCSVLine = (line) => {
+          const result = [];
+          let cur = '';
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              if (inQuotes && line[i + 1] === '"') {
+                cur += '"';
+                i++;
+              } else {
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              result.push(cur.trim());
+              cur = '';
+            } else {
+              cur += char;
+            }
+          }
+          result.push(cur.trim());
+          return result;
+        };
+
+        const rows = lines.slice(1).map(parseCSVLine);
+        let importedCount = 0;
+
+        for (const row of rows) {
+          if (row.length < 1) continue;
+          const [dateVal, plantSec, cat, sec, equip, name, detail, plan, safety, stat, eeSupp, eeAft, mechSupp, mechAft, subName, plant, loc, prog, pic] = row;
+          
+          if (!dateVal) continue;
+
+          const docData = {
+            taskDate: dateVal,
+            plantSection: plantSec || 'RFG',
+            category: cat || 'MTN',
+            section: sec || '',
+            equipment: equip || '',
+            taskName: name || '',
+            detail: detail || '',
+            planType: plan || 'Plan',
+            safety: safety || 'PPE',
+            status: stat || 'Pending',
+            eeWorkSupp: eeSupp || '',
+            eeWorkAft: eeAft || '',
+            mechWorkSupp: mechSupp || '',
+            mechWorkAft: mechAft || '',
+            subcontractorName: subName || '',
+            plant: plant || '',
+            location: loc || '',
+            progress: prog || '',
+            pic: pic || '',
+            updatedAt: new Date().toISOString()
+          };
+
+          await createDocument('mace_tasks', docData);
+          importedCount++;
+        }
+
+        showToast(`Successfully imported ${importedCount} schedule records!`, 'success');
+      } catch (err) {
+        console.error('Error importing CSV:', err);
+        showToast('Error reading import file. Make sure it is a valid CSV.', 'error');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleExportPlanClick = () => {
+    try {
+      const headers = ['Date', 'Plant Section', 'Category', 'Section', 'Equipment', 'Task Name', 'Detail', 'Plan Type', 'Safety', 'Status', 'EE Work Supp', 'EE Work Aft', 'MECH Work Supp', 'MECH Work Aft', 'Subcontractor Name', 'Plant', 'Location', 'Progress (%)', 'PIC'];
+      
+      const rows = tasks.map(t => [
+        t.taskDate || '',
+        t.plantSection || '',
+        t.category || '',
+        t.section || '',
+        t.equipment || '',
+        t.taskName || '',
+        t.detail || '',
+        t.planType || '',
+        t.safety || '',
+        t.status || '',
+        t.eeWorkSupp || '',
+        t.eeWorkAft || '',
+        t.mechWorkSupp || '',
+        t.mechWorkAft || '',
+        t.subcontractorName || '',
+        t.plant || '',
+        t.location || '',
+        t.progress || '',
+        t.pic || ''
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(r => r.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Task_Planning_Schedule_${new Date().toISOString().substring(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Plan schedule exported successfully!', 'success');
+    } catch (err) {
+      console.error('Export error:', err);
+      showToast('Failed to export plan', 'error');
+    }
+  };
 
   // Today date and Planning jump ref
   const todayRowRef = useRef(null);
@@ -918,11 +1059,39 @@ export default function TaskManagement() {
         title="Task Management"
         subtitle="Daily shop floor task execution board and schedule planning matrix."
         actions={
-          tasks.length === 0 ? (
-            <button className="btn btn-sm" onClick={handleSeedMockData}>
-              Seed Sample Data
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+              accept=".csv" 
+              style={{ display: 'none' }} 
+              id="plan-csv-file-input"
+            />
+            <button 
+              className="btn btn-sm" 
+              onClick={handleImportPlanClick}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '5px 12px', borderRadius: '6px' }}
+              id="btn-import-plan"
+              title="Import planning schedule from CSV file"
+            >
+              <Upload size={14} /> Import Plan
             </button>
-          ) : null
+            <button 
+              className="btn btn-sm" 
+              onClick={handleExportPlanClick}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '5px 12px', borderRadius: '6px' }}
+              id="btn-export-plan"
+              title="Export planning schedule to CSV file"
+            >
+              <Download size={14} /> Export Plan
+            </button>
+            {tasks.length === 0 && (
+              <button className="btn btn-sm" onClick={handleSeedMockData}>
+                Seed Sample Data
+              </button>
+            )}
+          </div>
         }
         id="task-mgmt-header"
       />
