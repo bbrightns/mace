@@ -536,14 +536,21 @@ export default function TaskManagement() {
     );
   };
 
-  // Helper for Section Auto-Suggest Cell
+  // Helper for Section Auto-Suggest Cell (Multiline + Custom Interactive Popover Suggestion)
   const renderSectionCell = (task) => {
     const field = 'section';
     const currentDraft = draftEdits[task.id]?.[field];
     const val = currentDraft !== undefined ? currentDraft : (task.section || '');
     const isUrgent = (draftEdits[task.id]?.planType || task.planType || task.mtnType) === 'Urgent';
 
-    const listId = `section-suggest-${task.id}`;
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    const filteredSuggestions = useMemo(() => {
+      if (!val) return SECTION_SUGGESTIONS.slice(0, 8);
+      return SECTION_SUGGESTIONS.filter(item => 
+        item.toLowerCase().includes(val.toLowerCase())
+      ).slice(0, 8);
+    }, [val]);
 
     const handleInput = (e) => {
       e.target.style.height = 'auto';
@@ -551,23 +558,30 @@ export default function TaskManagement() {
     };
 
     return (
-      <>
+      <div style={{ position: 'relative', width: '100%' }}>
         <textarea 
           className="table-cell-input"
           rows={1}
-          list={listId}
           value={val}
           placeholder="Section..."
           onChange={(e) => {
             handleCellChange(task.id, field, e.target.value);
             handleInput(e);
+            setShowSuggestions(true);
           }}
           onFocus={(e) => {
             e.target.style.borderColor = 'var(--accent)';
             e.target.style.background = 'var(--surface)';
             handleInput(e);
+            setShowSuggestions(true);
           }}
-          onBlur={(e) => handleCellBlur(task, field, e.target.value)}
+          onBlur={(e) => {
+            // Delay hide to allow suggestion click
+            setTimeout(() => {
+              setShowSuggestions(false);
+              handleCellBlur(task, field, e.target.value);
+            }, 200);
+          }}
           style={{
             width: '100%',
             border: '1px solid transparent',
@@ -585,12 +599,43 @@ export default function TaskManagement() {
             display: 'block'
           }}
         />
-        <datalist id={listId}>
-          {SECTION_SUGGESTIONS.map((item, idx) => (
-            <option key={idx} value={item} />
-          ))}
-        </datalist>
-      </>
+
+        {showSuggestions && filteredSuggestions.length > 0 && (
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            backgroundColor: '#ffffff',
+            border: '1px solid var(--border)',
+            borderRadius: '6px',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+            zIndex: 100,
+            maxHeight: '160px',
+            overflowY: 'auto'
+          }}>
+            {filteredSuggestions.map((item, idx) => (
+              <div
+                key={idx}
+                style={{
+                  padding: '5px 8px',
+                  fontSize: '11.5px',
+                  cursor: 'pointer',
+                  borderBottom: '1px solid #f1f5f9',
+                  color: 'var(--text)'
+                }}
+                onMouseDown={() => {
+                  handleCellChange(task.id, field, item);
+                  handleCellBlur(task, field, item);
+                  setShowSuggestions(false);
+                }}
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     );
   };
 
