@@ -1161,8 +1161,35 @@ export default function TaskManagement() {
   const dailySubRows = useMemo(() => getPaddedRows(existingSubTasks, dailySearchQuery ? 0 : subMinCount, 'SUBCONTRACTOR', 'SUBCONTRACTOR'), [existingSubTasks, subMinCount, selectedDate, dailySearchQuery]);
 
   // Generate date range rows for Planning Matrix (controlled by planningRangeStart/End)
+  // When search is active: searches ALL tasks in DB regardless of date range
   const planningTasks = useMemo(() => {
-    // Map existing tasks by date for fast lookup
+    const query = planningSearchQuery.toLowerCase().trim();
+
+    // SEARCH MODE: scan all tasks in the entire database
+    if (query) {
+      const matched = tasks.filter(t => {
+        if (!t.taskDate) return false;
+        const dObj = new Date(t.taskDate + 'T00:00:00');
+        const formattedDateStr = dObj.toLocaleDateString('en-GB', {
+          weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'
+        }).toLowerCase();
+        return (
+          t.taskName?.toLowerCase().includes(query) ||
+          t.eeWorkAft?.toLowerCase().includes(query) ||
+          t.mechWorkAft?.toLowerCase().includes(query) ||
+          t.eeWorkSupp?.toLowerCase().includes(query) ||
+          t.mechWorkSupp?.toLowerCase().includes(query) ||
+          t.rfgRev?.toLowerCase().includes(query) ||
+          t.mirRev?.toLowerCase().includes(query) ||
+          t.taskDate.includes(query) ||
+          formattedDateStr.includes(query)
+        );
+      });
+      // Sort results by date ascending
+      return matched.sort((a, b) => (a.taskDate > b.taskDate ? 1 : -1));
+    }
+
+    // DATE WINDOW MODE: build rows for the selected range (empty rows for days with no data)
     const taskMap = new Map();
     tasks.forEach(t => {
       if (t.taskDate) {
@@ -1183,44 +1210,15 @@ export default function TaskManagement() {
       const day = String(current.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
 
-      const existing = taskMap.get(dateStr);
-      const row = existing || {
+      rows.push(taskMap.get(dateStr) || {
         id: `temp-plan-${dateStr}`,
         taskDate: dateStr,
         plantSection: 'PLANNING',
-        rfgRev: '',
-        mirRev: '',
-        eeWorkSupp: '',
-        eeWorkAft: '',
-        mechWorkSupp: '',
-        mechWorkAft: '',
+        rfgRev: '', mirRev: '',
+        eeWorkSupp: '', eeWorkAft: '',
+        mechWorkSupp: '', mechWorkAft: '',
         isTemp: true
-      };
-
-      if (planningSearchQuery) {
-        const query = planningSearchQuery.toLowerCase();
-        const formattedDateStr = current.toLocaleDateString('en-GB', {
-          weekday: 'short',
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric'
-        }).toLowerCase();
-
-        const matches =
-          row.taskName?.toLowerCase().includes(query) ||
-          row.eeWorkAft?.toLowerCase().includes(query) ||
-          row.mechWorkAft?.toLowerCase().includes(query) ||
-          row.eeWorkSupp?.toLowerCase().includes(query) ||
-          row.mechWorkSupp?.toLowerCase().includes(query) ||
-          row.rfgRev?.toLowerCase().includes(query) ||
-          row.mirRev?.toLowerCase().includes(query) ||
-          dateStr.includes(query) ||
-          formattedDateStr.includes(query);
-
-        if (matches) rows.push(row);
-      } else {
-        rows.push(row);
-      }
+      });
 
       current.setDate(current.getDate() + 1);
     }
