@@ -704,7 +704,7 @@ export default function TaskManagement() {
                         <th style={{ width: '90px', color: '#854d0e', fontWeight: '700' }}>Safety</th>
                         <th style={{ width: '150px', color: '#854d0e', fontWeight: '700' }}>Section</th>
                         <th style={{ width: '130px', color: '#854d0e', fontWeight: '700' }}>Equipment</th>
-                        <th style={{ width: '50px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Rank</th>
+                        <th style={{ width: '70px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Rank</th>
                         <th style={{ minWidth: '350px', color: '#854d0e', fontWeight: '700' }}>Task Name / Description</th>
                         <th style={{ minWidth: '250px', color: '#854d0e', fontWeight: '700' }}>Detail</th>
                         <th style={{ width: '100px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Status</th>
@@ -835,7 +835,7 @@ export default function TaskManagement() {
                         <th style={{ width: '90px', color: '#166534', fontWeight: '700' }}>Safety</th>
                         <th style={{ width: '150px', color: '#166534', fontWeight: '700' }}>Section</th>
                         <th style={{ width: '130px', color: '#166534', fontWeight: '700' }}>Equipment</th>
-                        <th style={{ width: '50px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Rank</th>
+                        <th style={{ width: '70px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Rank</th>
                         <th style={{ minWidth: '350px', color: '#166534', fontWeight: '700' }}>Task Name / Description</th>
                         <th style={{ minWidth: '250px', color: '#166534', fontWeight: '700' }}>Detail</th>
                         <th style={{ width: '100px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Status</th>
