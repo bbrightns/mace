@@ -237,6 +237,33 @@ export default function TaskManagement() {
     }
   }, [tasks]);
 
+  // Today date and Planning jump ref
+  const todayRowRef = useRef(null);
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }, []);
+
+  const handleJumpToToday = () => {
+    if (todayRowRef.current) {
+      todayRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  useEffect(() => {
+    if (activeView === 'planning') {
+      const timer = setTimeout(() => {
+        if (todayRowRef.current) {
+          todayRowRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [activeView]);
+
   // Search filters (separated for Daily Tasks and Planning Matrix)
   const [dailySearchQuery, setDailySearchQuery] = useState('');
   const [planningSearchQuery, setPlanningSearchQuery] = useState('');
@@ -964,17 +991,28 @@ export default function TaskManagement() {
             </div>
           </>
         ) : (
-          <div style={{ position: 'relative', width: '300px', marginLeft: 'auto' }}>
-            <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
-            <input 
-              type="text" 
-              placeholder="Search planning schedule, EE, MECH..." 
-              value={planningSearchQuery}
-              onChange={(e) => setPlanningSearchQuery(e.target.value)}
-              className="form-input"
-              style={{ paddingLeft: '32px', width: '100%', height: '34px', fontSize: '12px' }}
-              id="task-mgmt-planning-search"
-            />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+            <button 
+              className="btn btn-sm"
+              onClick={handleJumpToToday}
+              style={{ backgroundColor: '#fef08a', color: '#854d0e', border: '1px solid #fde047', fontWeight: '700', borderRadius: '6px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}
+              title="Jump to Today's work row"
+              id="btn-jump-today"
+            >
+              📅 Jump to Today
+            </button>
+            <div style={{ position: 'relative', width: '280px' }}>
+              <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
+              <input 
+                type="text" 
+                placeholder="Search planning schedule, EE, MECH..." 
+                value={planningSearchQuery}
+                onChange={(e) => setPlanningSearchQuery(e.target.value)}
+                className="form-input"
+                style={{ paddingLeft: '32px', width: '100%', height: '34px', fontSize: '12px' }}
+                id="task-mgmt-planning-search"
+              />
+            </div>
           </div>
         )}
       </div>
@@ -1642,22 +1680,22 @@ export default function TaskManagement() {
           )}
 
           {/* Planning Matrix Table - Matching Excel Layout 2 */}
-          <div className="table-container" style={{ margin: 0, overflowX: 'auto' }}>
-            <table className="data-table font-mono" style={{ fontSize: '12px', borderCollapse: 'collapse' }}>
+          <div className="table-container" style={{ margin: 0, overflowX: 'auto', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', position: 'relative' }}>
+            <table className="data-table font-mono" style={{ fontSize: '12px', borderCollapse: 'separate', borderSpacing: 0 }}>
               <thead>
                 <tr>
-                  <th rowSpan="2" style={{ width: '140px', textAlign: 'center', backgroundColor: '#e2e8f0', border: '1px solid #cbd5e1' }}>DATE</th>
-                  <th colSpan="2" style={{ textAlign: 'center', backgroundColor: '#bfdbfe', color: '#1e3a8a', border: '1px solid #93c5fd' }}>LINE SCHEDULE</th>
-                  <th colSpan="2" style={{ textAlign: 'center', backgroundColor: '#2563eb', color: '#ffffff', border: '1px solid #1d4ed8' }}>EE Work (Electrical)</th>
-                  <th colSpan="2" style={{ textAlign: 'center', backgroundColor: '#ec4899', color: '#ffffff', border: '1px solid #db2777' }}>MECH Work (Mechanical)</th>
+                  <th rowSpan="2" style={{ position: 'sticky', top: 0, zIndex: 12, width: '150px', textAlign: 'center', backgroundColor: '#e2e8f0', border: '1px solid #cbd5e1' }}>DATE</th>
+                  <th colSpan="2" style={{ position: 'sticky', top: 0, zIndex: 12, textAlign: 'center', backgroundColor: '#bfdbfe', color: '#1e3a8a', border: '1px solid #93c5fd' }}>LINE SCHEDULE</th>
+                  <th colSpan="2" style={{ position: 'sticky', top: 0, zIndex: 12, textAlign: 'center', backgroundColor: '#2563eb', color: '#ffffff', border: '1px solid #1d4ed8' }}>EE Work (Electrical)</th>
+                  <th colSpan="2" style={{ position: 'sticky', top: 0, zIndex: 12, textAlign: 'center', backgroundColor: '#ec4899', color: '#ffffff', border: '1px solid #db2777' }}>MECH Work (Mechanical)</th>
                 </tr>
                 <tr>
-                  <th style={{ width: '90px', textAlign: 'center', backgroundColor: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' }}>RFG</th>
-                  <th style={{ width: '90px', textAlign: 'center', backgroundColor: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' }}>MIR</th>
-                  <th style={{ width: '140px', backgroundColor: '#93c5fd', color: '#1e3a8a', border: '1px solid #60a5fa' }}>SUPP</th>
-                  <th style={{ minWidth: '220px', backgroundColor: '#bfdbfe', color: '#1e40af', border: '1px solid #60a5fa' }}>AFT</th>
-                  <th style={{ width: '140px', backgroundColor: '#fbcfe8', color: '#831843', border: '1px solid #f472b6' }}>SUPP</th>
-                  <th style={{ minWidth: '220px', backgroundColor: '#fce7f3', color: '#831843', border: '1px solid #f472b6' }}>AFT</th>
+                  <th style={{ position: 'sticky', top: '27px', zIndex: 11, width: '90px', textAlign: 'center', backgroundColor: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' }}>RFG</th>
+                  <th style={{ position: 'sticky', top: '27px', zIndex: 11, width: '90px', textAlign: 'center', backgroundColor: '#dbeafe', color: '#1e40af', border: '1px solid #93c5fd' }}>MIR</th>
+                  <th style={{ position: 'sticky', top: '27px', zIndex: 11, width: '140px', backgroundColor: '#93c5fd', color: '#1e3a8a', border: '1px solid #60a5fa' }}>SUPP</th>
+                  <th style={{ position: 'sticky', top: '27px', zIndex: 11, minWidth: '220px', backgroundColor: '#bfdbfe', color: '#1e40af', border: '1px solid #60a5fa' }}>AFT</th>
+                  <th style={{ position: 'sticky', top: '27px', zIndex: 11, width: '140px', backgroundColor: '#fbcfe8', color: '#831843', border: '1px solid #f472b6' }}>SUPP</th>
+                  <th style={{ position: 'sticky', top: '27px', zIndex: 11, minWidth: '220px', backgroundColor: '#fce7f3', color: '#831843', border: '1px solid #f472b6' }}>AFT</th>
                 </tr>
               </thead>
               <tbody>
@@ -1671,6 +1709,7 @@ export default function TaskManagement() {
                   planningTasks.map((t) => {
                     const dObj = t.taskDate ? new Date(t.taskDate + 'T00:00:00') : null;
                     const isWeekend = dObj ? (dObj.getDay() === 0 || dObj.getDay() === 6) : false;
+                    const isToday = t.taskDate === todayStr;
                     const dateFormatted = dObj ? dObj.toLocaleDateString('en-GB', {
                       weekday: 'short',
                       day: '2-digit',
@@ -1681,23 +1720,46 @@ export default function TaskManagement() {
                     return (
                       <tr 
                         key={t.id}
+                        ref={isToday ? todayRowRef : null}
                         style={{ 
-                          backgroundColor: isWeekend ? '#fef2f2' : 'transparent'
+                          backgroundColor: isToday ? '#fef9c3' : (isWeekend ? '#fef2f2' : 'transparent')
                         }}
                       >
-                        <td style={{ fontWeight: '700', textAlign: 'center', backgroundColor: isWeekend ? '#fee2e2' : '#f8fafc', color: isWeekend ? '#dc2626' : 'var(--text)', whiteSpace: 'nowrap' }}>
-                          {dateFormatted}
+                        <td style={{ 
+                          fontWeight: isToday ? '800' : '700', 
+                          textAlign: 'center', 
+                          backgroundColor: isToday ? '#fde047' : (isWeekend ? '#fee2e2' : '#f8fafc'), 
+                          color: isToday ? '#713f12' : (isWeekend ? '#dc2626' : 'var(--text)'), 
+                          whiteSpace: 'nowrap',
+                          borderLeft: isToday ? '4px solid #ca8a04' : 'none'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            <span>{dateFormatted}</span>
+                            {isToday && (
+                              <span style={{ 
+                                backgroundColor: '#ca8a04', 
+                                color: '#ffffff', 
+                                fontSize: '10px', 
+                                fontWeight: '800', 
+                                padding: '1px 5px', 
+                                borderRadius: '4px',
+                                letterSpacing: '0.5px' 
+                              }}>
+                                TODAY
+                              </span>
+                            )}
+                          </div>
                         </td>
-                        <td style={{ textAlign: 'center', backgroundColor: t.rfgRev === 'STOP' ? '#fca5a5' : t.rfgRev === 'Maintenance' ? '#fef08a' : t.rfgRev ? '#e0f2fe' : 'transparent', fontWeight: '600' }}>
+                        <td style={{ textAlign: 'center', backgroundColor: t.rfgRev === 'STOP' ? '#fca5a5' : t.rfgRev === 'Maintenance' ? '#fef08a' : t.rfgRev ? '#e0f2fe' : (isToday ? '#fef9c3' : 'transparent'), fontWeight: '600' }}>
                           {renderCell(t, 'rfgRev', '', { textAlign: 'center', fontWeight: '600' })}
                         </td>
-                        <td style={{ textAlign: 'center', backgroundColor: t.mirRev === 'STOP' ? '#fca5a5' : t.mirRev?.includes('MTN') ? '#fef08a' : t.mirRev ? '#e0f2fe' : 'transparent', fontWeight: '600' }}>
+                        <td style={{ textAlign: 'center', backgroundColor: t.mirRev === 'STOP' ? '#fca5a5' : t.mirRev?.includes('MTN') ? '#fef08a' : t.mirRev ? '#e0f2fe' : (isToday ? '#fef9c3' : 'transparent'), fontWeight: '600' }}>
                           {renderCell(t, 'mirRev', '', { textAlign: 'center', fontWeight: '600' })}
                         </td>
-                        <td style={{ color: '#2563eb', fontSize: '11.5px' }}>{renderCell(t, 'eeWorkSupp', '')}</td>
-                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>{renderCell(t, 'eeWorkAft', '')}</td>
-                        <td style={{ color: '#db2777', fontSize: '11.5px' }}>{renderCell(t, 'mechWorkSupp', '')}</td>
-                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>{renderCell(t, 'mechWorkAft', '')}</td>
+                        <td style={{ color: '#2563eb', fontSize: '11.5px', backgroundColor: isToday && !draftEdits[t.id]?.eeWorkSupp ? '#fef9c3' : 'transparent' }}>{renderCell(t, 'eeWorkSupp', '')}</td>
+                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px', backgroundColor: isToday && !draftEdits[t.id]?.eeWorkAft ? '#fef9c3' : 'transparent' }}>{renderCell(t, 'eeWorkAft', '')}</td>
+                        <td style={{ color: '#db2777', fontSize: '11.5px', backgroundColor: isToday && !draftEdits[t.id]?.mechWorkSupp ? '#fef9c3' : 'transparent' }}>{renderCell(t, 'mechWorkSupp', '')}</td>
+                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px', backgroundColor: isToday && !draftEdits[t.id]?.mechWorkAft ? '#fef9c3' : 'transparent' }}>{renderCell(t, 'mechWorkAft', '')}</td>
                       </tr>
                     );
                   })
