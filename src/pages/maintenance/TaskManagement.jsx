@@ -166,6 +166,136 @@ const EditableCell = React.memo(({ initialValue, onSave, placeholder = '', style
   );
 });
 
+// Memoized PlanningRow Component for 60 FPS row-level rendering
+const PlanningRow = React.memo(({ 
+  task, 
+  todayStr, 
+  todayRowRef,
+  draftEdits, 
+  handleCellChange, 
+  handleCellBlur 
+}) => {
+  const dObj = task.taskDate ? new Date(task.taskDate + 'T00:00:00') : null;
+  const isWeekend = dObj ? (dObj.getDay() === 0 || dObj.getDay() === 6) : false;
+  const isToday = task.taskDate === todayStr;
+  const dateFormatted = dObj ? dObj.toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }) : '';
+
+  const rfgVal = draftEdits[task.id]?.rfgRev !== undefined ? draftEdits[task.id].rfgRev : (task.rfgRev || '');
+  const mirVal = draftEdits[task.id]?.mirRev !== undefined ? draftEdits[task.id].mirRev : (task.mirRev || '');
+  const eeSuppVal = draftEdits[task.id]?.eeWorkSupp !== undefined ? draftEdits[task.id].eeWorkSupp : (task.eeWorkSupp || '');
+  const eeAftVal = draftEdits[task.id]?.eeWorkAft !== undefined ? draftEdits[task.id].eeWorkAft : (task.eeWorkAft || '');
+  const mechSuppVal = draftEdits[task.id]?.mechWorkSupp !== undefined ? draftEdits[task.id].mechWorkSupp : (task.mechWorkSupp || '');
+  const mechAftVal = draftEdits[task.id]?.mechWorkAft !== undefined ? draftEdits[task.id].mechWorkAft : (task.mechWorkAft || '');
+
+  return (
+    <tr 
+      ref={isToday ? todayRowRef : null}
+      style={{ 
+        backgroundColor: isToday ? '#fef9c3' : (isWeekend ? '#fef2f2' : 'transparent')
+      }}
+    >
+      <td style={{ 
+        fontWeight: isToday ? '800' : '700', 
+        textAlign: 'center', 
+        backgroundColor: isToday ? '#fde047' : (isWeekend ? '#fee2e2' : '#f8fafc'), 
+        color: isToday ? '#713f12' : (isWeekend ? '#dc2626' : 'var(--text)'), 
+        whiteSpace: 'nowrap',
+        borderLeft: isToday ? '4px solid #ca8a04' : 'none'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <span>{dateFormatted}</span>
+          {isToday && (
+            <span style={{ 
+              backgroundColor: '#ca8a04', 
+              color: '#ffffff', 
+              fontSize: '10px', 
+              fontWeight: '800', 
+              padding: '1px 5px', 
+              borderRadius: '4px',
+              letterSpacing: '0.5px' 
+            }}>
+              TODAY
+            </span>
+          )}
+        </div>
+      </td>
+      
+      {/* RFG */}
+      <td style={{ textAlign: 'center', backgroundColor: rfgVal === 'STOP' ? '#fca5a5' : rfgVal === 'Maintenance' ? '#fef08a' : rfgVal ? '#e0f2fe' : (isToday ? '#fef9c3' : 'transparent'), fontWeight: '600' }}>
+        <EditableCell 
+          initialValue={rfgVal}
+          onSave={(val) => {
+            handleCellChange(task.id, 'rfgRev', val);
+            handleCellBlur(task, 'rfgRev', val);
+          }}
+          style={{ textAlign: 'center', fontWeight: '600' }}
+        />
+      </td>
+
+      {/* MIR */}
+      <td style={{ textAlign: 'center', backgroundColor: mirVal === 'STOP' ? '#fca5a5' : mirVal?.includes('MTN') ? '#fef08a' : mirVal ? '#e0f2fe' : (isToday ? '#fef9c3' : 'transparent'), fontWeight: '600' }}>
+        <EditableCell 
+          initialValue={mirVal}
+          onSave={(val) => {
+            handleCellChange(task.id, 'mirRev', val);
+            handleCellBlur(task, 'mirRev', val);
+          }}
+          style={{ textAlign: 'center', fontWeight: '600' }}
+        />
+      </td>
+
+      {/* EE Work Supp */}
+      <td style={{ color: '#2563eb', fontSize: '11.5px', backgroundColor: isToday && !eeSuppVal ? '#fef9c3' : 'transparent' }}>
+        <EditableCell 
+          initialValue={eeSuppVal}
+          onSave={(val) => {
+            handleCellChange(task.id, 'eeWorkSupp', val);
+            handleCellBlur(task, 'eeWorkSupp', val);
+          }}
+        />
+      </td>
+
+      {/* EE Work Aft */}
+      <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px', backgroundColor: isToday && !eeAftVal ? '#fef9c3' : 'transparent' }}>
+        <EditableCell 
+          initialValue={eeAftVal}
+          onSave={(val) => {
+            handleCellChange(task.id, 'eeWorkAft', val);
+            handleCellBlur(task, 'eeWorkAft', val);
+          }}
+        />
+      </td>
+
+      {/* MECH Work Supp */}
+      <td style={{ color: '#db2777', fontSize: '11.5px', backgroundColor: isToday && !mechSuppVal ? '#fef9c3' : 'transparent' }}>
+        <EditableCell 
+          initialValue={mechSuppVal}
+          onSave={(val) => {
+            handleCellChange(task.id, 'mechWorkSupp', val);
+            handleCellBlur(task, 'mechWorkSupp', val);
+          }}
+        />
+      </td>
+
+      {/* MECH Work Aft */}
+      <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px', backgroundColor: isToday && !mechAftVal ? '#fef9c3' : 'transparent' }}>
+        <EditableCell 
+          initialValue={mechAftVal}
+          onSave={(val) => {
+            handleCellChange(task.id, 'mechWorkAft', val);
+            handleCellBlur(task, 'mechWorkAft', val);
+          }}
+        />
+      </td>
+    </tr>
+  );
+});
+
 // Standalone SectionCell Component to strictly satisfy React Rules of Hooks
 function SectionCell({ task, draftEdits, handleCellChange, handleCellBlur }) {
   const field = 'section';
@@ -1930,63 +2060,17 @@ export default function TaskManagement() {
                     </td>
                   </tr>
                 ) : (
-                  planningTasks.map((t) => {
-                    const dObj = t.taskDate ? new Date(t.taskDate + 'T00:00:00') : null;
-                    const isWeekend = dObj ? (dObj.getDay() === 0 || dObj.getDay() === 6) : false;
-                    const isToday = t.taskDate === todayStr;
-                    const dateFormatted = dObj ? dObj.toLocaleDateString('en-GB', {
-                      weekday: 'short',
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric'
-                    }) : '';
-                    
-                    return (
-                      <tr 
-                        key={t.id}
-                        ref={isToday ? todayRowRef : null}
-                        style={{ 
-                          backgroundColor: isToday ? '#fef9c3' : (isWeekend ? '#fef2f2' : 'transparent')
-                        }}
-                      >
-                        <td style={{ 
-                          fontWeight: isToday ? '800' : '700', 
-                          textAlign: 'center', 
-                          backgroundColor: isToday ? '#fde047' : (isWeekend ? '#fee2e2' : '#f8fafc'), 
-                          color: isToday ? '#713f12' : (isWeekend ? '#dc2626' : 'var(--text)'), 
-                          whiteSpace: 'nowrap',
-                          borderLeft: isToday ? '4px solid #ca8a04' : 'none'
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                            <span>{dateFormatted}</span>
-                            {isToday && (
-                              <span style={{ 
-                                backgroundColor: '#ca8a04', 
-                                color: '#ffffff', 
-                                fontSize: '10px', 
-                                fontWeight: '800', 
-                                padding: '1px 5px', 
-                                borderRadius: '4px',
-                                letterSpacing: '0.5px' 
-                              }}>
-                                TODAY
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td style={{ textAlign: 'center', backgroundColor: t.rfgRev === 'STOP' ? '#fca5a5' : t.rfgRev === 'Maintenance' ? '#fef08a' : t.rfgRev ? '#e0f2fe' : (isToday ? '#fef9c3' : 'transparent'), fontWeight: '600' }}>
-                          {renderCell(t, 'rfgRev', '', { textAlign: 'center', fontWeight: '600' })}
-                        </td>
-                        <td style={{ textAlign: 'center', backgroundColor: t.mirRev === 'STOP' ? '#fca5a5' : t.mirRev?.includes('MTN') ? '#fef08a' : t.mirRev ? '#e0f2fe' : (isToday ? '#fef9c3' : 'transparent'), fontWeight: '600' }}>
-                          {renderCell(t, 'mirRev', '', { textAlign: 'center', fontWeight: '600' })}
-                        </td>
-                        <td style={{ color: '#2563eb', fontSize: '11.5px', backgroundColor: isToday && !draftEdits[t.id]?.eeWorkSupp ? '#fef9c3' : 'transparent' }}>{renderCell(t, 'eeWorkSupp', '')}</td>
-                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px', backgroundColor: isToday && !draftEdits[t.id]?.eeWorkAft ? '#fef9c3' : 'transparent' }}>{renderCell(t, 'eeWorkAft', '')}</td>
-                        <td style={{ color: '#db2777', fontSize: '11.5px', backgroundColor: isToday && !draftEdits[t.id]?.mechWorkSupp ? '#fef9c3' : 'transparent' }}>{renderCell(t, 'mechWorkSupp', '')}</td>
-                        <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px', backgroundColor: isToday && !draftEdits[t.id]?.mechWorkAft ? '#fef9c3' : 'transparent' }}>{renderCell(t, 'mechWorkAft', '')}</td>
-                      </tr>
-                    );
-                  })
+                  planningTasks.map((t) => (
+                    <PlanningRow 
+                      key={t.taskDate}
+                      task={t}
+                      todayStr={todayStr}
+                      todayRowRef={todayRowRef}
+                      draftEdits={draftEdits}
+                      handleCellChange={handleCellChange}
+                      handleCellBlur={handleCellBlur}
+                    />
+                  ))
                 )}
               </tbody>
             </table>
