@@ -108,8 +108,8 @@ export default function TaskManagement() {
     return tasks.find(t => t.taskDate === selectedDate && (t.rfgRev || t.mirRev));
   }, [tasks, selectedDate]);
 
-  const currentRfgStatus = currentPlanningRow?.rfgRev || 'MTN';
-  const currentMirStatus = currentPlanningRow?.mirRev || 'Mirror';
+  const currentRfgStatus = currentPlanningRow?.rfgRev || 'PROD';
+  const currentMirStatus = currentPlanningRow?.mirRev || 'PROD';
 
   // Quick Inline Edit Cell Handler
   const handleCellChange = (taskId, field, value) => {
@@ -685,8 +685,8 @@ export default function TaskManagement() {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <span>RFG</span>
-                    <span className="badge font-mono" style={{ backgroundColor: currentRfgStatus === 'STOP' ? '#fca5a5' : '#fef9c3', color: currentRfgStatus === 'STOP' ? '#991b1b' : '#854d0e', border: '1px solid #fde047', fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}>
-                      Status: {currentRfgStatus}
+                    <span className="badge font-mono" style={{ backgroundColor: currentRfgStatus === 'STOP' ? '#fca5a5' : currentRfgStatus === 'MTN' ? '#fef08a' : '#dcfce7', color: currentRfgStatus === 'STOP' ? '#991b1b' : currentRfgStatus === 'MTN' ? '#854d0e' : '#166534', border: '1px solid #fde047', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', fontWeight: '700' }}>
+                      {currentRfgStatus}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
@@ -816,8 +816,8 @@ export default function TaskManagement() {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <span>MIR</span>
-                    <span className="badge font-mono" style={{ backgroundColor: currentMirStatus === 'STOP' ? '#fca5a5' : '#dcfce7', color: currentMirStatus === 'STOP' ? '#991b1b' : '#166534', border: '1px solid #86efac', fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}>
-                      Status: {currentMirStatus}
+                    <span className="badge font-mono" style={{ backgroundColor: currentMirStatus === 'STOP' ? '#fca5a5' : currentMirStatus?.includes('MTN') ? '#fef08a' : '#dcfce7', color: currentMirStatus === 'STOP' ? '#991b1b' : currentMirStatus?.includes('MTN') ? '#854d0e' : '#166534', border: '1px solid #86efac', fontSize: '11px', padding: '2px 8px', borderRadius: '4px', fontWeight: '700' }}>
+                      {currentMirStatus}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
