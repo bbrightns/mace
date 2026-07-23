@@ -120,7 +120,7 @@ function SectionCell({ task, draftEdits, handleCellChange, handleCellBlur }) {
         className="table-cell-input"
         rows={1}
         value={val}
-        placeholder="Section..."
+        placeholder=""
         onChange={(e) => {
           handleCellChange(task.id, field, e.target.value);
           textareaRef(e.target);
@@ -310,13 +310,13 @@ export default function TaskManagement() {
           category: task.category,
           taskDate: selectedDate,
           planType: field === 'planType' ? newValue : (task.planType || 'Plan'),
-          safety: field === 'safety' ? newValue : (task.safety || 'LOTO'),
+          safety: field === 'safety' ? newValue : (task.safety || 'PPE'),
           section: field === 'section' ? newValue : (task.section || ''),
           equipment: field === 'equipment' ? newValue : (task.equipment || ''),
           rank: field === 'rank' ? newValue : (task.rank || ''),
           taskName: field === 'taskName' ? newValue : (task.taskName || ''),
           detail: field === 'detail' ? newValue : (task.detail || ''),
-          status: field === 'status' ? newValue : (task.status || 'Pending'),
+          status: field === 'status' ? newValue : (task.status || ''),
           mechTechnicians: field === 'mechTechnicians' ? newValue : (task.mechTechnicians || ''),
           elecTechnicians: field === 'elecTechnicians' ? newValue : (task.elecTechnicians || ''),
           plant: field === 'plant' ? newValue : (task.plant || 'RFG'),
@@ -379,13 +379,13 @@ export default function TaskManagement() {
       category,
       taskDate: selectedDate,
       planType: 'Plan',
-      safety: 'LOTO',
+      safety: 'PPE',
       section: '',
       equipment: '',
-      rank: 'B',
+      rank: '',
       taskName: '',
       detail: '',
-      status: 'Finished',
+      status: '',
       mechTechnicians: '',
       elecTechnicians: '',
       plant: plantSection === 'SUBCONTRACTOR' ? 'RFG' : plantSection,
@@ -615,13 +615,13 @@ export default function TaskManagement() {
         category,
         taskDate: selectedDate,
         planType: 'Plan',
-        safety: 'LOTO',
+        safety: 'PPE',
         section: '',
         equipment: '',
-        rank: 'B',
+        rank: '',
         taskName: '',
         detail: '',
-        status: 'Pending',
+        status: '',
         mechTechnicians: '',
         elecTechnicians: '',
         plant: plantSection === 'SUBCONTRACTOR' ? 'RFG' : plantSection,
@@ -897,20 +897,19 @@ export default function TaskManagement() {
                       <tr style={{ backgroundColor: '#fefce8' }}>
                         <th style={{ width: '60px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Mech</th>
                         <th style={{ width: '60px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Elec</th>
-                        <th style={{ width: '70px', color: '#854d0e', fontWeight: '700' }}>Plan</th>
-                        <th style={{ width: '80px', color: '#854d0e', fontWeight: '700' }}>Safety</th>
+                        <th style={{ width: '75px', color: '#854d0e', fontWeight: '700' }}>Plan</th>
+                        <th style={{ width: '85px', color: '#854d0e', fontWeight: '700' }}>Safety</th>
                         <th style={{ width: '160px', color: '#854d0e', fontWeight: '700' }}>Section</th>
-                        <th style={{ width: '120px', color: '#854d0e', fontWeight: '700' }}>Equipment</th>
-                        <th style={{ width: '80px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Rank</th>
-                        <th style={{ minWidth: '300px', color: '#854d0e', fontWeight: '700' }}>Task Name / Description</th>
-                        <th style={{ minWidth: '200px', color: '#854d0e', fontWeight: '700' }}>Detail</th>
+                        <th style={{ width: '130px', color: '#854d0e', fontWeight: '700' }}>Equipment</th>
+                        <th style={{ minWidth: '320px', color: '#854d0e', fontWeight: '700' }}>Task Name / Description</th>
+                        <th style={{ minWidth: '220px', color: '#854d0e', fontWeight: '700' }}>Detail</th>
                         <th style={{ width: '100px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {dailyRfgRows.map((t) => {
                         const planVal = draftEdits[t.id]?.planType || t.planType || t.mtnType || 'Plan';
-                        const safetyVal = draftEdits[t.id]?.safety || t.safety || t.refective || 'LOTO';
+                        const safetyVal = draftEdits[t.id]?.safety || t.safety || t.refective || 'PPE';
                         const isUrgent = planVal === 'Urgent';
 
                         return (
@@ -954,6 +953,7 @@ export default function TaskManagement() {
                                   handleCellBlur(t, 'planType', e.target.value);
                                 }}
                               >
+                                <option value=""></option>
                                 <option value="Plan">Plan</option>
                                 <option value="Urgent">Urgent</option>
                               </select>
@@ -970,6 +970,7 @@ export default function TaskManagement() {
                                   handleCellBlur(t, 'safety', e.target.value);
                                 }}
                               >
+                                <option value=""></option>
                                 <option value="PPE">PPE</option>
                                 <option value="LOTO">LOTO</option>
                                 <option value="ที่สูง">ที่สูง</option>
@@ -980,28 +981,27 @@ export default function TaskManagement() {
                             <td>{renderSectionCell(t)}</td>
 
                             {/* Column 6: Equipment */}
-                            <td>{renderCell(t, 'equipment', 'Equipment', { fontWeight: '600' })}</td>
+                            <td>{renderCell(t, 'equipment', '', { fontWeight: '600' })}</td>
 
-                            {/* Column 7: Rank */}
-                            <td style={{ textAlign: 'center' }}>{renderCell(t, 'rank', 'B', { textAlign: 'center', fontWeight: '700' })}</td>
+                            {/* Column 7: Task Name / Description (WIDER) */}
+                            <td>{renderCell(t, 'taskName', '', { fontWeight: '600' })}</td>
 
-                            {/* Column 8: Task Name / Description (WIDER) */}
-                            <td>{renderCell(t, 'taskName', 'Click to add task name...', { fontWeight: '600' })}</td>
+                            {/* Column 8: Detail (WIDER) */}
+                            <td>{renderCell(t, 'detail', '')}</td>
 
-                            {/* Column 9: Detail (WIDER) */}
-                            <td>{renderCell(t, 'detail', 'Detail...')}</td>
-
-                            {/* Column 10: Status */}
+                            {/* Column 9: Status */}
                             <td style={{ textAlign: 'center' }}>
                               <select 
                                 className="table-cell-select font-mono" 
                                 style={{
                                   backgroundColor: 
-                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Finished' ? '#dcfce7' : 
-                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Continue' ? '#fef08a' : '#fca5a5',
+                                    (draftEdits[t.id]?.status || t.status) === 'Finished' ? '#dcfce7' : 
+                                    (draftEdits[t.id]?.status || t.status) === 'Continue' ? '#fef08a' : 
+                                    (draftEdits[t.id]?.status || t.status) === 'Postpone' ? '#fca5a5' : 'transparent',
                                   color: 
-                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Finished' ? '#166534' : 
-                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Continue' ? '#854d0e' : '#991b1b',
+                                    (draftEdits[t.id]?.status || t.status) === 'Finished' ? '#166534' : 
+                                    (draftEdits[t.id]?.status || t.status) === 'Continue' ? '#854d0e' : 
+                                    (draftEdits[t.id]?.status || t.status) === 'Postpone' ? '#991b1b' : 'var(--text)',
                                   fontWeight: '700',
                                   padding: '2px 4px',
                                   borderRadius: '4px',
@@ -1009,12 +1009,13 @@ export default function TaskManagement() {
                                   width: '100%',
                                   boxSizing: 'border-box'
                                 }}
-                                value={draftEdits[t.id]?.status || t.status || 'Finished'} 
+                                value={draftEdits[t.id]?.status || t.status || ''} 
                                 onChange={(e) => {
                                   handleCellChange(t.id, 'status', e.target.value);
                                   handleCellBlur(t, 'status', e.target.value);
                                 }}
                               >
+                                <option value="" style={{ backgroundColor: '#ffffff', color: 'var(--text)' }}></option>
                                 <option value="Finished" style={{ backgroundColor: '#ffffff', color: '#166534' }}>Finished</option>
                                 <option value="Continue" style={{ backgroundColor: '#ffffff', color: '#854d0e' }}>Continue</option>
                                 <option value="Postpone" style={{ backgroundColor: '#ffffff', color: '#991b1b' }}>Postpone</option>
@@ -1061,20 +1062,19 @@ export default function TaskManagement() {
                       <tr style={{ backgroundColor: '#f0fdf4' }}>
                         <th style={{ width: '60px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Mech</th>
                         <th style={{ width: '60px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Elec</th>
-                        <th style={{ width: '70px', color: '#166534', fontWeight: '700' }}>Plan</th>
-                        <th style={{ width: '80px', color: '#166534', fontWeight: '700' }}>Safety</th>
+                        <th style={{ width: '75px', color: '#166534', fontWeight: '700' }}>Plan</th>
+                        <th style={{ width: '85px', color: '#166534', fontWeight: '700' }}>Safety</th>
                         <th style={{ width: '160px', color: '#166534', fontWeight: '700' }}>Section</th>
-                        <th style={{ width: '120px', color: '#166534', fontWeight: '700' }}>Equipment</th>
-                        <th style={{ width: '80px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Rank</th>
-                        <th style={{ minWidth: '300px', color: '#166534', fontWeight: '700' }}>Task Name / Description</th>
-                        <th style={{ minWidth: '200px', color: '#166534', fontWeight: '700' }}>Detail</th>
+                        <th style={{ width: '130px', color: '#166534', fontWeight: '700' }}>Equipment</th>
+                        <th style={{ minWidth: '320px', color: '#166534', fontWeight: '700' }}>Task Name / Description</th>
+                        <th style={{ minWidth: '220px', color: '#166534', fontWeight: '700' }}>Detail</th>
                         <th style={{ width: '100px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {dailyMirRows.map((t) => {
                         const planVal = draftEdits[t.id]?.planType || t.planType || t.mtnType || 'Plan';
-                        const safetyVal = draftEdits[t.id]?.safety || t.safety || t.refective || 'LOTO';
+                        const safetyVal = draftEdits[t.id]?.safety || t.safety || t.refective || 'PPE';
                         const isUrgent = planVal === 'Urgent';
 
                         return (
@@ -1118,6 +1118,7 @@ export default function TaskManagement() {
                                   handleCellBlur(t, 'planType', e.target.value);
                                 }}
                               >
+                                <option value=""></option>
                                 <option value="Plan">Plan</option>
                                 <option value="Urgent">Urgent</option>
                               </select>
@@ -1134,6 +1135,7 @@ export default function TaskManagement() {
                                   handleCellBlur(t, 'safety', e.target.value);
                                 }}
                               >
+                                <option value=""></option>
                                 <option value="PPE">PPE</option>
                                 <option value="LOTO">LOTO</option>
                                 <option value="ที่สูง">ที่สูง</option>
@@ -1144,28 +1146,27 @@ export default function TaskManagement() {
                             <td>{renderSectionCell(t)}</td>
 
                             {/* Column 6: Equipment */}
-                            <td>{renderCell(t, 'equipment', 'Equipment', { fontWeight: '600' })}</td>
+                            <td>{renderCell(t, 'equipment', '', { fontWeight: '600' })}</td>
 
-                            {/* Column 7: Rank */}
-                            <td style={{ textAlign: 'center' }}>{renderCell(t, 'rank', 'B', { textAlign: 'center', fontWeight: '700' })}</td>
+                            {/* Column 7: Task Name / Description (WIDER) */}
+                            <td>{renderCell(t, 'taskName', '', { fontWeight: '600' })}</td>
 
-                            {/* Column 8: Task Name / Description (WIDER) */}
-                            <td>{renderCell(t, 'taskName', 'Click to add task name...', { fontWeight: '600' })}</td>
+                            {/* Column 8: Detail (WIDER) */}
+                            <td>{renderCell(t, 'detail', '')}</td>
 
-                            {/* Column 9: Detail (WIDER) */}
-                            <td>{renderCell(t, 'detail', 'Detail...')}</td>
-
-                            {/* Column 10: Status */}
+                            {/* Column 9: Status */}
                             <td style={{ textAlign: 'center' }}>
                               <select 
                                 className="table-cell-select font-mono" 
                                 style={{
                                   backgroundColor: 
-                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Finished' ? '#dcfce7' : 
-                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Continue' ? '#fef08a' : '#fca5a5',
+                                    (draftEdits[t.id]?.status || t.status) === 'Finished' ? '#dcfce7' : 
+                                    (draftEdits[t.id]?.status || t.status) === 'Continue' ? '#fef08a' : 
+                                    (draftEdits[t.id]?.status || t.status) === 'Postpone' ? '#fca5a5' : 'transparent',
                                   color: 
-                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Finished' ? '#166534' : 
-                                    (draftEdits[t.id]?.status || t.status || 'Finished') === 'Continue' ? '#854d0e' : '#991b1b',
+                                    (draftEdits[t.id]?.status || t.status) === 'Finished' ? '#166534' : 
+                                    (draftEdits[t.id]?.status || t.status) === 'Continue' ? '#854d0e' : 
+                                    (draftEdits[t.id]?.status || t.status) === 'Postpone' ? '#991b1b' : 'var(--text)',
                                   fontWeight: '700',
                                   padding: '2px 4px',
                                   borderRadius: '4px',
@@ -1173,12 +1174,13 @@ export default function TaskManagement() {
                                   width: '100%',
                                   boxSizing: 'border-box'
                                 }}
-                                value={draftEdits[t.id]?.status || t.status || 'Finished'} 
+                                value={draftEdits[t.id]?.status || t.status || ''} 
                                 onChange={(e) => {
                                   handleCellChange(t.id, 'status', e.target.value);
                                   handleCellBlur(t, 'status', e.target.value);
                                 }}
                               >
+                                <option value="" style={{ backgroundColor: '#ffffff', color: 'var(--text)' }}></option>
                                 <option value="Finished" style={{ backgroundColor: '#ffffff', color: '#166534' }}>Finished</option>
                                 <option value="Continue" style={{ backgroundColor: '#ffffff', color: '#854d0e' }}>Continue</option>
                                 <option value="Postpone" style={{ backgroundColor: '#ffffff', color: '#991b1b' }}>Postpone</option>
