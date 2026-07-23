@@ -90,27 +90,31 @@ function SectionCell({ task, draftEdits, handleCellChange, handleCellBlur }) {
     ).slice(0, 8);
   }, [val]);
 
-  const handleInput = (e) => {
-    e.target.style.height = 'auto';
-    e.target.style.height = `${Math.max(24, e.target.scrollHeight)}px`;
+  // Auto-adjust height callback ref for initial mount and rerenders
+  const textareaRef = (node) => {
+    if (node) {
+      node.style.height = 'auto';
+      node.style.height = `${Math.max(24, node.scrollHeight)}px`;
+    }
   };
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
       <textarea 
+        ref={textareaRef}
         className="table-cell-input"
         rows={1}
         value={val}
         placeholder="Section..."
         onChange={(e) => {
           handleCellChange(task.id, field, e.target.value);
-          handleInput(e);
+          textareaRef(e.target);
           setShowSuggestions(true);
         }}
         onFocus={(e) => {
           e.target.style.borderColor = 'var(--accent)';
           e.target.style.background = 'var(--surface)';
-          handleInput(e);
+          textareaRef(e.target);
           setShowSuggestions(true);
         }}
         onBlur={(e) => {
@@ -594,26 +598,29 @@ export default function TaskManagement() {
     const val = currentDraft !== undefined ? currentDraft : (task[field] || '');
     const isUrgent = (draftEdits[task.id]?.planType || task.planType || task.mtnType) === 'Urgent';
 
-    // Auto-adjust height based on content scrollHeight
-    const handleInput = (e) => {
-      e.target.style.height = 'auto';
-      e.target.style.height = `${Math.max(24, e.target.scrollHeight)}px`;
+    // Auto-adjust height callback ref for initial mount and rerenders
+    const textareaRef = (node) => {
+      if (node) {
+        node.style.height = 'auto';
+        node.style.height = `${Math.max(24, node.scrollHeight)}px`;
+      }
     };
 
     return (
       <textarea 
+        ref={textareaRef}
         className="table-cell-input"
         rows={1}
         value={val}
         placeholder={placeholder}
         onChange={(e) => {
           handleCellChange(task.id, field, e.target.value);
-          handleInput(e);
+          textareaRef(e.target);
         }}
         onFocus={(e) => {
           e.target.style.borderColor = 'var(--accent)';
           e.target.style.background = 'var(--surface)';
-          handleInput(e);
+          textareaRef(e.target);
         }}
         onBlur={() => handleCellBlur(task, field)}
         style={{
