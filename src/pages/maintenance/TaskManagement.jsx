@@ -697,9 +697,8 @@ export default function TaskManagement() {
 
   // Fill up minimum rows: RFG (min 4), MIR (min 4), SUBCONTRACTOR (min 2)
   const getPaddedRows = (existing, minCount, plantSection, category) => {
-    const realContentTasks = existing.filter(t => !t.id?.startsWith('temp-') || hasAnyContent(t));
     const list = [...existing];
-    const missing = Math.max(0, minCount - realContentTasks.length);
+    const missing = Math.max(0, minCount - existing.length);
     for (let i = 0; i < missing; i++) {
       list.push({
         id: `temp-${plantSection}-${i}`,
