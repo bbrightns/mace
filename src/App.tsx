@@ -7,7 +7,7 @@ import { subscribeCollection } from './firebase/collections';
 import Home from './pages/Home';
 import PMPlan from './pages/maintenance/PMPlan';
 import LongTermPlan from './pages/maintenance/LongTermPlan';
-import VoiceOfShopFloor from './pages/maintenance/VoiceOfShopFloor';
+import TaskManagement from './pages/maintenance/TaskManagement';
 import TroubleRecord from './pages/maintenance/TroubleRecord';
 import Purchasing from './pages/maintenance/Purchasing';
 import ProjectRequests from './pages/project/ProjectRequests';
@@ -155,8 +155,9 @@ function MainApp() {
         return <PMPlan />;
       case 'long-term-plan':
         return <LongTermPlan />;
+      case 'task-management':
       case 'vosf':
-        return <VoiceOfShopFloor />;
+        return <TaskManagement />;
       case 'trouble-record':
         return <TroubleRecord />;
       case 'purchasing':

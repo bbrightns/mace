@@ -55,7 +55,7 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
       items: [
         { id: 'pm-plan', label: 'PM Plan', icon: Calendar },
         { id: 'long-term-plan', label: 'Long Term Plan', icon: Clock },
-        { id: 'vosf', label: 'Voice of Shop Floor', icon: MessageSquare },
+        { id: 'task-management', label: 'Task Management', icon: MessageSquare },
         { id: 'trouble-record', label: 'Trouble Record', icon: AlertTriangle },
         { id: 'purchasing', label: 'Purchasing', icon: ShoppingBag }
       ]

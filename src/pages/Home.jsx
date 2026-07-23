@@ -128,7 +128,7 @@ export default function Home({
       items: [
         { id: 'pm-plan', label: 'PM Plan', desc: 'Recurring cycle machine PM schedule', icon: Calendar, count: openPMs, countLabel: 'Remaining' },
         { id: 'long-term-plan', label: 'Long Term Plan', desc: 'Horizon > 1 year replacement plan', icon: Clock, count: longTermPlans.length, countLabel: 'Items' },
-        { id: 'vosf', label: 'Voice of Shop Floor', desc: 'Floor problems and complaint reporter', icon: MessageSquare, count: openVOSF, countLabel: 'Open' },
+        { id: 'task-management', label: 'Task Management', desc: 'Daily shop floor task & planning matrix', icon: MessageSquare, count: openVOSF, countLabel: 'Open' },
         { id: 'trouble-record', label: 'Trouble Record', desc: 'Equipment breakdown & downtime log', icon: AlertTriangle, count: activeTroubles, countLabel: 'Active' },
         { id: 'purchasing', label: 'Purchasing', desc: 'List of pending machine spare parts', icon: ShoppingBag, count: pendingPurchasing, countLabel: 'Pending' }
       ]
