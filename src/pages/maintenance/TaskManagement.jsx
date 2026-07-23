@@ -700,16 +700,16 @@ export default function TaskManagement() {
                   <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#fefce8' }}>
-                        <th style={{ width: '80px', color: '#854d0e', fontWeight: '700' }}>Plan</th>
-                        <th style={{ width: '90px', color: '#854d0e', fontWeight: '700' }}>Safety</th>
-                        <th style={{ width: '150px', color: '#854d0e', fontWeight: '700' }}>Section</th>
-                        <th style={{ width: '130px', color: '#854d0e', fontWeight: '700' }}>Equipment</th>
-                        <th style={{ width: '70px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Rank</th>
-                        <th style={{ minWidth: '350px', color: '#854d0e', fontWeight: '700' }}>Task Name / Description</th>
-                        <th style={{ minWidth: '250px', color: '#854d0e', fontWeight: '700' }}>Detail</th>
-                        <th style={{ width: '100px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Status</th>
-                        <th style={{ width: '150px', color: '#854d0e', fontWeight: '700' }}>Mech</th>
-                        <th style={{ width: '150px', color: '#854d0e', fontWeight: '700' }}>Elec</th>
+                        <th style={{ width: '65px', color: '#854d0e', fontWeight: '700' }}>Plan</th>
+                        <th style={{ width: '75px', color: '#854d0e', fontWeight: '700' }}>Safety</th>
+                        <th style={{ width: '110px', color: '#854d0e', fontWeight: '700' }}>Section</th>
+                        <th style={{ width: '110px', color: '#854d0e', fontWeight: '700' }}>Equipment</th>
+                        <th style={{ width: '45px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Rank</th>
+                        <th style={{ width: '36%', color: '#854d0e', fontWeight: '700' }}>Task Name / Description</th>
+                        <th style={{ width: '24%', color: '#854d0e', fontWeight: '700' }}>Detail</th>
+                        <th style={{ width: '85px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Status</th>
+                        <th style={{ width: '110px', color: '#854d0e', fontWeight: '700' }}>Mech</th>
+                        <th style={{ width: '110px', color: '#854d0e', fontWeight: '700' }}>Elec</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -831,16 +831,16 @@ export default function TaskManagement() {
                   <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f0fdf4' }}>
-                        <th style={{ width: '80px', color: '#166534', fontWeight: '700' }}>Plan</th>
-                        <th style={{ width: '90px', color: '#166534', fontWeight: '700' }}>Safety</th>
-                        <th style={{ width: '150px', color: '#166534', fontWeight: '700' }}>Section</th>
-                        <th style={{ width: '130px', color: '#166534', fontWeight: '700' }}>Equipment</th>
-                        <th style={{ width: '70px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Rank</th>
-                        <th style={{ minWidth: '350px', color: '#166534', fontWeight: '700' }}>Task Name / Description</th>
-                        <th style={{ minWidth: '250px', color: '#166534', fontWeight: '700' }}>Detail</th>
-                        <th style={{ width: '100px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Status</th>
-                        <th style={{ width: '150px', color: '#166534', fontWeight: '700' }}>Mech</th>
-                        <th style={{ width: '150px', color: '#166534', fontWeight: '700' }}>Elec</th>
+                        <th style={{ width: '65px', color: '#166534', fontWeight: '700' }}>Plan</th>
+                        <th style={{ width: '75px', color: '#166534', fontWeight: '700' }}>Safety</th>
+                        <th style={{ width: '110px', color: '#166534', fontWeight: '700' }}>Section</th>
+                        <th style={{ width: '110px', color: '#166534', fontWeight: '700' }}>Equipment</th>
+                        <th style={{ width: '45px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Rank</th>
+                        <th style={{ width: '36%', color: '#166534', fontWeight: '700' }}>Task Name / Description</th>
+                        <th style={{ width: '24%', color: '#166534', fontWeight: '700' }}>Detail</th>
+                        <th style={{ width: '85px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Status</th>
+                        <th style={{ width: '110px', color: '#166534', fontWeight: '700' }}>Mech</th>
+                        <th style={{ width: '110px', color: '#166534', fontWeight: '700' }}>Elec</th>
                       </tr>
                     </thead>
                     <tbody>
