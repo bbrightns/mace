@@ -196,16 +196,16 @@ const PlanningRow = React.memo(({
     <tr 
       ref={isToday ? todayRowRef : null}
       style={{ 
-        backgroundColor: isToday ? '#dcfce7' : (isWeekend ? '#fef2f2' : 'transparent')
+        backgroundColor: isWeekend ? '#fef2f2' : 'transparent'
       }}
     >
       <td style={{ 
         fontWeight: isToday ? '800' : '700', 
         textAlign: 'center', 
-        backgroundColor: isToday ? '#22c55e' : (isWeekend ? '#fee2e2' : '#f8fafc'), 
-        color: isToday ? '#ffffff' : (isWeekend ? '#dc2626' : 'var(--text)'), 
+        backgroundColor: isToday ? '#bbf7d0' : (isWeekend ? '#fee2e2' : '#f8fafc'), 
+        color: isToday ? '#14532d' : (isWeekend ? '#dc2626' : 'var(--text)'), 
         whiteSpace: 'nowrap',
-        borderLeft: isToday ? '4px solid #15803d' : 'none'
+        borderLeft: isToday ? '4px solid #22c55e' : 'none'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
           <span>{dateFormatted}</span>
@@ -229,7 +229,7 @@ const PlanningRow = React.memo(({
       <td style={{
         textAlign: 'center',
         backgroundColor: (() => {
-          if (!rfgVal) return isToday ? '#dcfce7' : 'transparent';
+          if (!rfgVal) return 'transparent';
           const v = rfgVal.toUpperCase();
           if (v.includes('STOP')) return '#fca5a5';
           if (v.includes('MTN') || v.includes('MAINTENANCE')) return '#fef08a';
@@ -251,7 +251,7 @@ const PlanningRow = React.memo(({
       <td style={{
         textAlign: 'center',
         backgroundColor: (() => {
-          if (!mirVal) return isToday ? '#dcfce7' : 'transparent';
+          if (!mirVal) return 'transparent';
           const v = mirVal.toUpperCase();
           if (v.includes('STOP')) return '#fca5a5';
           if (v.includes('MTN') || v.includes('MAINTENANCE')) return '#fef08a';
@@ -270,7 +270,7 @@ const PlanningRow = React.memo(({
       </td>
 
       {/* EE Work Supp */}
-      <td style={{ color: '#2563eb', fontSize: '11.5px', backgroundColor: isToday && !eeSuppVal ? '#dcfce7' : 'transparent' }}>
+      <td style={{ color: '#2563eb', fontSize: '11.5px' }}>
         <EditableCell 
           initialValue={eeSuppVal}
           onSave={(val) => {
@@ -281,7 +281,7 @@ const PlanningRow = React.memo(({
       </td>
 
       {/* EE Work Aft */}
-      <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px', backgroundColor: isToday && !eeAftVal ? '#dcfce7' : 'transparent' }}>
+      <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>
         <EditableCell 
           initialValue={eeAftVal}
           onSave={(val) => {
@@ -292,7 +292,7 @@ const PlanningRow = React.memo(({
       </td>
 
       {/* MECH Work Supp */}
-      <td style={{ color: '#db2777', fontSize: '11.5px', backgroundColor: isToday && !mechSuppVal ? '#dcfce7' : 'transparent' }}>
+      <td style={{ color: '#db2777', fontSize: '11.5px' }}>
         <EditableCell 
           initialValue={mechSuppVal}
           onSave={(val) => {
@@ -303,7 +303,7 @@ const PlanningRow = React.memo(({
       </td>
 
       {/* MECH Work Aft */}
-      <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px', backgroundColor: isToday && !mechAftVal ? '#dcfce7' : 'transparent' }}>
+      <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>
         <EditableCell 
           initialValue={mechAftVal}
           onSave={(val) => {
