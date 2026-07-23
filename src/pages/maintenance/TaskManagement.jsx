@@ -724,8 +724,8 @@ export default function TaskManagement() {
                             {/* Column 1: Plan Dropdown */}
                             <td>
                               <select 
-                                className="form-select font-mono" 
-                                style={{ padding: '2px 4px', fontSize: '11px', height: '26px', fontWeight: '700', color: isUrgent ? '#dc2626' : 'inherit' }}
+                                className="table-cell-select font-mono" 
+                                style={{ fontWeight: '700', color: isUrgent ? '#dc2626' : 'inherit' }}
                                 value={planVal} 
                                 onChange={(e) => {
                                   handleCellChange(t.id, 'planType', e.target.value);
@@ -740,8 +740,8 @@ export default function TaskManagement() {
                             {/* Column 2: Safety Dropdown */}
                             <td>
                               <select 
-                                className="form-select font-mono" 
-                                style={{ padding: '2px 4px', fontSize: '11px', height: '26px', color: isUrgent ? '#dc2626' : 'inherit' }}
+                                className="table-cell-select font-mono" 
+                                style={{ color: isUrgent ? '#dc2626' : 'inherit' }}
                                 value={safetyVal} 
                                 onChange={(e) => {
                                   handleCellChange(t.id, 'safety', e.target.value);
@@ -772,8 +772,7 @@ export default function TaskManagement() {
                             {/* Column 8: Status */}
                             <td style={{ textAlign: 'center' }}>
                               <select 
-                                className="form-select font-mono" 
-                                style={{ padding: '2px 4px', fontSize: '11px', height: '26px' }}
+                                className="table-cell-select font-mono" 
                                 value={t.status || 'Pending'} 
                                 onChange={(e) => {
                                   handleCellChange(t.id, 'status', e.target.value);
@@ -855,8 +854,8 @@ export default function TaskManagement() {
                             {/* Column 1: Plan Dropdown */}
                             <td>
                               <select 
-                                className="form-select font-mono" 
-                                style={{ padding: '2px 4px', fontSize: '11px', height: '26px', fontWeight: '700', color: isUrgent ? '#dc2626' : 'inherit' }}
+                                className="table-cell-select font-mono" 
+                                style={{ fontWeight: '700', color: isUrgent ? '#dc2626' : 'inherit' }}
                                 value={planVal} 
                                 onChange={(e) => {
                                   handleCellChange(t.id, 'planType', e.target.value);
@@ -871,8 +870,8 @@ export default function TaskManagement() {
                             {/* Column 2: Safety Dropdown */}
                             <td>
                               <select 
-                                className="form-select font-mono" 
-                                style={{ padding: '2px 4px', fontSize: '11px', height: '26px', color: isUrgent ? '#dc2626' : 'inherit' }}
+                                className="table-cell-select font-mono" 
+                                style={{ color: isUrgent ? '#dc2626' : 'inherit' }}
                                 value={safetyVal} 
                                 onChange={(e) => {
                                   handleCellChange(t.id, 'safety', e.target.value);
@@ -903,8 +902,7 @@ export default function TaskManagement() {
                             {/* Column 8: Status */}
                             <td style={{ textAlign: 'center' }}>
                               <select 
-                                className="form-select font-mono" 
-                                style={{ padding: '2px 4px', fontSize: '11px', height: '26px' }}
+                                className="table-cell-select font-mono" 
                                 value={t.status || 'Pending'} 
                                 onChange={(e) => {
                                   handleCellChange(t.id, 'status', e.target.value);

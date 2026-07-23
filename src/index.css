@@ -643,6 +643,33 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.12);
 }
 
+/* Compact Inline Table Select Dropdowns */
+.table-cell-select {
+  font-family: inherit;
+  font-size: 11.5px;
+  color: var(--text);
+  padding: 1px 4px;
+  min-height: auto !important;
+  height: 22px !important;
+  border: 1px solid transparent;
+  background-color: transparent;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+.table-cell-select:hover {
+  border-color: var(--border);
+  background-color: var(--surface2);
+}
+
+.table-cell-select:focus {
+  border-color: var(--accent);
+  background-color: var(--surface);
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.12);
+}
+
 .form-textarea {
   min-height: 100px;
   resize: vertical;
