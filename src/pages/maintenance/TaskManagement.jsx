@@ -334,11 +334,17 @@ export default function TaskManagement() {
         
         try {
           const docId = await createDocument('mace_tasks', payload);
-          setTasks(prev => [...prev, { id: docId, ...payload }]);
+          setTasks(prev => {
+            const filtered = prev.filter(t => t.id !== task.id);
+            return [...filtered, { id: docId, ...payload }];
+          });
         } catch (err) {
           // Local fallback for offline/temp state
           const tempId = `local-${Date.now()}`;
-          setTasks(prev => [...prev, { id: tempId, ...payload }]);
+          setTasks(prev => {
+            const filtered = prev.filter(t => t.id !== task.id);
+            return [...filtered, { id: tempId, ...payload }];
+          });
         }
 
         setDraftEdits(prev => {
