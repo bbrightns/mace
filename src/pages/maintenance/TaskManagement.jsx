@@ -896,7 +896,7 @@ export default function TaskManagement() {
               </button>
             </div>
 
-            <div style={{ position: 'relative', width: '280px' }}>
+            <div style={{ position: 'relative', width: '300px', marginLeft: 'auto' }}>
               <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
               <input 
                 type="text" 
@@ -910,7 +910,7 @@ export default function TaskManagement() {
             </div>
           </>
         ) : (
-          <div style={{ position: 'relative', width: '320px', marginLeft: 'auto' }}>
+          <div style={{ position: 'relative', width: '300px', marginLeft: 'auto' }}>
             <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
             <input 
               type="text" 
