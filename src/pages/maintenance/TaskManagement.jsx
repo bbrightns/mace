@@ -80,7 +80,7 @@ const hasAnyContent = (t) => {
       t.location?.trim() || 
       t.subcontractorName?.trim() || 
       t.taskName?.trim() || 
-      t.progress?.toString().trim() || 
+      (t.progress !== undefined && t.progress !== '0' && t.progress !== 0 && t.progress?.toString().trim() !== '') || 
       t.pic?.trim()
     );
   }
@@ -328,7 +328,7 @@ export default function TaskManagement() {
           elecTechnicians: field === 'elecTechnicians' ? newValue : (task.elecTechnicians || ''),
           plant: field === 'plant' ? newValue : (task.plant || 'RFG'),
           location: field === 'location' ? newValue : (task.location || ''),
-          progress: field === 'progress' ? newValue : (task.progress || ''),
+          progress: field === 'progress' ? newValue : (task.progress !== undefined ? task.progress : '0'),
           pic: field === 'pic' ? newValue : (task.pic || '')
         };
         
@@ -399,7 +399,7 @@ export default function TaskManagement() {
       elecTechnicians: '',
       plant: plantSection === 'SUBCONTRACTOR' ? 'RFG' : plantSection,
       location: '',
-      progress: '',
+      progress: '0',
       pic: '',
       isTemp: true
     };
@@ -677,7 +677,7 @@ export default function TaskManagement() {
         elecTechnicians: '',
         plant: plantSection === 'SUBCONTRACTOR' ? 'RFG' : plantSection,
         location: '',
-        progress: '',
+        progress: '0',
         pic: '',
         isTemp: true
       });
@@ -1322,7 +1322,7 @@ export default function TaskManagement() {
                         <th style={{ width: '150px', color: '#0369a1', fontWeight: '700' }}>Location</th>
                         <th style={{ width: '150px', color: '#0369a1', fontWeight: '700' }}>Subcontractor Name</th>
                         <th style={{ minWidth: '300px', color: '#0369a1', fontWeight: '700' }}>Task Name</th>
-                        <th style={{ width: '120px', color: '#0369a1', fontWeight: '700', textAlign: 'center' }}>Progress</th>
+                        <th style={{ width: '120px', color: '#0369a1', fontWeight: '700', textAlign: 'center' }}>Progress (%)</th>
                         <th style={{ width: '150px', color: '#0369a1', fontWeight: '700' }}>PIC</th>
                         <th style={{ width: '50px', textAlign: 'center' }}></th>
                       </tr>
