@@ -674,7 +674,9 @@ export default function TaskManagement() {
     }
   };
 
-  const rawDailyTasks = tasks.filter(t => t.taskDate === selectedDate && (
+  const rawDailyTasks = tasks.filter(t => (
+    !searchQuery ? (t.taskDate === selectedDate) : true
+  ) && (
     t.id?.startsWith('temp-') || t.id?.startsWith('local-') || t.isTemp || hasAnyContent(t)
   ) && (
     !searchQuery || 
@@ -682,7 +684,9 @@ export default function TaskManagement() {
     t.equipment?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.section?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.eeWorkAft?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.mechWorkAft?.toLowerCase().includes(searchQuery.toLowerCase())
+    t.mechWorkAft?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.subcontractorName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.pic?.toLowerCase().includes(searchQuery.toLowerCase())
   ));
 
   // Extract tasks or planning details for selected date
@@ -1010,6 +1014,7 @@ export default function TaskManagement() {
                   <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#fefce8' }}>
+                        {searchQuery && <th style={{ width: '95px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Date</th>}
                         <th style={{ width: '60px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Mech</th>
                         <th style={{ width: '60px', color: '#854d0e', fontWeight: '700', textAlign: 'center' }}>Elec</th>
                         <th style={{ width: '75px', color: '#854d0e', fontWeight: '700' }}>Plan</th>
@@ -1030,6 +1035,18 @@ export default function TaskManagement() {
 
                         return (
                           <tr key={t.id} style={{ color: isUrgent ? '#dc2626' : 'inherit' }}>
+                            {searchQuery && (
+                              <td style={{ 
+                                textAlign: 'center', 
+                                fontWeight: '700', 
+                                fontSize: '11.5px', 
+                                color: '#854d0e', 
+                                backgroundColor: '#fefce8',
+                                verticalAlign: 'middle'
+                              }}>
+                                {t.taskDate ? new Date(t.taskDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : ''}
+                              </td>
+                            )}
                             {/* Column 1: Mech */}
                             <td style={{ textAlign: 'center' }}>
                               <input 
@@ -1200,6 +1217,7 @@ export default function TaskManagement() {
                   <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f0fdf4' }}>
+                        {searchQuery && <th style={{ width: '95px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Date</th>}
                         <th style={{ width: '60px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Mech</th>
                         <th style={{ width: '60px', color: '#166534', fontWeight: '700', textAlign: 'center' }}>Elec</th>
                         <th style={{ width: '75px', color: '#166534', fontWeight: '700' }}>Plan</th>
@@ -1220,6 +1238,18 @@ export default function TaskManagement() {
 
                         return (
                           <tr key={t.id} style={{ color: isUrgent ? '#dc2626' : 'inherit' }}>
+                            {searchQuery && (
+                              <td style={{ 
+                                textAlign: 'center', 
+                                fontWeight: '700', 
+                                fontSize: '11.5px', 
+                                color: '#166534', 
+                                backgroundColor: '#f0fdf4',
+                                verticalAlign: 'middle'
+                              }}>
+                                {t.taskDate ? new Date(t.taskDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : ''}
+                              </td>
+                            )}
                             {/* Column 1: Mech */}
                             <td style={{ textAlign: 'center' }}>
                               <input 
@@ -1385,6 +1415,7 @@ export default function TaskManagement() {
                   <table className="data-table" style={{ width: '100%', tableLayout: 'fixed' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f0f9ff' }}>
+                        {searchQuery && <th style={{ width: '95px', color: '#0369a1', fontWeight: '700', textAlign: 'center' }}>Date</th>}
                         <th style={{ width: '100px', color: '#0369a1', fontWeight: '700' }}>Plant</th>
                         <th style={{ width: '150px', color: '#0369a1', fontWeight: '700' }}>Location</th>
                         <th style={{ width: '150px', color: '#0369a1', fontWeight: '700' }}>Subcontractor Name</th>
@@ -1395,8 +1426,20 @@ export default function TaskManagement() {
                       </tr>
                     </thead>
                     <tbody>
-                      {dailySubRows.map((t) => (
+                       {dailySubRows.map((t) => (
                         <tr key={t.id}>
+                          {searchQuery && (
+                            <td style={{ 
+                              textAlign: 'center', 
+                              fontWeight: '700', 
+                              fontSize: '11.5px', 
+                              color: '#0369a1', 
+                              backgroundColor: '#f0f9ff',
+                              verticalAlign: 'middle'
+                            }}>
+                              {t.taskDate ? new Date(t.taskDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : ''}
+                            </td>
+                          )}
                           {/* Column 1: Plant Dropdown */}
                           <td>
                             <select 
