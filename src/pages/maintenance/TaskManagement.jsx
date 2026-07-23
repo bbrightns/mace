@@ -531,101 +531,110 @@ export default function TaskManagement() {
     }));
   };
 
-  // Blur/Save cell to Firestore automatically
-  const handleCellBlur = async (task, field, overrideVal) => {
+  // Blur/Save cell to Firestore automatically (non-blocking for 60 FPS focus transitions)
+  const handleCellBlur = (task, field, overrideVal) => {
     const changes = draftEdits[task.id];
     const newValue = overrideVal !== undefined ? overrideVal : changes?.[field];
 
     if (newValue === undefined) return;
 
-    try {
-      if (task.id.startsWith('temp-')) {
-        // Prevent creating a document if there is no actual content entered
-        const isString = typeof newValue === 'string';
-        const newValHasContent = isString ? newValue.trim().length > 0 : !!newValue;
-        
-        const hasContent = newValHasContent || 
-          Object.entries(changes || {}).some(([k, v]) => {
-            if (k === field) return false;
-            return typeof v === 'string' ? v.trim().length > 0 : !!v;
-          });
+    // Use non-blocking async execution so browser focus transitions never freeze
+    setTimeout(async () => {
+      try {
+        if (task.id?.startsWith('temp-')) {
+          const isString = typeof newValue === 'string';
+          const newValHasContent = isString ? newValue.trim().length > 0 : !!newValue;
           
-        if (!hasContent) {
-          return;
-        }
+          const hasContent = newValHasContent || 
+            Object.entries(changes || {}).some(([k, v]) => {
+              if (k === field) return false;
+              return typeof v === 'string' ? v.trim().length > 0 : !!v;
+            });
+            
+          if (!hasContent) return;
 
-        // Create new document if it's a temp row created inline
-        const payload = {
-          plantSection: task.plantSection,
-          category: task.category,
-          taskDate: selectedDate,
-          planType: field === 'planType' ? newValue : (task.planType || 'Plan'),
-          safety: field === 'safety' ? newValue : (task.safety || 'PPE'),
-          section: field === 'section' ? newValue : (task.section || ''),
-          equipment: field === 'equipment' ? newValue : (task.equipment || ''),
-          rank: field === 'rank' ? newValue : (task.rank || ''),
-          taskName: field === 'taskName' ? newValue : (task.taskName || ''),
-          subcontractorName: field === 'subcontractorName' ? newValue : (task.subcontractorName || ''),
-          detail: field === 'detail' ? newValue : (task.detail || ''),
-          status: field === 'status' ? newValue : (task.status || ''),
-          mechTechnicians: field === 'mechTechnicians' ? newValue : (task.mechTechnicians || ''),
-          elecTechnicians: field === 'elecTechnicians' ? newValue : (task.elecTechnicians || ''),
-          plant: field === 'plant' ? newValue : (task.plant || (task.plantSection === 'SUBCONTRACTOR' ? '' : 'RFG')),
-          location: field === 'location' ? newValue : (task.location || ''),
-          progress: field === 'progress' ? newValue : (task.progress || ''),
-          pic: field === 'pic' ? newValue : (task.pic || '')
-        };
-        
-        try {
-          const docId = await createDocument('mace_tasks', payload);
-          setTasks(prev => {
-            const filtered = prev.filter(t => t.id !== task.id);
-            return [...filtered, { id: docId, ...payload }];
-          });
-        } catch (err) {
-          // Local fallback for offline/temp state
-          const tempId = `local-${Date.now()}`;
-          setTasks(prev => {
-            const filtered = prev.filter(t => t.id !== task.id);
-            return [...filtered, { id: tempId, ...payload }];
-          });
-        }
-
-        setDraftEdits(prev => {
-          const next = { ...prev };
-          delete next[task.id];
-          return next;
-        });
-      } else {
-        const updatedTask = {
-          ...task,
-          ...changes,
-          [field]: newValue
-        };
-        if (!hasAnyContent(updatedTask)) {
+          const targetDate = task.taskDate || selectedDate;
+          const payload = {
+            plantSection: task.plantSection || 'RFG',
+            category: task.category || 'MTN',
+            taskDate: targetDate,
+            rfgRev: field === 'rfgRev' ? newValue : (task.rfgRev || ''),
+            mirRev: field === 'mirRev' ? newValue : (task.mirRev || ''),
+            eeWorkSupp: field === 'eeWorkSupp' ? newValue : (task.eeWorkSupp || ''),
+            eeWorkAft: field === 'eeWorkAft' ? newValue : (task.eeWorkAft || ''),
+            mechWorkSupp: field === 'mechWorkSupp' ? newValue : (task.mechWorkSupp || ''),
+            mechWorkAft: field === 'mechWorkAft' ? newValue : (task.mechWorkAft || ''),
+            planType: field === 'planType' ? newValue : (task.planType || 'Plan'),
+            safety: field === 'safety' ? newValue : (task.safety || 'PPE'),
+            section: field === 'section' ? newValue : (task.section || ''),
+            equipment: field === 'equipment' ? newValue : (task.equipment || ''),
+            rank: field === 'rank' ? newValue : (task.rank || ''),
+            taskName: field === 'taskName' ? newValue : (task.taskName || ''),
+            subcontractorName: field === 'subcontractorName' ? newValue : (task.subcontractorName || ''),
+            detail: field === 'detail' ? newValue : (task.detail || ''),
+            status: field === 'status' ? newValue : (task.status || ''),
+            mechTechnicians: field === 'mechTechnicians' ? newValue : (task.mechTechnicians || ''),
+            elecTechnicians: field === 'elecTechnicians' ? newValue : (task.elecTechnicians || ''),
+            plant: field === 'plant' ? newValue : (task.plant || (task.plantSection === 'SUBCONTRACTOR' ? '' : 'RFG')),
+            location: field === 'location' ? newValue : (task.location || ''),
+            progress: field === 'progress' ? newValue : (task.progress || ''),
+            pic: field === 'pic' ? newValue : (task.pic || '')
+          };
+          
           try {
-            await deleteDocument('mace_tasks', task.id);
-            setTasks(prev => prev.filter(t => t.id !== task.id));
-            setDraftEdits(prev => {
-              const next = { ...prev };
-              delete next[task.id];
-              return next;
+            const docId = await createDocument('mace_tasks', payload);
+            setTasks(prev => {
+              const filtered = prev.filter(t => t.id !== task.id && t.id !== docId);
+              return [...filtered, { id: docId, ...payload }];
             });
           } catch (err) {
-            console.error('Delete empty task error:', err);
+            const tempId = `local-${Date.now()}`;
+            setTasks(prev => {
+              const filtered = prev.filter(t => t.id !== task.id);
+              return [...filtered, { id: tempId, ...payload }];
+            });
           }
+
+          setDraftEdits(prev => {
+            const next = { ...prev };
+            delete next[task.id];
+            return next;
+          });
         } else {
-          try {
-            await updateDocument('mace_tasks', task.id, { [field]: newValue });
-          } catch (err) {
-            // Local fallback update
+          // Existing document
+          const updatedTask = {
+            ...task,
+            ...changes,
+            [field]: newValue
+          };
+
+          const hasPlanningContent = updatedTask.rfgRev || updatedTask.mirRev || updatedTask.eeWorkAft || updatedTask.mechWorkAft || updatedTask.eeWorkSupp || updatedTask.mechWorkSupp;
+
+          if (!hasAnyContent(updatedTask) && !hasPlanningContent) {
+            try {
+              await deleteDocument('mace_tasks', task.id);
+              setTasks(prev => prev.filter(t => t.id !== task.id));
+              setDraftEdits(prev => {
+                const next = { ...prev };
+                delete next[task.id];
+                return next;
+              });
+            } catch (err) {
+              console.error('Delete empty task error:', err);
+            }
+          } else {
             setTasks(prev => prev.map(t => t.id === task.id ? { ...t, [field]: newValue } : t));
+            try {
+              await updateDocument('mace_tasks', task.id, { [field]: newValue });
+            } catch (err) {
+              console.warn('Document update note:', err);
+            }
           }
         }
+      } catch (e) {
+        console.warn('Cell save error:', e);
       }
-    } catch (e) {
-      console.warn('Cell save note:', e);
-    }
+    }, 0);
   };
 
   const handleAddNewRow = (plantSection, category) => {
