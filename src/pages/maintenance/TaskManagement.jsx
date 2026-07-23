@@ -545,28 +545,44 @@ export default function TaskManagement() {
 
     const listId = `section-suggest-${task.id}`;
 
+    const handleInput = (e) => {
+      e.target.style.height = 'auto';
+      e.target.style.height = `${Math.max(24, e.target.scrollHeight)}px`;
+    };
+
     return (
       <>
-        <input 
-          type="text"
+        <textarea 
+          className="table-cell-input"
+          rows={1}
           list={listId}
           value={val}
           placeholder="Section..."
-          onChange={(e) => handleCellChange(task.id, field, e.target.value)}
+          onChange={(e) => {
+            handleCellChange(task.id, field, e.target.value);
+            handleInput(e);
+          }}
+          onFocus={(e) => {
+            e.target.style.borderColor = 'var(--accent)';
+            e.target.style.background = 'var(--surface)';
+            handleInput(e);
+          }}
           onBlur={(e) => handleCellBlur(task, field, e.target.value)}
           style={{
             width: '100%',
             border: '1px solid transparent',
             background: 'transparent',
-            padding: '4px 6px',
+            padding: '2px 4px',
+            minHeight: '24px',
             borderRadius: '4px',
-            fontSize: '12.5px',
+            fontSize: '12px',
+            fontFamily: 'inherit',
             color: isUrgent ? '#dc2626' : 'var(--text)',
-            outline: 'none'
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = 'var(--accent)';
-            e.target.style.background = 'var(--surface)';
+            outline: 'none',
+            resize: 'none',
+            overflow: 'hidden',
+            lineHeight: '1.3',
+            display: 'block'
           }}
         />
         <datalist id={listId}>
