@@ -334,31 +334,35 @@ export default function TaskManagement() {
 
   const handleExportPlanClick = () => {
     try {
-      const headers = ['Date', 'Plant Section', 'Category', 'Section', 'Equipment', 'Task Name', 'Detail', 'Plan Type', 'Safety', 'Status', 'EE Work Supp', 'EE Work Aft', 'MECH Work Supp', 'MECH Work Aft', 'Subcontractor Name', 'Plant', 'Location', 'Progress (%)', 'PIC'];
+      // Export active items (filtering out empty placeholders for ultra-fast export)
+      const listToExport = activeView === 'planning' 
+        ? planningTasks.filter(t => hasAnyContent(t) || t.rfgRev || t.mirRev || t.eeWorkAft || t.mechWorkAft || t.eeWorkSupp || t.mechWorkSupp)
+        : tasks.filter(t => hasAnyContent(t));
+
+      const targetList = listToExport.length > 0 ? listToExport : tasks.filter(t => hasAnyContent(t));
+
+      const headers = ['Date', 'RFG Line Schedule', 'MIR Line Schedule', 'EE Work Supp', 'EE Work Aft', 'MECH Work Supp', 'MECH Work Aft', 'Plant Section', 'Category', 'Section', 'Equipment', 'Task Name', 'Detail', 'Status', 'PIC'];
       
-      const rows = tasks.map(t => [
+      const rows = targetList.map(t => [
         t.taskDate || '',
+        t.rfgRev || '',
+        t.mirRev || '',
+        t.eeWorkSupp || '',
+        t.eeWorkAft || '',
+        t.mechWorkSupp || '',
+        t.mechWorkAft || '',
         t.plantSection || '',
         t.category || '',
         t.section || '',
         t.equipment || '',
         t.taskName || '',
         t.detail || '',
-        t.planType || '',
-        t.safety || '',
         t.status || '',
-        t.eeWorkSupp || '',
-        t.eeWorkAft || '',
-        t.mechWorkSupp || '',
-        t.mechWorkAft || '',
-        t.subcontractorName || '',
-        t.plant || '',
-        t.location || '',
-        t.progress || '',
         t.pic || ''
       ]);
 
-      const csvContent = [
+      // \uFEFF UTF-8 BOM for seamless Excel opening
+      const csvContent = '\uFEFF' + [
         headers.join(','),
         ...rows.map(r => r.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(','))
       ].join('\n');
@@ -366,11 +370,12 @@ export default function TaskManagement() {
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `Task_Planning_Schedule_${new Date().toISOString().substring(0, 10)}.csv`);
+      link.href = url;
+      link.download = `Task_Planning_Schedule_${new Date().toISOString().substring(0, 10)}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
       showToast('Plan schedule exported successfully!', 'success');
     } catch (err) {
       console.error('Export error:', err);
