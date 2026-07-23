@@ -834,25 +834,11 @@ export default function TaskManagement() {
         title="Task Management"
         subtitle="Daily shop floor task execution board and schedule planning matrix."
         actions={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ position: 'relative', width: '280px' }}>
-              <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
-              <input 
-                type="text" 
-                placeholder="Search daily tasks, equipment..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="form-input"
-                style={{ paddingLeft: '32px', width: '100%', height: '34px', fontSize: '12px' }}
-                id="task-mgmt-top-search"
-              />
-            </div>
-            {tasks.length === 0 && (
-              <button className="btn btn-sm" onClick={handleSeedMockData}>
-                Seed Sample Data
-              </button>
-            )}
-          </div>
+          tasks.length === 0 ? (
+            <button className="btn btn-sm" onClick={handleSeedMockData}>
+              Seed Sample Data
+            </button>
+          ) : null
         }
         id="task-mgmt-header"
       />
@@ -860,10 +846,10 @@ export default function TaskManagement() {
       {/* Tabs navigation & Top Controls Bar */}
       <div style={{ 
         display: 'flex', 
-        justify: 'space-between', 
         alignItems: 'center', 
         borderBottom: '1px solid var(--border)',
-        marginBottom: '8px',
+        marginBottom: '12px',
+        paddingBottom: '8px',
         gap: '12px',
         flexWrap: 'wrap'
       }}>
@@ -871,7 +857,7 @@ export default function TaskManagement() {
           <button 
             className={`btn ${activeView === 'daily' ? 'btn-primary' : ''}`}
             onClick={() => setActiveView('daily')}
-            style={{ borderRadius: '8px 8px 0 0', padding: '8px 18px', fontWeight: '600', fontSize: '13px' }}
+            style={{ borderRadius: '8px', padding: '8px 18px', fontWeight: '600', fontSize: '13px' }}
             id="tab-daily-view"
           >
             <CalendarDays size={15} style={{ marginRight: '6px' }} />
@@ -880,7 +866,7 @@ export default function TaskManagement() {
           <button 
             className={`btn ${activeView === 'planning' ? 'btn-primary' : ''}`}
             onClick={() => setActiveView('planning')}
-            style={{ borderRadius: '8px 8px 0 0', padding: '8px 18px', fontWeight: '600', fontSize: '13px' }}
+            style={{ borderRadius: '8px', padding: '8px 18px', fontWeight: '600', fontSize: '13px' }}
             id="tab-planning-view"
           >
             <Clock size={15} style={{ marginRight: '6px' }} />
@@ -889,7 +875,7 @@ export default function TaskManagement() {
         </div>
 
         {activeView === 'daily' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button className="btn btn-sm" onClick={() => changeDateByDays(-1)}>
               <ChevronLeft size={16} />
             </button>
@@ -906,6 +892,19 @@ export default function TaskManagement() {
             </button>
           </div>
         )}
+
+        <div style={{ position: 'relative', width: '280px' }}>
+          <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
+          <input 
+            type="text" 
+            placeholder="Search daily tasks, equipment..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="form-input"
+            style={{ paddingLeft: '32px', width: '100%', height: '34px', fontSize: '12px' }}
+            id="task-mgmt-top-search"
+          />
+        </div>
       </div>
 
 
