@@ -663,8 +663,9 @@ export default function TaskManagement() {
 
   // Fill up minimum rows: RFG (min 4), MIR (min 4), SUBCONTRACTOR (min 2)
   const getPaddedRows = (existing, minCount, plantSection, category) => {
+    const realContentTasks = existing.filter(t => !t.id?.startsWith('temp-') || hasAnyContent(t));
     const list = [...existing];
-    const missing = minCount - list.length;
+    const missing = Math.max(0, minCount - realContentTasks.length);
     for (let i = 0; i < missing; i++) {
       list.push({
         id: `temp-${plantSection}-${i}`,
@@ -943,7 +944,7 @@ export default function TaskManagement() {
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
-                    <span className="font-mono" style={{ fontSize: '12px' }}>{existingRfgTasks.length} items</span>
+                    <span className="font-mono" style={{ fontSize: '12px' }}>{existingRfgTasks.filter(t => !t.id?.startsWith('temp-') || hasAnyContent(t)).length} items</span>
                     <button className="btn btn-sm" style={{ backgroundColor: '#ffffff', color: '#854d0e', border: '1px solid #fde047', fontWeight: '600' }} onClick={() => handleAddNewRow('RFG', 'MTN')}>
                       <Plus size={12} /> Add Row
                     </button>
@@ -1131,7 +1132,7 @@ export default function TaskManagement() {
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
-                    <span className="font-mono" style={{ fontSize: '12px' }}>{existingMirTasks.length} items</span>
+                    <span className="font-mono" style={{ fontSize: '12px' }}>{existingMirTasks.filter(t => !t.id?.startsWith('temp-') || hasAnyContent(t)).length} items</span>
                     <button className="btn btn-sm" style={{ backgroundColor: '#ffffff', color: '#166534', border: '1px solid #86efac', fontWeight: '600' }} onClick={() => handleAddNewRow('MIR', 'PROD')}>
                       <Plus size={12} /> Add Row
                     </button>
@@ -1314,7 +1315,7 @@ export default function TaskManagement() {
                 }}>
                   <span>SUBCONTRACTOR</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
-                    <span className="font-mono" style={{ fontSize: '12px' }}>{existingSubTasks.length} items</span>
+                    <span className="font-mono" style={{ fontSize: '12px' }}>{existingSubTasks.filter(t => !t.id?.startsWith('temp-') || hasAnyContent(t)).length} items</span>
                     <button className="btn btn-sm" style={{ backgroundColor: '#ffffff', color: '#0369a1', border: '1px solid #7dd3fc', fontWeight: '600' }} onClick={() => handleAddNewRow('SUBCONTRACTOR', 'SUBCONTRACTOR')}>
                       <Plus size={12} /> Add Row
                     </button>
