@@ -830,9 +830,21 @@ export default function TaskManagement() {
         title="Task Management"
         subtitle="Daily shop floor task execution board and schedule planning matrix."
         actions={
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ position: 'relative', width: '280px' }}>
+              <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
+              <input 
+                type="text" 
+                placeholder="Search daily tasks, equipment..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="form-input"
+                style={{ paddingLeft: '32px', width: '100%', height: '34px', fontSize: '12px' }}
+                id="task-mgmt-top-search"
+              />
+            </div>
             {tasks.length === 0 && (
-              <button className="btn" onClick={handleSeedMockData}>
+              <button className="btn btn-sm" onClick={handleSeedMockData}>
                 Seed Sample Data
               </button>
             )}
@@ -892,24 +904,7 @@ export default function TaskManagement() {
         )}
       </div>
 
-      {/* TOP SEARCH BAR - Moved to top above Blue Date Banner as requested */}
-      <div className="card controls-bar" style={{ padding: '8px 16px', marginBottom: '8px' }}>
-        <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
-          <Search size={14} style={{ position: 'absolute', left: '12px', top: '11px', color: 'var(--text3)' }} />
-          <input 
-            type="text" 
-            placeholder="Search daily tasks, equipment, planning..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="form-input"
-            style={{ paddingLeft: '34px', width: '100%' }}
-            id="task-mgmt-top-search"
-          />
-        </div>
-        <div className="font-mono text3" style={{ fontSize: '12.5px' }}>
-          {activeView === 'daily' ? `Total ${rawDailyTasks.length} tasks scheduled for ${selectedDate}` : `${planningTasks.length} planning rows`}
-        </div>
-      </div>
+
 
       {/* VIEW 1: DAILY TASK VIEW */}
       {activeView === 'daily' && (
