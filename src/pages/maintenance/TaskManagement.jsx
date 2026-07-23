@@ -76,7 +76,10 @@ const SECTION_SUGGESTIONS = [
 
 export default function TaskManagement() {
   const [activeView, setActiveView] = useState('daily'); // 'daily' | 'planning'
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState(() => {
+    const localSaved = localStorage.getItem('mace_tasks_cache');
+    return localSaved ? JSON.parse(localSaved) : [];
+  });
   const [loading, setLoading] = useState(true);
 
   // Daily View Date Selector (persisted in localStorage, default to today)
@@ -87,6 +90,12 @@ export default function TaskManagement() {
   useEffect(() => {
     localStorage.setItem('mace_task_selected_date', selectedDate);
   }, [selectedDate]);
+
+  useEffect(() => {
+    if (tasks && tasks.length > 0) {
+      localStorage.setItem('mace_tasks_cache', JSON.stringify(tasks));
+    }
+  }, [tasks]);
 
   // Search filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,6 +109,7 @@ export default function TaskManagement() {
     const unsubscribe = subscribeCollection('mace_tasks', (data) => {
       if (data && data.length > 0) {
         setTasks(data);
+        localStorage.setItem('mace_tasks_cache', JSON.stringify(data));
       }
       setLoading(false);
     }, (error) => {
