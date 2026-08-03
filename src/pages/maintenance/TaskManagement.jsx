@@ -810,23 +810,34 @@ export default function TaskManagement() {
           const hasPlanningContent = updatedTask.rfgRev || updatedTask.mirRev || updatedTask.eeWorkAft || updatedTask.mechWorkAft || updatedTask.eeWorkSupp || updatedTask.mechWorkSupp;
 
           if (!hasAnyContent(updatedTask) && !hasPlanningContent) {
-            try {
-              await deleteDocument('mace_tasks', task.id);
-              setTasks(prev => prev.filter(t => t.id !== task.id));
-              setDraftEdits(prev => {
-                const next = { ...prev };
-                delete next[task.id];
-                return next;
-              });
-            } catch (err) {
-              console.error('Delete empty task error:', err);
+            setTasks(prev => prev.filter(t => t.id !== task.id));
+            setDraftEdits(prev => {
+              const next = { ...prev };
+              delete next[task.id];
+              return next;
+            });
+            if (!task.id.startsWith('local-')) {
+              try {
+                await deleteDocument('mace_tasks', task.id);
+              } catch (err) {
+                console.error('Delete empty task error:', err);
+              }
             }
           } else {
             setTasks(prev => prev.map(t => t.id === task.id ? { ...t, [field]: newValue } : t));
-            try {
-              await updateDocument('mace_tasks', task.id, { [field]: newValue });
-            } catch (err) {
-              console.warn('Document update note:', err);
+            if (!task.id.startsWith('local-')) {
+              try {
+                await updateDocument('mace_tasks', task.id, { [field]: newValue });
+              } catch (err) {
+                console.warn('Document update note:', err);
+              }
+            } else {
+              try {
+                const docId = await createDocument('mace_tasks', updatedTask);
+                setTasks(prev => prev.map(t => t.id === task.id ? { ...updatedTask, id: docId } : t));
+              } catch (e) {
+                // Keep local task in state
+              }
             }
           }
         }
