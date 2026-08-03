@@ -1348,6 +1348,14 @@ export default function TaskManagement() {
               <button className="btn btn-sm" onClick={() => changeDateByDays(1)}>
                 <ChevronRight size={16} />
               </button>
+              <button 
+                className="btn btn-sm btn-secondary" 
+                onClick={() => setSelectedDate(new Date().toISOString().substring(0, 10))}
+                title="Go to Today"
+                style={{ fontSize: '12px' }}
+              >
+                Today
+              </button>
             </div>
 
             <div style={{ position: 'relative', width: '300px', marginLeft: 'auto' }}>
