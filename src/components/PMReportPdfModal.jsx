@@ -209,6 +209,11 @@ export default function PMReportPdfModal({
 
         {/* Printable Document Body */}
         <div className="pdf-modal-body" id="printable-pm-report">
+          {/* Page 1 Preview Banner */}
+          <div className="pdf-page-indicator no-print">
+            <span>📄 PAGE 1: PREVENTIVE MAINTENANCE SCHEDULE TABLE ({filteredItems.length} ITEMS)</span>
+          </div>
+
           {/* ============================================================== */}
           {/* PAGE 1: PM SCHEDULE TABLE & DUAL SIGNATURE BLOCK */}
           {/* ============================================================== */}
@@ -255,16 +260,16 @@ export default function PMReportPdfModal({
                     filteredItems.map((item, idx) => {
                       return (
                         <tr key={item.id || idx}>
-                          <td style={{ textAlign: 'center', fontSize: '10px' }}>{idx + 1}</td>
+                          <td style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: '500' }}>{idx + 1}</td>
                           <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{item.plant || 'RFG'}</td>
                           <td style={{ textAlign: 'left', fontWeight: '600' }}>
                             <div>{item.machineName}</div>
-                            <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 'normal' }}>
+                            <div style={{ fontSize: '8.5px', color: '#64748b', fontWeight: 'normal' }}>
                               {item.responsible === 'Own Team' ? 'My Team' : (item.responsible || 'My Team')}
                             </div>
                           </td>
-                          <td style={{ textTransform: 'capitalize', fontSize: '10px' }}>{item.cycle}</td>
-                          <td className="font-mono" style={{ fontSize: '10px' }}>{item.checksheetId || '-'}</td>
+                          <td style={{ textTransform: 'capitalize', fontSize: '9.5px' }}>{item.cycle}</td>
+                          <td className="font-mono" style={{ fontSize: '9.5px' }}>{item.checksheetId || '-'}</td>
                           {Array.from({ length: 12 }).map((_, mIdx) => {
                             const monthNum = mIdx + 1;
                             const cellState = getCellStatus(item, selectedYear, monthNum);
@@ -337,6 +342,11 @@ export default function PMReportPdfModal({
             </div>
           </div>
 
+          {/* Page 2 Preview Banner */}
+          <div className="pdf-page-indicator no-print" style={{ marginTop: '16px' }}>
+            <span>📊 PAGE 2: PREVENTIVE MAINTENANCE ACHIEVEMENT TREND GRAPH & KPI DASHBOARD</span>
+          </div>
+
           {/* PAGE BREAK FOR PRINT */}
           <div className="pdf-page-break"></div>
 
@@ -384,27 +394,27 @@ export default function PMReportPdfModal({
             {/* Recharts Bar Chart */}
             <div className="pdf-chart-container">
               <h3 className="pdf-section-title">PM Plan vs Actual Execution Trend ({selectedYear})</h3>
-              <div style={{ width: '100%', height: '210px' }}>
+              <div style={{ width: '100%', height: '165px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={monthlyData}
-                    margin={{ top: 20, right: 10, left: -20, bottom: 5 }}
+                    margin={{ top: 15, right: 10, left: -20, bottom: 0 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#334155' }} />
-                    <YAxis tick={{ fontSize: 10, fill: '#334155' }} allowDecimals={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 9.5, fill: '#334155' }} />
+                    <YAxis tick={{ fontSize: 9.5, fill: '#334155' }} allowDecimals={false} />
                     <Legend 
                       verticalAlign="top" 
                       align="right"
-                      height={28}
+                      height={24}
                       iconType="circle"
-                      formatter={(val) => <span style={{ fontSize: 11, color: '#1e293b', fontWeight: 'bold' }}>{val}</span>}
+                      formatter={(val) => <span style={{ fontSize: 10, color: '#1e293b', fontWeight: 'bold' }}>{val}</span>}
                     />
                     <Bar dataKey="Plan" name="Planned (Plan)" fill="#93c5fd" radius={[3, 3, 0, 0]}>
-                      <LabelList dataKey="Plan" position="top" style={{ fill: '#1e293b', fontSize: '9px', fontWeight: 'bold' }} />
+                      <LabelList dataKey="Plan" position="top" style={{ fill: '#1e293b', fontSize: '8.5px', fontWeight: 'bold' }} />
                     </Bar>
                     <Bar dataKey="Actual" name="Actual (Logged)" fill="#86efac" radius={[3, 3, 0, 0]}>
-                      <LabelList dataKey="Actual" position="top" style={{ fill: '#065f46', fontSize: '9px', fontWeight: 'bold' }} />
+                      <LabelList dataKey="Actual" position="top" style={{ fill: '#065f46', fontSize: '8.5px', fontWeight: 'bold' }} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -412,20 +422,20 @@ export default function PMReportPdfModal({
             </div>
 
             {/* Monthly Summary Table */}
-            <div className="pdf-table-wrapper" style={{ marginTop: '10px' }}>
-              <table className="pdf-table font-mono" style={{ fontSize: '10px' }}>
+            <div className="pdf-table-wrapper" style={{ marginTop: '8px' }}>
+              <table className="pdf-table font-mono" style={{ fontSize: '9.5px' }}>
                 <thead>
                   <tr style={{ background: '#f1f5f9' }}>
-                    <th style={{ textAlign: 'left', padding: '6px 10px' }}>Job Metric</th>
+                    <th style={{ textAlign: 'left', padding: '4px 8px' }}>Job Metric</th>
                     {MONTH_NAMES.map(m => (
-                      <th key={m} style={{ textAlign: 'center', padding: '6px 2px' }}>{m}</th>
+                      <th key={m} style={{ textAlign: 'center', padding: '4px 2px' }}>{m}</th>
                     ))}
                     <th style={{ textAlign: 'center', background: '#e2e8f0' }}>TOTAL</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td style={{ fontWeight: 'bold', textAlign: 'left', padding: '6px 10px' }}>Planned (Plan)</td>
+                    <td style={{ fontWeight: 'bold', textAlign: 'left', padding: '4px 8px' }}>Planned (Plan)</td>
                     {monthlyData.map((d, i) => (
                       <td key={i} style={{ textAlign: 'center' }}>{d.Plan}</td>
                     ))}
@@ -434,7 +444,7 @@ export default function PMReportPdfModal({
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ fontWeight: 'bold', textAlign: 'left', padding: '6px 10px' }}>Actual (Logged)</td>
+                    <td style={{ fontWeight: 'bold', textAlign: 'left', padding: '4px 8px' }}>Actual (Logged)</td>
                     {monthlyData.map((d, i) => (
                       <td key={i} style={{ textAlign: 'center', color: d.Actual > 0 ? '#059669' : 'inherit', fontWeight: d.Actual > 0 ? 'bold' : 'normal' }}>
                         {d.Actual}
@@ -445,7 +455,7 @@ export default function PMReportPdfModal({
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ fontWeight: 'bold', textAlign: 'left', padding: '6px 10px' }}>Achievement %</td>
+                    <td style={{ fontWeight: 'bold', textAlign: 'left', padding: '4px 8px' }}>Achievement %</td>
                     {monthlyData.map((d, i) => {
                       let pctColor = '#64748b';
                       if (d.Plan > 0) {

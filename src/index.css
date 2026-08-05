@@ -1414,6 +1414,22 @@ h1, h2, h3, h4, h5, h6 {
   gap: 24px;
 }
 
+/* Page Indicator Banner for Modal Screen Preview */
+.pdf-page-indicator {
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 /* Single A4 Sheet Preview on Screen */
 .pdf-page {
   background: #ffffff;
@@ -1426,8 +1442,7 @@ h1, h2, h3, h4, h5, h6 {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  min-height: 640px;
+  box-sizing: border-box;
 }
 
 /* Header Section */
@@ -1494,7 +1509,7 @@ h1, h2, h3, h4, h5, h6 {
 .pdf-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 10px;
+  font-size: 9.5px;
   color: #0f172a;
 }
 
@@ -1503,14 +1518,14 @@ h1, h2, h3, h4, h5, h6 {
   color: #0f172a;
   font-weight: 700;
   text-transform: uppercase;
-  padding: 5px 4px;
+  padding: 4px 4px;
   border: 1px solid #cbd5e1;
-  font-size: 9.5px;
+  font-size: 9px;
   text-align: center;
 }
 
 .pdf-table td {
-  padding: 4px 6px;
+  padding: 3px 5px;
   border: 1px solid #cbd5e1;
   vertical-align: middle;
 }
@@ -1518,7 +1533,7 @@ h1, h2, h3, h4, h5, h6 {
 .pdf-month-cell {
   text-align: center;
   font-weight: bold;
-  font-size: 10px;
+  font-size: 9.5px;
 }
 
 .pdf-cell-done {
@@ -1546,9 +1561,9 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   gap: 16px;
   align-items: center;
-  font-size: 9.5px;
+  font-size: 9px;
   color: #475569;
-  margin-top: 8px;
+  margin-top: 6px;
   font-weight: 500;
 }
 
@@ -1559,8 +1574,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .pdf-legend-box {
-  width: 14px;
-  height: 12px;
+  width: 12px;
+  height: 10px;
   border-radius: 2px;
   border: 1px solid #cbd5e1;
   display: inline-block;
@@ -1571,15 +1586,15 @@ h1, h2, h3, h4, h5, h6 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 32px;
-  margin-top: 16px;
-  padding-top: 10px;
+  margin-top: 12px;
+  padding-top: 8px;
   border-top: 1px dashed #cbd5e1;
 }
 
 .pdf-signature-box {
   border: 1px solid #cbd5e1;
   border-radius: 6px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   background: #fafafa;
   display: flex;
   flex-direction: column;
@@ -1588,17 +1603,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .pdf-sig-role {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
 }
 
 .pdf-sig-line-area {
   width: 80%;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .pdf-sig-line {
@@ -1608,21 +1623,21 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .pdf-sig-name {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 600;
   color: #0f172a;
   margin-bottom: 2px;
 }
 
 .pdf-sig-title {
-  font-size: 9.5px;
+  font-size: 9px;
   color: #64748b;
   font-weight: 500;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .pdf-sig-date {
-  font-size: 9px;
+  font-size: 8.5px;
   color: #475569;
   font-family: var(--font-mono, monospace);
 }
@@ -1631,33 +1646,33 @@ h1, h2, h3, h4, h5, h6 {
 .pdf-kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .pdf-kpi-card {
   border: 1px solid #cbd5e1;
   border-radius: 6px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   background: #f8fafc;
 }
 
 .pdf-kpi-label {
-  font-size: 9px;
+  font-size: 8.5px;
   font-weight: 700;
   text-transform: uppercase;
   color: #64748b;
 }
 
 .pdf-kpi-val {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
   color: #0f172a;
   font-family: var(--font-mono, monospace);
 }
 
 .pdf-kpi-unit {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: normal;
   color: #64748b;
 }
@@ -1665,15 +1680,15 @@ h1, h2, h3, h4, h5, h6 {
 .pdf-chart-container {
   border: 1px solid #cbd5e1;
   border-radius: 6px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   background: #ffffff;
 }
 
 .pdf-section-title {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: #0f172a;
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
   text-transform: uppercase;
 }
 
@@ -1687,7 +1702,7 @@ h1, h2, h3, h4, h5, h6 {
 @media print {
   @page {
     size: A4 landscape;
-    margin: 6mm 8mm;
+    margin: 5mm 6mm;
   }
 
   body {
@@ -1721,6 +1736,7 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0 !important;
     background: #ffffff !important;
     gap: 0 !important;
+    overflow: visible !important;
   }
 
   .pdf-page {
@@ -1729,24 +1745,48 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
-    height: 100vh !important;
-    min-height: 100vh !important;
     box-sizing: border-box !important;
-    justify-content: space-between !important;
+  }
+
+  .pdf-page-1 {
     page-break-after: always !important;
     break-after: page !important;
   }
 
-  .pdf-page-break {
-    page-break-after: always !important;
-    break-after: page !important;
-    height: 0 !important;
+  .pdf-page-2 {
+    page-break-before: always !important;
+    break-before: page !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    overflow: hidden !important;
+  }
+
+  .pdf-table th {
+    padding: 3px 2px !important;
+    font-size: 8pt !important;
+  }
+
+  .pdf-table td {
+    padding: 2.5px 4px !important;
+    font-size: 8pt !important;
   }
 
   .pdf-signature-section {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    margin-top: auto !important;
+    margin-top: 10px !important;
+  }
+
+  .pdf-signature-box {
+    padding: 6px 10px !important;
+  }
+
+  .pdf-sig-role {
+    margin-bottom: 16px !important;
+    font-size: 8.5pt !important;
   }
 }
 

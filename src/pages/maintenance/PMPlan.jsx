@@ -3109,7 +3109,7 @@ export default function PMPlan() {
       <PMReportPdfModal
         isOpen={isPdfModalOpen}
         onClose={() => setIsPdfModalOpen(false)}
-        items={items}
+        items={sortedItems}
         logs={logs}
         selectedYear={selectedYear}
         filterPlant={filterPlant}
