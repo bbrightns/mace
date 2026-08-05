@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Printer, X, UserCheck, FileText } from 'lucide-react';
+import { Printer, Download, X, UserCheck, FileText, Loader2 } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -32,6 +32,7 @@ export default function PMReportPdfModal({
   const [managerTitle, setManagerTitle] = useState('Maintenance Manager');
   const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
   const [documentNo, setDocumentNo] = useState(`PM-RPT-${selectedYear}-${filterPlant.toUpperCase()}`);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   if (!isOpen) return null;
 
@@ -106,6 +107,55 @@ export default function PMReportPdfModal({
     };
   });
 
+  // Direct PDF File Generation & Download
+  const handleDownloadPdf = async () => {
+    setIsGeneratingPdf(true);
+    try {
+      const reportElement = document.getElementById('printable-pm-report');
+      if (!reportElement) throw new Error('Report element not found');
+
+      // Load html2pdf dynamically if not attached to window
+      let html2pdfLib = window.html2pdf;
+      if (!html2pdfLib) {
+        try {
+          const module = await import('html2pdf.js');
+          html2pdfLib = module.default || module;
+        } catch (err) {
+          // CDN Fallback if local import fails
+          html2pdfLib = await new Promise((resolve, reject) => {
+            if (window.html2pdf) return resolve(window.html2pdf);
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.onload = () => resolve(window.html2pdf);
+            script.onerror = () => reject(new Error('Failed to load html2pdf script'));
+            document.body.appendChild(script);
+          });
+        }
+      }
+
+      const opt = {
+        margin: [4, 4, 4, 4],
+        filename: `${documentNo || 'PM-Report'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      };
+
+      await html2pdfLib().set(opt).from(reportElement).save();
+    } catch (err) {
+      console.error('PDF Generation Failed, fallback to window.print():', err);
+      window.print();
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -125,9 +175,19 @@ export default function PMReportPdfModal({
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button className="btn btn-primary" onClick={handlePrint} id="btn-do-print">
-              <Printer size={16} />
-              <span>Print / Save as PDF</span>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleDownloadPdf} 
+              disabled={isGeneratingPdf} 
+              id="btn-download-pdf"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              {isGeneratingPdf ? <Loader2 size={16} className="spin-icon" /> : <Download size={16} />}
+              <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download PDF File'}</span>
+            </button>
+            <button className="btn" onClick={handlePrint} id="btn-do-print" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Printer size={14} />
+              <span>Print Browser</span>
             </button>
             <button className="modal-close-btn" onClick={onClose} aria-label="Close">
               <X size={18} />
