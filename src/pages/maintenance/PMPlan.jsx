@@ -417,6 +417,9 @@ export default function PMPlan() {
     return matchesSearch && matchesPlant && matchesResponsible && matchesCycle;
   });
 
+  // Shift key range selection state
+  const [lastSelectedId, setLastSelectedId] = useState(null);
+
   // Batch Selection & Execution Handlers
   const handleToggleSelectAll = () => {
     if (selectedPlanIds.length === filteredItems.length && filteredItems.length > 0) {
@@ -426,10 +429,32 @@ export default function PMPlan() {
     }
   };
 
-  const handleToggleSelectItem = (id) => {
+  const handleToggleSelectItem = (id, e) => {
+    const isShiftPressed = e && e.shiftKey;
+
+    if (isShiftPressed && lastSelectedId && sortedItems.some(i => i.id === lastSelectedId)) {
+      const currentIndex = sortedItems.findIndex(i => i.id === id);
+      const lastIndex = sortedItems.findIndex(i => i.id === lastSelectedId);
+
+      if (currentIndex !== -1 && lastIndex !== -1) {
+        const start = Math.min(currentIndex, lastIndex);
+        const end = Math.max(currentIndex, lastIndex);
+        const rangeIds = sortedItems.slice(start, end + 1).map(i => i.id);
+
+        setSelectedPlanIds(prev => {
+          const newSet = new Set(prev);
+          rangeIds.forEach(rId => newSet.add(rId));
+          return Array.from(newSet);
+        });
+        setLastSelectedId(id);
+        return;
+      }
+    }
+
     setSelectedPlanIds(prev => 
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
+    setLastSelectedId(id);
   };
 
   const handleOpenBatchModal = () => {
@@ -1914,17 +1939,17 @@ export default function PMPlan() {
             <table className="grid-table">
               <thead>
                 <tr>
-                  <th style={{ width: '38px', position: 'sticky', left: 0, zIndex: 10, background: 'var(--surface2)', textAlign: 'center' }}>
+                  <th style={{ width: '42px', position: 'sticky', left: 0, zIndex: 10, background: 'var(--surface2)', textAlign: 'center' }}>
                     <input 
                       type="checkbox" 
+                      className="pm-select-checkbox"
                       checked={selectedPlanIds.length > 0 && selectedPlanIds.length === filteredItems.length}
                       onChange={handleToggleSelectAll}
                       title="Select / Deselect all visible items"
-                      style={{ cursor: 'pointer' }}
                     />
                   </th>
-                  {renderSortableHeader('plant', 'Plant', { width: '65px', position: 'sticky', left: '38px', zIndex: 10, background: 'var(--surface2)' })}
-                  {renderSortableHeader('machineName', 'Machine / Equipment', { width: '220px', textAlign: 'left', position: 'sticky', left: '103px', zIndex: 10, background: 'var(--surface2)', borderRight: '2px solid var(--border2)' })}
+                  {renderSortableHeader('plant', 'Plant', { width: '65px', position: 'sticky', left: '42px', zIndex: 10, background: 'var(--surface2)' })}
+                  {renderSortableHeader('machineName', 'Machine / Equipment', { width: '220px', textAlign: 'left', position: 'sticky', left: '107px', zIndex: 10, background: 'var(--surface2)', borderRight: '2px solid var(--border2)' })}
                   {renderSortableHeader('cycle', 'Cycle', { width: '110px' })}
                   {renderSortableHeader('checksheetId', 'Checksheet ID', { width: '120px' })}
                   {MONTH_NAMES.map((name, i) => {
@@ -1942,18 +1967,31 @@ export default function PMPlan() {
                   const isSelected = selectedPlanIds.includes(item.id);
                   return (
                     <tr key={item.id} style={{ backgroundColor: isSelected ? 'rgba(var(--accent-rgb, 59, 130, 246), 0.06)' : undefined }}>
-                      {/* Checkbox Column */}
-                      <td style={{ position: 'sticky', left: 0, background: isSelected ? 'var(--surface2)' : 'var(--surface)', zIndex: 5, textAlign: 'center' }}>
+                      {/* Checkbox Column - Click anywhere in cell to select */}
+                      <td 
+                        className="pm-select-cell"
+                        onClick={(e) => handleToggleSelectItem(item.id, e)}
+                        style={{ position: 'sticky', left: 0, background: isSelected ? 'var(--surface2)' : 'var(--surface)', zIndex: 5, textAlign: 'center' }}
+                        title="Click to select item (Shift+Click to select range)"
+                      >
                         <input 
                           type="checkbox" 
+                          className="pm-select-checkbox"
                           checked={isSelected}
-                          onChange={() => handleToggleSelectItem(item.id)}
-                          style={{ cursor: 'pointer' }}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleToggleSelectItem(item.id, e.nativeEvent);
+                          }}
                         />
                       </td>
 
-                      {/* Fixed Left Plant Column */}
-                      <td style={{ position: 'sticky', left: '38px', background: isSelected ? 'var(--surface2)' : 'var(--surface)', zIndex: 5 }}>
+                      {/* Fixed Left Plant Column - Also clickable to select */}
+                      <td 
+                        className="pm-select-cell"
+                        onClick={(e) => handleToggleSelectItem(item.id, e)}
+                        style={{ position: 'sticky', left: '42px', background: isSelected ? 'var(--surface2)' : 'var(--surface)', zIndex: 5 }}
+                        title="Click to select item"
+                      >
                         <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`}>{item.plant || 'RFG'}</span>
                       </td>
 
@@ -1962,7 +2000,7 @@ export default function PMPlan() {
                         className="machine-cell" 
                         style={{ 
                           position: 'sticky', 
-                          left: '103px', 
+                          left: '107px', 
                           zIndex: 5, 
                           background: isSelected ? 'var(--surface2)' : 'var(--surface)', 
                           borderRight: '2px solid var(--border2)',
@@ -2279,13 +2317,13 @@ export default function PMPlan() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th style={{ width: '38px', textAlign: 'center' }}>
+                  <th style={{ width: '42px', textAlign: 'center' }}>
                     <input 
                       type="checkbox" 
+                      className="pm-select-checkbox"
                       checked={selectedPlanIds.length > 0 && selectedPlanIds.length === filteredItems.length}
                       onChange={handleToggleSelectAll}
                       title="Select / Deselect all visible items"
-                      style={{ cursor: 'pointer' }}
                     />
                   </th>
                   <th style={{ width: '50px' }}>No.</th>
@@ -2308,18 +2346,30 @@ export default function PMPlan() {
                   const isSelected = selectedPlanIds.includes(item.id);
                   return (
                     <tr key={item.id} className={overdue ? 'overdue-row' : ''} style={{ backgroundColor: isSelected ? 'rgba(var(--accent-rgb, 59, 130, 246), 0.06)' : undefined }} id={`pm-row-${item.id}`}>
-                      <td style={{ textAlign: 'center' }}>
+                      <td 
+                        className="pm-select-cell"
+                        onClick={(e) => handleToggleSelectItem(item.id, e)}
+                        style={{ textAlign: 'center' }}
+                        title="Click to select item (Shift+Click to select range)"
+                      >
                         <input 
                           type="checkbox" 
+                          className="pm-select-checkbox"
                           checked={isSelected}
-                          onChange={() => handleToggleSelectItem(item.id)}
-                          style={{ cursor: 'pointer' }}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleToggleSelectItem(item.id, e.nativeEvent);
+                          }}
                         />
                       </td>
                       <td className="font-mono" style={{ color: 'var(--text3)' }}>
                         {String(index + 1).padStart(2, '0')}
                       </td>
-                      <td>
+                      <td 
+                        className="pm-select-cell"
+                        onClick={(e) => handleToggleSelectItem(item.id, e)}
+                        title="Click to select item"
+                      >
                         <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`}>{item.plant || 'RFG'}</span>
                       </td>
                       <td 
