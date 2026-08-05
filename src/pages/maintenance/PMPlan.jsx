@@ -72,9 +72,9 @@ export default function PMPlan() {
   const [batchNote, setBatchNote] = useState('');
   const [isBatchSaving, setIsBatchSaving] = useState(false);
 
-  // Batch Change Due Date States
+  // Batch Change Schedule / Cycle States
   const [isBatchDueDateModalOpen, setIsBatchDueDateModalOpen] = useState(false);
-  const [batchDueDate, setBatchDueDate] = useState('');
+  const [batchCycle, setBatchCycle] = useState('keep'); // 'keep' or specific cycle
   const [batchStartMonth, setBatchStartMonth] = useState(1);
   
   // Sorting state
@@ -552,8 +552,7 @@ export default function PMPlan() {
       showToast('Please select at least one PM item using the checkboxes.', 'error');
       return;
     }
-    const todayStr = formatInputDate(new Date());
-    setBatchDueDate(todayStr);
+    setBatchCycle('keep');
     setBatchStartMonth(filterMonth !== 'all' ? Number(filterMonth) : 1);
     setIsBatchDueDateModalOpen(true);
   };
@@ -561,10 +560,6 @@ export default function PMPlan() {
   const handleSaveBatchDueDate = async (e) => {
     e.preventDefault();
     if (selectedPlanIds.length === 0) return;
-    if (!batchDueDate) {
-      showToast('Please select a valid Next Due Date.', 'error');
-      return;
-    }
 
     setIsBatchSaving(true);
     try {
@@ -572,25 +567,29 @@ export default function PMPlan() {
       const operations = [];
 
       for (const item of selectedItems) {
+        const updateData = {
+          startMonth: Number(batchStartMonth)
+        };
+        if (batchCycle !== 'keep') {
+          updateData.cycle = batchCycle;
+        }
+
         operations.push({
           type: 'update',
           collectionName: 'mace_pm_plans',
           id: item.id,
-          data: {
-            nextDueDate: batchDueDate,
-            startMonth: Number(batchStartMonth)
-          }
+          data: updateData
         });
       }
 
       await batchWriteOperations(operations);
 
-      showToast(`Batch updated Next Due Date for ${selectedItems.length} items.`);
+      showToast(`Batch updated schedule for ${selectedItems.length} items.`);
       setIsBatchDueDateModalOpen(false);
       setSelectedPlanIds([]);
     } catch (err) {
       console.error(err);
-      showToast('Failed to update Next Due Date.', 'error');
+      showToast('Failed to update schedule.', 'error');
     } finally {
       setIsBatchSaving(false);
     }
@@ -1873,7 +1872,7 @@ export default function PMPlan() {
               style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 'bold' }}
             >
               <Clock size={14} />
-              <span>Batch Change Due Date</span>
+              <span>Batch Change Schedule</span>
             </button>
           </div>
         </div>
@@ -2943,7 +2942,7 @@ export default function PMPlan() {
       <Modal
         isOpen={isBatchDueDateModalOpen}
         onClose={() => setIsBatchDueDateModalOpen(false)}
-        title={`Batch Change Due Date (${selectedPlanIds.length} items)`}
+        title={`Batch Change Schedule (${selectedPlanIds.length} items)`}
         footerActions={
           <>
             <button className="btn" onClick={() => setIsBatchDueDateModalOpen(false)} disabled={isBatchSaving}>
@@ -2988,19 +2987,7 @@ export default function PMPlan() {
           </div>
 
           <div className="form-group form-full">
-            <label className="form-label">New Next Due Date *</label>
-            <input 
-              type="date" 
-              className="form-input font-mono" 
-              required 
-              value={batchDueDate} 
-              onChange={(e) => setBatchDueDate(e.target.value)}
-              id="batch-due-date-input"
-            />
-          </div>
-
-          <div className="form-group form-full">
-            <label className="form-label">Start Month (PM Schedule Base Month) *</label>
+            <label className="form-label">Shift Base Target Month (Shift Schedule To) *</label>
             <select 
               className="form-select font-mono" 
               value={batchStartMonth} 
@@ -3014,6 +3001,22 @@ export default function PMPlan() {
             <span style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px', display: 'block' }}>
               Determines which month cell in the annual matrix this schedule aligns with.
             </span>
+          </div>
+
+          <div className="form-group form-full">
+            <label className="form-label">Inspect Cycle (Optional)</label>
+            <select 
+              className="form-select" 
+              value={batchCycle} 
+              onChange={(e) => setBatchCycle(e.target.value)}
+              id="batch-cycle-select"
+            >
+              <option value="keep">-- Keep Original Cycle --</option>
+              <option value="monthly">Monthly</option>
+              <option value="every 2 months">Every 2 Months</option>
+              <option value="every 6 months">Every 6 Months</option>
+              <option value="yearly">Yearly</option>
+            </select>
           </div>
         </form>
       </Modal>
