@@ -1698,28 +1698,57 @@ h1, h2, h3, h4, h5, h6 {
   display: block;
 }
 
-/* PRINT MEDIA OVERRIDES */
+/* PRINT MEDIA OVERRIDES - ISOLATED 2-PAGE REPORT PRINTING */
 @media print {
   @page {
     size: A4 landscape;
     margin: 5mm 6mm;
   }
 
-  body {
+  html, body {
     background: #ffffff !important;
     color: #000000 !important;
+    height: auto !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Hide app shell chrome & screen-only controls */
-  header, nav, aside, .sidebar, .navbar, .no-print, .modal-header, .modal-overlay, .modal-close-btn {
-    display: none !important;
+  /* 1. Hide every background web page element visually */
+  body * {
+    visibility: hidden !important;
   }
 
+  /* 2. Unhide ONLY the printable report container and its contents */
+  #printable-pm-report,
+  #printable-pm-report * {
+    visibility: visible !important;
+  }
+
+  /* 3. Position printable report at the absolute top-left of the printed paper */
+  #printable-pm-report {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    display: block !important;
+  }
+
+  /* 4. Remove all screen-only controls, banners, and modal headers from print layout */
+  .no-print,
+  .no-print *,
+  .pdf-modal-header,
+  .modal-header,
+  .modal-overlay,
   .pdf-modal-overlay {
-    position: static !important;
-    background: none !important;
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
     padding: 0 !important;
   }
 
@@ -1730,6 +1759,7 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: none !important;
     border: none !important;
     background: #ffffff !important;
+    padding: 0 !important;
   }
 
   .pdf-modal-body {
@@ -1745,6 +1775,7 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
+    background: #ffffff !important;
     box-sizing: border-box !important;
   }
 
