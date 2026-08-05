@@ -15,7 +15,8 @@ import {
   Grid,
   Download,
   Upload,
-  TrendingUp
+  TrendingUp,
+  Clock
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -62,7 +63,7 @@ export default function PMPlan() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterMonth, setFilterMonth] = useState('all');
 
-  // Batch Selection & Batch Input Date States
+  // Batch Selection & Batch Input Date / Due Date States
   const [selectedPlanIds, setSelectedPlanIds] = useState([]);
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [batchYear, setBatchYear] = useState(2026);
@@ -70,6 +71,11 @@ export default function PMPlan() {
   const [batchDoneDay, setBatchDoneDay] = useState(20);
   const [batchNote, setBatchNote] = useState('');
   const [isBatchSaving, setIsBatchSaving] = useState(false);
+
+  // Batch Change Due Date States
+  const [isBatchDueDateModalOpen, setIsBatchDueDateModalOpen] = useState(false);
+  const [batchDueDate, setBatchDueDate] = useState('');
+  const [batchStartMonth, setBatchStartMonth] = useState(1);
   
   // Sorting state
   const [sortField, setSortField] = useState('plant'); // 'plant', 'machineName', 'cycle', 'checksheetId', 'responsible', 'lastDone', 'nextDue'
@@ -536,6 +542,55 @@ export default function PMPlan() {
     } catch (err) {
       console.error(err);
       showToast('Failed to save batch PM logs.', 'error');
+    } finally {
+      setIsBatchSaving(false);
+    }
+  };
+
+  const handleOpenBatchDueDateModal = () => {
+    if (selectedPlanIds.length === 0) {
+      showToast('Please select at least one PM item using the checkboxes.', 'error');
+      return;
+    }
+    const todayStr = formatInputDate(new Date());
+    setBatchDueDate(todayStr);
+    setBatchStartMonth(filterMonth !== 'all' ? Number(filterMonth) : 1);
+    setIsBatchDueDateModalOpen(true);
+  };
+
+  const handleSaveBatchDueDate = async (e) => {
+    e.preventDefault();
+    if (selectedPlanIds.length === 0) return;
+    if (!batchDueDate) {
+      showToast('Please select a valid Next Due Date.', 'error');
+      return;
+    }
+
+    setIsBatchSaving(true);
+    try {
+      const selectedItems = items.filter(i => selectedPlanIds.includes(i.id));
+      const operations = [];
+
+      for (const item of selectedItems) {
+        operations.push({
+          type: 'update',
+          collectionName: 'mace_pm_plans',
+          id: item.id,
+          data: {
+            nextDueDate: batchDueDate,
+            startMonth: Number(batchStartMonth)
+          }
+        });
+      }
+
+      await batchWriteOperations(operations);
+
+      showToast(`Batch updated Next Due Date for ${selectedItems.length} items.`);
+      setIsBatchDueDateModalOpen(false);
+      setSelectedPlanIds([]);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update Next Due Date.', 'error');
     } finally {
       setIsBatchSaving(false);
     }
@@ -1811,6 +1866,15 @@ export default function PMPlan() {
               <Calendar size={14} />
               <span>Batch Input Date</span>
             </button>
+            <button 
+              className="btn btn-secondary btn-sm" 
+              onClick={handleOpenBatchDueDateModal}
+              id="open-batch-due-date-btn"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 'bold' }}
+            >
+              <Clock size={14} />
+              <span>Batch Change Due Date</span>
+            </button>
           </div>
         </div>
       )}
@@ -2871,6 +2935,85 @@ export default function PMPlan() {
               onChange={(e) => setBatchNote(e.target.value)}
               id="batch-form-note"
             />
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL 5: BATCH CHANGE DUE DATE POPUP */}
+      <Modal
+        isOpen={isBatchDueDateModalOpen}
+        onClose={() => setIsBatchDueDateModalOpen(false)}
+        title={`Batch Change Due Date (${selectedPlanIds.length} items)`}
+        footerActions={
+          <>
+            <button className="btn" onClick={() => setIsBatchDueDateModalOpen(false)} disabled={isBatchSaving}>
+              Cancel
+            </button>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleSaveBatchDueDate} 
+              disabled={isBatchSaving}
+              id="submit-batch-due-date-btn"
+            >
+              {isBatchSaving ? 'Updating...' : `Update for ${selectedPlanIds.length} Items`}
+            </button>
+          </>
+        }
+      >
+        <form onSubmit={handleSaveBatchDueDate} className="form-grid">
+          <div className="form-full" style={{ padding: '12px', background: 'var(--surface2)', borderRadius: '6px', fontSize: '12.5px', border: '1px solid var(--border)' }}>
+            <div style={{ fontWeight: 'bold', color: 'var(--text)', marginBottom: '6px' }}>
+              Selected PM Machines ({selectedPlanIds.length}):
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '100px', overflowY: 'auto', padding: '4px' }}>
+              {items.filter(i => selectedPlanIds.includes(i.id)).map(item => (
+                <span 
+                  key={item.id} 
+                  style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '4px', 
+                    backgroundColor: 'var(--surface)', 
+                    border: '1px solid var(--border)', 
+                    borderRadius: '4px', 
+                    padding: '2px 8px', 
+                    fontSize: '11px' 
+                  }}
+                >
+                  <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`} style={{ fontSize: '9px', padding: '1px 4px' }}>{item.plant || 'RFG'}</span>
+                  <strong style={{ color: 'var(--text)' }}>{item.machineName}</strong>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group form-full">
+            <label className="form-label">New Next Due Date *</label>
+            <input 
+              type="date" 
+              className="form-input font-mono" 
+              required 
+              value={batchDueDate} 
+              onChange={(e) => setBatchDueDate(e.target.value)}
+              id="batch-due-date-input"
+            />
+          </div>
+
+          <div className="form-group form-full">
+            <label className="form-label">Start Month (PM Schedule Base Month) *</label>
+            <select 
+              className="form-select font-mono" 
+              value={batchStartMonth} 
+              onChange={(e) => setBatchStartMonth(Number(e.target.value))}
+              id="batch-start-month-select"
+            >
+              {MONTH_NAMES.map((name, i) => (
+                <option key={name} value={i + 1}>{name} ({i + 1})</option>
+              ))}
+            </select>
+            <span style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '4px', display: 'block' }}>
+              Determines which month cell in the annual matrix this schedule aligns with.
+            </span>
           </div>
         </form>
       </Modal>
