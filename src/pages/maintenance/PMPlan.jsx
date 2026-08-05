@@ -16,7 +16,8 @@ import {
   Download,
   Upload,
   TrendingUp,
-  Clock
+  Clock,
+  Printer
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -39,6 +40,7 @@ import {
   batchDeleteDocuments
 } from '../../firebase/collections';
 import Modal from '../../components/Modal';
+import PMReportPdfModal from '../../components/PMReportPdfModal';
 import { useToast } from '../../components/Toast';
 import { formatDate, toInputDate } from '../../utils';
 
@@ -144,6 +146,9 @@ export default function PMPlan() {
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState('');
   const [importMode, setImportMode] = useState('add'); // 'add' or 'overwrite'
+
+  // PDF Export Modal State
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   const { showToast } = useToast();
   const logDoneDayInputRef = useRef(null);
@@ -1639,6 +1644,10 @@ export default function PMPlan() {
             <Download size={14} />
             <span>Export CSV</span>
           </button>
+          <button className="btn" onClick={() => setIsPdfModalOpen(true)} id="export-pdf-report-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--surface2)', borderColor: 'var(--accent)' }} title="Generate 2-page print PDF report with schedule table, trend graph, and engineer/manager signature blocks">
+            <Printer size={14} style={{ color: 'var(--accent)' }} />
+            <span style={{ fontWeight: '600', color: 'var(--accent)' }}>Export PDF Report</span>
+          </button>
           <button className="btn" onClick={() => setIsImportModalOpen(true)} id="import-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} title="Import items or completion logs from JSON/CSV files">
             <Upload size={14} />
             <span>Import</span>
@@ -3095,6 +3104,18 @@ export default function PMPlan() {
           </p>
         </div>
       </Modal>
+
+      {/* MODAL: PM REPORT PDF 2-PAGE EXPORT */}
+      <PMReportPdfModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        items={items}
+        logs={logs}
+        selectedYear={selectedYear}
+        filterPlant={filterPlant}
+        isMonthRequired={isMonthRequired}
+        getCellStatus={getCellStatus}
+      />
     </div>
   );
 }
