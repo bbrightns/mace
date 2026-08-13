@@ -97,8 +97,8 @@ const hasAnyContent = (t) => {
   );
 };
 
-// Standalone EditableCell Component with local state for 60 FPS typing
-const EditableCell = React.memo(({ initialValue, onSave, placeholder = '', style = {}, isUrgent = false }) => {
+// Standalone EditableCell Component with local state for 60 FPS typing & Excel-style navigation
+const EditableCell = React.memo(({ initialValue, onSave, placeholder = '', style = {}, isUrgent = false, rowIndex = 0, colKey = '' }) => {
   const [value, setValue] = useState(initialValue || '');
 
   useEffect(() => {
@@ -112,6 +112,17 @@ const EditableCell = React.memo(({ initialValue, onSave, placeholder = '', style
     }
   };
 
+  const navigateToCell = (targetRowIndex, targetColKey) => {
+    const selector = `textarea[data-row-index="${targetRowIndex}"][data-col-key="${targetColKey}"]`;
+    const targetElem = document.querySelector(selector);
+    if (targetElem) {
+      targetElem.focus();
+      if (typeof targetElem.select === 'function') {
+        targetElem.select();
+      }
+    }
+  };
+
   return (
     <textarea 
       ref={textareaRef}
@@ -119,17 +130,51 @@ const EditableCell = React.memo(({ initialValue, onSave, placeholder = '', style
       rows={1}
       value={value}
       placeholder={placeholder}
+      data-row-index={rowIndex}
+      data-col-key={colKey}
       onChange={(e) => {
         setValue(e.target.value);
         textareaRef(e.target);
       }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
-          if (e.altKey || e.shiftKey) {
-            return; // Alt+Enter or Shift+Enter inserts a new line
+          if (e.altKey) {
+            return; // Alt+Enter inserts a new line inside cell
           }
           e.preventDefault();
-          e.target.blur(); // Plain Enter finishes typing and commits cell
+          
+          // Commit current cell value
+          if (value !== (initialValue || '')) {
+            onSave(value);
+          }
+
+          if (e.shiftKey) {
+            // Shift + Enter -> Move Up
+            navigateToCell(rowIndex - 1, colKey);
+          } else {
+            // Enter -> Move Down (Excel Style)
+            navigateToCell(rowIndex + 1, colKey);
+          }
+        } else if (e.key === 'ArrowDown' && !e.altKey && !e.shiftKey) {
+          // If cursor is at bottom of text or single line, move down
+          const target = e.target;
+          if (target.selectionEnd === target.value.length || !target.value.includes('\n')) {
+            e.preventDefault();
+            if (value !== (initialValue || '')) {
+              onSave(value);
+            }
+            navigateToCell(rowIndex + 1, colKey);
+          }
+        } else if (e.key === 'ArrowUp' && !e.altKey && !e.shiftKey) {
+          // If cursor is at top of text or single line, move up
+          const target = e.target;
+          if (target.selectionStart === 0 || !target.value.includes('\n')) {
+            e.preventDefault();
+            if (value !== (initialValue || '')) {
+              onSave(value);
+            }
+            navigateToCell(rowIndex - 1, colKey);
+          }
         }
       }}
       onFocus={(e) => {
@@ -169,6 +214,7 @@ const EditableCell = React.memo(({ initialValue, onSave, placeholder = '', style
 // Memoized PlanningRow Component for 60 FPS row-level rendering
 const PlanningRow = React.memo(({ 
   task, 
+  rowIndex = 0,
   todayStr, 
   todayRowRef,
   draftEdits, 
@@ -239,6 +285,8 @@ const PlanningRow = React.memo(({
       }}>
         <EditableCell 
           initialValue={rfgVal}
+          rowIndex={rowIndex}
+          colKey="rfgRev"
           onSave={(val) => {
             handleCellChange(task.id, 'rfgRev', val);
             handleCellBlur(task, 'rfgRev', val);
@@ -261,6 +309,8 @@ const PlanningRow = React.memo(({
       }}>
         <EditableCell 
           initialValue={mirVal}
+          rowIndex={rowIndex}
+          colKey="mirRev"
           onSave={(val) => {
             handleCellChange(task.id, 'mirRev', val);
             handleCellBlur(task, 'mirRev', val);
@@ -273,6 +323,8 @@ const PlanningRow = React.memo(({
       <td style={{ color: '#2563eb', fontSize: '11.5px' }}>
         <EditableCell 
           initialValue={eeSuppVal}
+          rowIndex={rowIndex}
+          colKey="eeWorkSupp"
           onSave={(val) => {
             handleCellChange(task.id, 'eeWorkSupp', val);
             handleCellBlur(task, 'eeWorkSupp', val);
@@ -284,6 +336,8 @@ const PlanningRow = React.memo(({
       <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>
         <EditableCell 
           initialValue={eeAftVal}
+          rowIndex={rowIndex}
+          colKey="eeWorkAft"
           onSave={(val) => {
             handleCellChange(task.id, 'eeWorkAft', val);
             handleCellBlur(task, 'eeWorkAft', val);
@@ -295,6 +349,8 @@ const PlanningRow = React.memo(({
       <td style={{ color: '#db2777', fontSize: '11.5px' }}>
         <EditableCell 
           initialValue={mechSuppVal}
+          rowIndex={rowIndex}
+          colKey="mechWorkSupp"
           onSave={(val) => {
             handleCellChange(task.id, 'mechWorkSupp', val);
             handleCellBlur(task, 'mechWorkSupp', val);
@@ -306,6 +362,8 @@ const PlanningRow = React.memo(({
       <td style={{ whiteSpace: 'pre-line', fontSize: '11.5px' }}>
         <EditableCell 
           initialValue={mechAftVal}
+          rowIndex={rowIndex}
+          colKey="mechWorkAft"
           onSave={(val) => {
             handleCellChange(task.id, 'mechWorkAft', val);
             handleCellBlur(task, 'mechWorkAft', val);
@@ -2183,10 +2241,11 @@ export default function TaskManagement() {
                     </td>
                   </tr>
                 ) : (
-                  planningTasks.map((t) => (
+                  planningTasks.map((t, index) => (
                     <PlanningRow 
                       key={t.taskDate}
                       task={t}
+                      rowIndex={index}
                       todayStr={todayStr}
                       todayRowRef={todayRowRef}
                       draftEdits={draftEdits}
