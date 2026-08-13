@@ -823,15 +823,16 @@ export default function MachineClassify() {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>Item No.</label>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
+                Item No. <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text3)' }}>(Auto-generated)</span>
+              </label>
               <input 
                 type="number"
-                required
+                readOnly
                 value={itemNo}
-                onChange={(e) => setItemNo(e.target.value)}
-                placeholder="e.g. 1"
+                title="Item number is automatically generated sequentially"
                 className="input"
-                style={{ width: '100%' }}
+                style={{ width: '100%', background: 'var(--surface2)', color: 'var(--text2)', cursor: 'not-allowed' }}
               />
             </div>
           </div>
