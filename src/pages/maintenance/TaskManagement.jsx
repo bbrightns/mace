@@ -589,29 +589,27 @@ export default function TaskManagement() {
 
         for (const row of rows) {
           if (row.length < 1) continue;
-          const [dateVal, plantSec, cat, sec, equip, name, detail, plan, safety, stat, eeSupp, eeAft, mechSupp, mechAft, subName, plant, loc, prog, pic] = row;
+          // Matching Export headers 1:1:
+          // ['Date', 'RFG Line Schedule', 'MIR Line Schedule', 'EE Work Supp', 'EE Work Aft', 'MECH Work Supp', 'MECH Work Aft', 'Plant Section', 'Category', 'Section', 'Equipment', 'Task Name', 'Detail', 'Status', 'PIC']
+          const [dateVal, rfgVal, mirVal, eeSupp, eeAft, mechSupp, mechAft, plantSec, cat, sec, equip, name, detail, stat, pic] = row;
           
           if (!dateVal) continue;
 
           const docData = {
             taskDate: dateVal,
+            rfgRev: rfgVal || '',
+            mirRev: mirVal || '',
+            eeWorkSupp: eeSupp || '',
+            eeWorkAft: eeAft || '',
+            mechWorkSupp: mechSupp || '',
+            mechWorkAft: mechAft || '',
             plantSection: plantSec || 'RFG',
             category: cat || 'MTN',
             section: sec || '',
             equipment: equip || '',
             taskName: name || '',
             detail: detail || '',
-            planType: plan || 'Plan',
-            safety: safety || 'PPE',
             status: stat || 'Pending',
-            eeWorkSupp: eeSupp || '',
-            eeWorkAft: eeAft || '',
-            mechWorkSupp: mechSupp || '',
-            mechWorkAft: mechAft || '',
-            subcontractorName: subName || '',
-            plant: plant || '',
-            location: loc || '',
-            progress: prog || '',
             pic: pic || '',
             updatedAt: new Date().toISOString()
           };
