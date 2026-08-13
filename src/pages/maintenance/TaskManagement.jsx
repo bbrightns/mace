@@ -97,12 +97,15 @@ const hasAnyContent = (t) => {
   );
 };
 
-// Standalone EditableCell Component with local state for 60 FPS typing & Excel-style navigation
 const EditableCell = React.memo(({ initialValue, onSave, placeholder = '', style = {}, isUrgent = false, rowIndex = 0, colKey = '' }) => {
   const [value, setValue] = useState(initialValue || '');
+  const isFocusedRef = useRef(false);
 
   useEffect(() => {
-    setValue(initialValue || '');
+    // Only update local state if user is NOT actively typing/focused in this cell
+    if (!isFocusedRef.current) {
+      setValue(initialValue || '');
+    }
   }, [initialValue]);
 
   const textareaRef = (node) => {
@@ -178,11 +181,13 @@ const EditableCell = React.memo(({ initialValue, onSave, placeholder = '', style
         }
       }}
       onFocus={(e) => {
+        isFocusedRef.current = true;
         e.target.style.borderColor = 'var(--accent)';
         e.target.style.background = 'var(--surface)';
         textareaRef(e.target);
       }}
       onBlur={(e) => {
+        isFocusedRef.current = false;
         e.target.style.borderColor = 'transparent';
         e.target.style.background = 'transparent';
         if (value !== (initialValue || '')) {
