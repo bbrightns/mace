@@ -42,5 +42,8 @@ service cloud.firestore {
     match /mace_tasks/{id} {
       allow read, write: if true;
     }
+    match /mace_machine_classify/{id} {
+      allow read, write: if true;
+    }
   }
 }
