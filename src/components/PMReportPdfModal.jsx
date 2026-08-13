@@ -425,6 +425,7 @@ export default function PMReportPdfModal({
                   <div className="pdf-signature-section">
                     <div className="pdf-signature-box">
                       <div className="pdf-sig-role">PREPARED / ACTION BY</div>
+                      <div className="pdf-sig-space" style={{ height: '32px' }}></div>
                       <div className="pdf-sig-line-area">
                         <div className="pdf-sig-line"></div>
                       </div>
@@ -435,6 +436,7 @@ export default function PMReportPdfModal({
 
                     <div className="pdf-signature-box">
                       <div className="pdf-sig-role">APPROVED / VERIFIED BY</div>
+                      <div className="pdf-sig-space" style={{ height: '32px' }}></div>
                       <div className="pdf-sig-line-area">
                         <div className="pdf-sig-line"></div>
                       </div>
@@ -444,8 +446,6 @@ export default function PMReportPdfModal({
                     </div>
                   </div>
                 </div>
-
-                <div className="pdf-page-break"></div>
               </React.Fragment>
             );
           })}
@@ -585,6 +585,7 @@ export default function PMReportPdfModal({
             <div className="pdf-signature-section">
               <div className="pdf-signature-box">
                 <div className="pdf-sig-role">PREPARED / ACTION BY</div>
+                <div className="pdf-sig-space" style={{ height: '32px' }}></div>
                 <div className="pdf-sig-line-area">
                   <div className="pdf-sig-line"></div>
                 </div>
@@ -595,6 +596,7 @@ export default function PMReportPdfModal({
 
               <div className="pdf-signature-box">
                 <div className="pdf-sig-role">APPROVED / VERIFIED BY</div>
+                <div className="pdf-sig-space" style={{ height: '32px' }}></div>
                 <div className="pdf-sig-line-area">
                   <div className="pdf-sig-line"></div>
                 </div>
