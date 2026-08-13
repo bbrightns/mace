@@ -473,8 +473,9 @@ export default function MachineClassify() {
 
         {/* Filter Department */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)' }}>Department:</span>
+          <label htmlFor="filter-dept" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>Department:</label>
           <select 
+            id="filter-dept"
             value={filterDept} 
             onChange={(e) => setFilterDept(e.target.value)}
             className="input"
@@ -488,8 +489,9 @@ export default function MachineClassify() {
 
         {/* Filter Section */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)' }}>Section:</span>
+          <label htmlFor="filter-sec" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>Section:</label>
           <select 
+            id="filter-sec"
             value={filterSection} 
             onChange={(e) => setFilterSection(e.target.value)}
             className="input"
@@ -503,8 +505,9 @@ export default function MachineClassify() {
 
         {/* Filter Rank */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)' }}>Rank:</span>
+          <label htmlFor="filter-rank" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text2)', cursor: 'pointer' }}>Rank:</label>
           <select 
+            id="filter-rank"
             value={filterRank} 
             onChange={(e) => setFilterRank(e.target.value)}
             className="input"
@@ -878,7 +881,7 @@ export default function MachineClassify() {
           <div style={{ background: 'var(--surface2)', padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid var(--border)' }}>
             
             {/* 1. Influence Rate Pills */}
-            <div>
+            <div role="radiogroup" aria-label="1. Influence Rate (1–4)">
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>1. Influence Rate (1–4)</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                 {[
@@ -886,63 +889,90 @@ export default function MachineClassify() {
                   { val: 2, label: "2 · Low Risk" },
                   { val: 3, label: "3 · Opportunity" },
                   { val: 4, label: "4 · No Impact" }
-                ].map((opt) => (
-                  <button
-                    key={opt.val}
-                    type="button"
-                    onClick={() => setInfluenceRate(opt.val)}
-                    style={{
-                      padding: '8px 4px',
-                      borderRadius: '6px',
-                      border: Number(influenceRate) === opt.val ? '2px solid var(--accent)' : '1px solid var(--border)',
-                      background: Number(influenceRate) === opt.val ? 'var(--surface)' : 'transparent',
-                      color: Number(influenceRate) === opt.val ? 'var(--accent)' : 'var(--text2)',
-                      fontWeight: Number(influenceRate) === opt.val ? 700 : 500,
-                      fontSize: '11.5px',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      textAlign: 'center'
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                ].map((opt) => {
+                  const isSelected = Number(influenceRate) === opt.val;
+                  return (
+                    <button
+                      key={opt.val}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      aria-pressed={isSelected}
+                      onClick={() => setInfluenceRate(opt.val)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          setInfluenceRate(opt.val < 4 ? opt.val + 1 : 1);
+                        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          setInfluenceRate(opt.val > 1 ? opt.val - 1 : 4);
+                        }
+                      }}
+                      style={{
+                        padding: '8px 4px',
+                        borderRadius: '6px',
+                        border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
+                        background: isSelected ? 'var(--surface)' : 'transparent',
+                        color: isSelected ? 'var(--accent)' : 'var(--text2)',
+                        fontWeight: isSelected ? 700 : 500,
+                        fontSize: '11.5px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        textAlign: 'center'
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* 2. Redundancy Pills */}
-            <div>
+            <div role="radiogroup" aria-label="2. Redundancy (1 or 4)">
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>2. Redundancy (1 or 4)</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 {[
                   { val: 1, label: "1 · Single Equipment (No Redundancy)" },
                   { val: 4, label: "4 · Redundant Equipment Available" }
-                ].map((opt) => (
-                  <button
-                    key={opt.val}
-                    type="button"
-                    onClick={() => setRedundancy(opt.val)}
-                    style={{
-                      padding: '8px 10px',
-                      borderRadius: '6px',
-                      border: Number(redundancy) === opt.val ? '2px solid var(--accent)' : '1px solid var(--border)',
-                      background: Number(redundancy) === opt.val ? 'var(--surface)' : 'transparent',
-                      color: Number(redundancy) === opt.val ? 'var(--accent)' : 'var(--text2)',
-                      fontWeight: Number(redundancy) === opt.val ? 700 : 500,
-                      fontSize: '11.5px',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      textAlign: 'center'
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                ].map((opt) => {
+                  const isSelected = Number(redundancy) === opt.val;
+                  return (
+                    <button
+                      key={opt.val}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      aria-pressed={isSelected}
+                      onClick={() => setRedundancy(opt.val)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          setRedundancy(opt.val === 1 ? 4 : 1);
+                        }
+                      }}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: '6px',
+                        border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
+                        background: isSelected ? 'var(--surface)' : 'transparent',
+                        color: isSelected ? 'var(--accent)' : 'var(--text2)',
+                        fontWeight: isSelected ? 700 : 500,
+                        fontSize: '11.5px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        textAlign: 'center'
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* 3. Quality Pills */}
-            <div>
+            <div role="radiogroup" aria-label="3. Quality Impact (1–4)">
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>3. Quality Impact (1–4)</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                 {[
@@ -950,27 +980,42 @@ export default function MachineClassify() {
                   { val: 2, label: "2 · Adjust >3h" },
                   { val: 3, label: "3 · Adjust <3h" },
                   { val: 4, label: "4 · No Impact" }
-                ].map((opt) => (
-                  <button
-                    key={opt.val}
-                    type="button"
-                    onClick={() => setQuality(opt.val)}
-                    style={{
-                      padding: '8px 4px',
-                      borderRadius: '6px',
-                      border: Number(quality) === opt.val ? '2px solid var(--accent)' : '1px solid var(--border)',
-                      background: Number(quality) === opt.val ? 'var(--surface)' : 'transparent',
-                      color: Number(quality) === opt.val ? 'var(--accent)' : 'var(--text2)',
-                      fontWeight: Number(quality) === opt.val ? 700 : 500,
-                      fontSize: '11.5px',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      textAlign: 'center'
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                ].map((opt) => {
+                  const isSelected = Number(quality) === opt.val;
+                  return (
+                    <button
+                      key={opt.val}
+                      type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      aria-pressed={isSelected}
+                      onClick={() => setQuality(opt.val)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          setQuality(opt.val < 4 ? opt.val + 1 : 1);
+                        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          setQuality(opt.val > 1 ? opt.val - 1 : 4);
+                        }
+                      }}
+                      style={{
+                        padding: '8px 4px',
+                        borderRadius: '6px',
+                        border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
+                        background: isSelected ? 'var(--surface)' : 'transparent',
+                        color: isSelected ? 'var(--accent)' : 'var(--text2)',
+                        fontWeight: isSelected ? 700 : 500,
+                        fontSize: '11.5px',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        textAlign: 'center'
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
