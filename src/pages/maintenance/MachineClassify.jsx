@@ -568,26 +568,26 @@ export default function MachineClassify() {
             <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 {/* Clean Sub-header scale bounds row */}
-                <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
-                  <th colSpan={5} style={{ borderRight: '1px solid var(--border)', padding: '6px' }}></th>
-                  <th style={{ textAlign: 'center', fontWeight: 600, fontSize: '10px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', borderRight: '1px solid var(--border)', padding: '6px 4px' }}>Range: 1–4</th>
-                  <th style={{ textAlign: 'center', fontWeight: 600, fontSize: '10px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', borderRight: '1px solid var(--border)', padding: '6px 4px' }}>1 or 4</th>
-                  <th style={{ textAlign: 'center', fontWeight: 600, fontSize: '10px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', borderRight: '1px solid var(--border)', padding: '6px 4px' }}>Range: 1–4</th>
+                <tr style={{ background: '#1e293b', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                  <th colSpan={5} style={{ borderRight: '1px solid rgba(255,255,255,0.1)', padding: '6px' }}></th>
+                  <th style={{ textAlign: 'center', fontWeight: 600, fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', borderRight: '1px solid rgba(255,255,255,0.1)', padding: '6px 4px' }}>Range: 1–4</th>
+                  <th style={{ textAlign: 'center', fontWeight: 600, fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', borderRight: '1px solid rgba(255,255,255,0.1)', padding: '6px 4px' }}>1 or 4</th>
+                  <th style={{ textAlign: 'center', fontWeight: 600, fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', borderRight: '1px solid rgba(255,255,255,0.1)', padding: '6px 4px' }}>Range: 1–4</th>
                   <th colSpan={3} style={{ padding: '6px' }}></th>
                 </tr>
-                {/* Modern Slate/Indigo Header Row */}
-                <tr style={{ background: 'var(--surface3)', color: 'var(--text)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '10px 12px', width: '95px', fontWeight: 700 }}>Department</th>
-                  <th style={{ padding: '10px 10px', width: '55px', textAlign: 'center', fontWeight: 700 }}>Item</th>
-                  <th style={{ padding: '10px 12px', width: '85px', fontWeight: 700 }}>Section</th>
-                  <th style={{ padding: '10px 12px', minWidth: '180px', fontWeight: 700 }}>Machine</th>
-                  <th style={{ padding: '10px 12px', minWidth: '220px', fontWeight: 700 }}>Machine 2</th>
-                  <th style={{ padding: '10px 8px', width: '90px', textAlign: 'center', fontWeight: 700 }}>Influence rate</th>
-                  <th style={{ padding: '10px 8px', width: '85px', textAlign: 'center', fontWeight: 700 }}>Redundancy</th>
-                  <th style={{ padding: '10px 8px', width: '70px', textAlign: 'center', fontWeight: 700 }}>Quality</th>
-                  <th style={{ padding: '10px 8px', width: '70px', textAlign: 'center', fontWeight: 700 }}>Grade</th>
-                  <th style={{ padding: '10px 8px', width: '70px', textAlign: 'center', fontWeight: 700 }}>Rank</th>
-                  <th style={{ padding: '10px 12px', width: '75px', textAlign: 'center', fontWeight: 700 }}>Actions</th>
+                {/* MACE Signature Dark Navy (#141B2E) Header Row */}
+                <tr style={{ background: '#141B2E', color: '#ffffff', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                  <th style={{ padding: '12px', width: '95px', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Department</th>
+                  <th style={{ padding: '12px 10px', width: '55px', textAlign: 'center', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Item</th>
+                  <th style={{ padding: '12px', width: '85px', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Section</th>
+                  <th style={{ padding: '12px', minWidth: '180px', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Machine</th>
+                  <th style={{ padding: '12px', minWidth: '220px', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Machine 2</th>
+                  <th style={{ padding: '12px 8px', width: '90px', textAlign: 'center', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Influence rate</th>
+                  <th style={{ padding: '12px 8px', width: '85px', textAlign: 'center', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Redundancy</th>
+                  <th style={{ padding: '12px 8px', width: '70px', textAlign: 'center', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Quality</th>
+                  <th style={{ padding: '12px 8px', width: '70px', textAlign: 'center', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Grade</th>
+                  <th style={{ padding: '12px 8px', width: '70px', textAlign: 'center', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.06)' }}>Rank</th>
+                  <th style={{ padding: '12px', width: '75px', textAlign: 'center', fontWeight: 700, color: '#ffffff' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
