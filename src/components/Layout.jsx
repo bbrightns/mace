@@ -12,7 +12,8 @@ import {
   ShoppingBag, 
   FileText, 
   BookOpen, 
-  FileCheck2 
+  FileCheck2,
+  Cpu 
 } from 'lucide-react';
 
 export default function Layout({ children, currentPage, setCurrentPage, syncStatus = 'synced' }) {
@@ -56,6 +57,7 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
         { id: 'task-management', label: 'Task Management', icon: MessageSquare },
         { id: 'pm-plan', label: 'PM Plan', icon: Calendar },
         { id: 'long-term-plan', label: 'Long Term Plan', icon: Clock },
+        { id: 'machine-classify', label: 'Machine Classify', icon: Cpu },
         { id: 'trouble-record', label: 'Trouble Record', icon: AlertTriangle },
         { id: 'purchasing', label: 'Purchasing', icon: ShoppingBag }
       ]

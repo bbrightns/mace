@@ -7,6 +7,7 @@ import { subscribeCollection } from './firebase/collections';
 import Home from './pages/Home';
 import PMPlan from './pages/maintenance/PMPlan';
 import LongTermPlan from './pages/maintenance/LongTermPlan';
+import MachineClassify from './pages/maintenance/MachineClassify';
 import TaskManagement from './pages/maintenance/TaskManagement';
 import TroubleRecord from './pages/maintenance/TroubleRecord';
 import Purchasing from './pages/maintenance/Purchasing';
@@ -155,6 +156,8 @@ function MainApp() {
         return <PMPlan />;
       case 'long-term-plan':
         return <LongTermPlan />;
+      case 'machine-classify':
+        return <MachineClassify />;
       case 'task-management':
       case 'vosf':
         return <TaskManagement />;
