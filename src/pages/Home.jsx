@@ -229,16 +229,16 @@ export default function Home({
           id="home-metric-purchasing"
         />
 
-        {/* Floor Issues */}
+        {/* PM Plan / Tasks */}
         <MetricCard 
-          label="Shop Floor Issues"
-          value={openVOSF}
-          subtext="Open Reports"
-          icon={MessageSquare}
+          label="PM Plan"
+          value={openPMs}
+          subtext={`Cycle: ${currentMonthName}`}
+          icon={Calendar}
           glowColor="green"
-          onClick={() => setCurrentPage('vosf')}
-          ariaLabel="View voice of shop floor issues"
-          id="home-metric-vosf"
+          onClick={() => setCurrentPage('pm-plan')}
+          ariaLabel="View PM Plan tasks"
+          id="home-metric-pm-plan"
         />
 
       </div>
