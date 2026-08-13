@@ -229,16 +229,16 @@ export default function Home({
           id="home-metric-purchasing"
         />
 
-        {/* PM Plan / Tasks */}
+        {/* Task Management */}
         <MetricCard 
-          label="PM Plan"
-          value={openPMs}
-          subtext={`Cycle: ${currentMonthName}`}
-          icon={Calendar}
+          label="Task Management"
+          value={openVOSF}
+          subtext="Active Tasks"
+          icon={CheckSquare}
           glowColor="green"
-          onClick={() => setCurrentPage('pm-plan')}
-          ariaLabel="View PM Plan tasks"
-          id="home-metric-pm-plan"
+          onClick={() => setCurrentPage('task-management')}
+          ariaLabel="View Task Management"
+          id="home-metric-task-mgmt"
         />
 
       </div>
