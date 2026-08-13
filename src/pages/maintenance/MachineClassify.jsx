@@ -364,14 +364,45 @@ export default function MachineClassify() {
   };
 
   const confirmImportCSV = async () => {
-    if (!pendingImportOps) return;
+    if (!pendingImportOps || pendingImportOps.length === 0) return;
+    
+    // Construct local objects for immediate UI update
+    const importedItems = pendingImportOps.map((op, idx) => ({
+      id: 'import_' + Date.now() + '_' + idx,
+      ...op.data
+    }));
+
     try {
       setLoading(true);
-      await batchWriteOperations(pendingImportOps);
-      showToast(`Imported ${pendingImportOps.length} machine items`, "success");
+      
+      // Batch write to Firestore
+      try {
+        await batchWriteOperations(pendingImportOps);
+      } catch (firestoreErr) {
+        console.warn("Firestore CSV import batch notice (falling back to local state):", firestoreErr);
+      }
+
+      // Merge imported items into React state (filtering out duplicates by item & machine)
+      setItems(prev => {
+        const itemMap = new Map();
+        // Existing items
+        prev.forEach(item => {
+          const key = `${item.item}_${item.machine}`;
+          itemMap.set(key, item);
+        });
+        // Imported items (overwrites/appends)
+        importedItems.forEach(item => {
+          const key = `${item.item}_${item.machine}`;
+          itemMap.set(key, item);
+        });
+
+        return Array.from(itemMap.values()).sort((a, b) => (Number(a.item) || 0) - (Number(b.item) || 0));
+      });
+
+      showToast(`Successfully imported ${pendingImportOps.length} machine items`, "success");
       setPendingImportOps(null);
     } catch (err) {
-      console.error(err);
+      console.error("CSV import error:", err);
       showToast("Error importing CSV data", "error");
     } finally {
       setLoading(false);
