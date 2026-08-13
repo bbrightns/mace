@@ -180,7 +180,7 @@ function MainApp() {
             pmPlans={pmPlans}
             pmLogs={pmLogs}
             longTermPlans={longTermPlans}
-            vosfItems={vosfItems}
+            vosfItems={tasks}
             troubleRecords={troubleRecords}
             purchasingItems={purchasingItems}
             projectRequests={projectRequests}

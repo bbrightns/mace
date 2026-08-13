@@ -412,6 +412,9 @@ function SectionCell({ task, draftEdits, handleCellChange, handleCellBlur }) {
           {filteredSuggestions.map((item, idx) => (
             <div
               key={idx}
+              role="option"
+              aria-selected={false}
+              tabIndex={0}
               style={{
                 padding: '5px 8px',
                 fontSize: '11.5px',
@@ -423,6 +426,14 @@ function SectionCell({ task, draftEdits, handleCellChange, handleCellBlur }) {
                 handleCellChange(task.id, field, item);
                 handleCellBlur(task, field, item);
                 setShowSuggestions(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleCellChange(task.id, field, item);
+                  handleCellBlur(task, field, item);
+                  setShowSuggestions(false);
+                }
               }}
             >
               {item}

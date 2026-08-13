@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, Search, Edit2, Trash2, ShieldAlert, List, Calendar, User, Trash, 
-  Settings, Upload, Download, TrendingUp, AlertTriangle, RefreshCw, BarChart2, Layers, Clock, CheckCircle2
+  Settings, Upload, Download, TrendingUp, AlertTriangle, RefreshCw, BarChart2, Layers, Clock, CheckCircle2, Filter
 } from 'lucide-react';
 import { 
   subscribeCollection, 
@@ -26,6 +26,7 @@ export default function TroubleRecord() {
   const [filterPlant, setFilterPlant] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterShift, setFilterShift] = useState('all');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   // Modal State
   const [isOpen, setIsOpen] = useState(false);
@@ -536,9 +537,9 @@ export default function TroubleRecord() {
       </div>
 
       {/* Control / Filter Bar */}
-      <div className="card controls-bar" style={{ marginBottom: '16px' }}>
-        <div className="filters-group" style={{ flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ position: 'relative', width: '240px' }}>
+      <div className="card controls-bar" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div className="filters-group" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', width: '280px' }}>
             <Search size={14} style={{ position: 'absolute', left: '10px', top: '11px', color: 'var(--text3)' }} />
             <input 
               type="text" 
@@ -550,43 +551,94 @@ export default function TroubleRecord() {
             />
           </div>
 
-          <select 
-            value={filterPlant} 
-            onChange={(e) => setFilterPlant(e.target.value)}
-            className="form-select"
+          <button 
+            type="button"
+            className={`btn ${filterPlant !== 'all' || filterShift !== 'all' || filterStatus !== 'all' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px' }}
+            aria-expanded={showFilterDropdown}
+            aria-controls="trouble-filter-popover"
           >
-            <option value="all">All Plants</option>
-            <option value="RFG">RFG Plant</option>
-            <option value="MIR">MIR Plant</option>
-          </select>
+            <Filter size={15} />
+            <span>Filters {(filterPlant !== 'all' || filterShift !== 'all' || filterStatus !== 'all') ? '(Active)' : ''}</span>
+          </button>
 
-          <select 
-            value={filterShift} 
-            onChange={(e) => setFilterShift(e.target.value)}
-            className="form-select"
-          >
-            <option value="all">All Shifts</option>
-            <option value="M">Morning Shift (M)</option>
-            <option value="E">Evening Shift (E)</option>
-            <option value="N">Night Shift (N)</option>
-            <option value="specified">Has Shift Code Assigned</option>
-          </select>
-
-          <select 
-            value={filterStatus} 
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="form-select"
-          >
-            <option value="all">All Statuses</option>
-            <option value="Finished">Finished</option>
-            <option value="Pending">Pending</option>
-            <option value="Need advice">Need advice</option>
-          </select>
+          {(filterPlant !== 'all' || filterShift !== 'all' || filterStatus !== 'all' || search) && (
+            <button 
+              type="button" 
+              className="btn btn-secondary" 
+              onClick={() => { setSearch(''); setFilterPlant('all'); setFilterShift('all'); setFilterStatus('all'); }}
+              style={{ fontSize: '12px', padding: '6px 10px' }}
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
 
-        <div className="font-mono text3">
+        <div className="font-mono text3" style={{ fontSize: '13px' }}>
           Showing {filteredItems.length} records
         </div>
+
+        {/* Collapsible Filter Popover Panel */}
+        {showFilterDropdown && (
+          <div 
+            id="trouble-filter-popover"
+            style={{ 
+              width: '100%', 
+              display: 'flex', 
+              gap: '12px', 
+              flexWrap: 'wrap', 
+              paddingTop: '12px', 
+              marginTop: '8px', 
+              borderTop: '1px solid var(--border)' 
+            }}
+          >
+            <div style={{ flex: '1 1 180px' }}>
+              <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px', display: 'block' }}>Plant</label>
+              <select 
+                value={filterPlant} 
+                onChange={(e) => setFilterPlant(e.target.value)}
+                className="form-select"
+                style={{ width: '100%' }}
+              >
+                <option value="all">All Plants</option>
+                <option value="RFG">RFG Plant</option>
+                <option value="MIR">MIR Plant</option>
+              </select>
+            </div>
+
+            <div style={{ flex: '1 1 180px' }}>
+              <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px', display: 'block' }}>Shift Code</label>
+              <select 
+                value={filterShift} 
+                onChange={(e) => setFilterShift(e.target.value)}
+                className="form-select"
+                style={{ width: '100%' }}
+              >
+                <option value="all">All Shifts</option>
+                <option value="M">Morning Shift (M)</option>
+                <option value="E">Evening Shift (E)</option>
+                <option value="N">Night Shift (N)</option>
+                <option value="specified">Has Shift Code Assigned</option>
+              </select>
+            </div>
+
+            <div style={{ flex: '1 1 180px' }}>
+              <label className="form-label" style={{ fontSize: '11px', marginBottom: '4px', display: 'block' }}>Status</label>
+              <select 
+                value={filterStatus} 
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="form-select"
+                style={{ width: '100%' }}
+              >
+                <option value="all">All Statuses</option>
+                <option value="Finished">Finished</option>
+                <option value="Pending">Pending</option>
+                <option value="Need advice">Need advice</option>
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* VIEW 1: RAW CSV TABLE VIEW */}

@@ -296,10 +296,10 @@ export default function Home({
       </div>
 
       {/* Bottom Stats Footer Bar */}
-      <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6 px-2 text-[#9b9b97] border-t border-[var(--border)] pt-6" id="dashboard-bottom-stats">
+      <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6 px-2 text-[var(--text2)] border-t border-[var(--border)] pt-6" id="dashboard-bottom-stats">
         <div className="flex flex-col sm:flex-row gap-6">
           <div className="flex flex-col">
-            <span className="text-[10px] uppercase font-bold tracking-widest text-[#9b9b97]">Recent Incident</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--text2)]">Recent Incident</span>
             <span className="font-mono text-xs text-[var(--text)]" style={{ marginTop: '2px' }}>
               {recentTrouble ? (
                 `${recentTrouble.machineEquipment} (${formatDate(recentTrouble.dateTime)})`
@@ -309,7 +309,7 @@ export default function Home({
             </span>
           </div>
           <div className="flex flex-col sm:border-l sm:border-[var(--border)] sm:pl-6">
-            <span className="text-[10px] uppercase font-bold tracking-widest text-[#9b9b97]">Next Scheduled PM</span>
+            <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--text2)]">Next Scheduled PM</span>
             <span className="font-mono text-xs text-[var(--text)]" style={{ marginTop: '2px' }}>
               {nextPm ? (
                 `${nextPm.machineName} (${formatDate(nextPm.nextDueDate)})`
@@ -320,7 +320,7 @@ export default function Home({
           </div>
         </div>
         <div className="text-left sm:text-right flex flex-col sm:items-end">
-           <span className="text-[10px] uppercase font-bold tracking-widest text-[#9b9b97]">Local Environment</span>
+           <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--text2)]">Local Environment</span>
            <span className="font-mono text-xs text-[var(--text)]" style={{ marginTop: '2px' }}>29.4°C / 64% RH</span>
         </div>
       </div>

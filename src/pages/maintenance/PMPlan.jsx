@@ -96,9 +96,13 @@ export default function PMPlan() {
     const isSorted = sortField === field;
     return (
       <th 
-        onClick={() => handleSort(field)} 
+        onClick={() => handleSort(field)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort(field); } }}
+        role="columnheader"
+        aria-sort={isSorted ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+        tabIndex={0}
         style={{ ...style, cursor: 'pointer', userSelect: 'none' }}
-        title={`Click to sort by ${label}`}
+        title={`Click or press Enter/Space to sort by ${label}`}
       >
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
           <span>{label}</span>

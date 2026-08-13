@@ -161,7 +161,7 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  color: #94a3b8; /* High contrast text (4.8:1 against #141B2E) */
+  color: #cbd5e1; /* Clean high contrast text (WCAG AA compliant) */
   letter-spacing: 1.1px;
   padding: 0 10px 6px 10px;
 }
@@ -175,77 +175,58 @@ h1, h2, h3, h4, h5, h6 {
   text-decoration: none;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 4px; /* Utilitarian 0.25rem Soft shape */
-  border-left: 4px solid transparent;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease;
   user-select: none;
   cursor: pointer;
 }
 
-/* Category-specific Hover & Active Styling for polished UX on Dark Sidebar */
+/* Category-specific Hover & Active Styling on Dark Sidebar */
 
-/* Group 1: General (Blue) */
-.nav-item.theme-general:hover {
-  background-color: rgba(96, 165, 250, 0.08);
-  color: #60a5fa;
-  border-left-color: rgba(0, 102, 255, 0.5);
-  transform: translateX(3px);
-}
-.nav-item.theme-general.active {
-  background: rgba(96, 165, 250, 0.22);
-  color: #93c5fd;
-  font-weight: 700;
-  border-left-color: #3b82f6;
-}
-
-/* Group 2: Maintenance Work (Blue) */
+/* Group 1 & 2: General & Maintenance (Blue) */
+.nav-item.theme-general:hover,
 .nav-item.theme-maintenance:hover {
-  background-color: rgba(96, 165, 250, 0.08);
-  color: #60a5fa;
-  transform: translateX(3px);
+  background-color: rgba(96, 165, 250, 0.12);
+  color: #93c5fd;
 }
+.nav-item.theme-general.active,
 .nav-item.theme-maintenance.active {
   background: rgba(96, 165, 250, 0.22);
-  color: #93c5fd;
+  color: #ffffff;
   font-weight: 700;
-  border-left-color: #3b82f6;
 }
 
 /* Group 3: Project Work (Yellow/Amber) */
 .nav-item.theme-project:hover {
-  background-color: rgba(245, 158, 11, 0.08);
-  color: #f59e0b;
-  transform: translateX(3px);
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
 }
 .nav-item.theme-project.active {
   background: rgba(245, 158, 11, 0.22);
-  color: #fbbf24;
+  color: #ffffff;
   font-weight: 700;
-  border-left-color: #f59e0b;
 }
 
 /* Group 4: Document Work (Green/Emerald) */
 .nav-item.theme-document:hover {
-  background-color: rgba(16, 185, 129, 0.08);
-  color: #34d399;
-  transform: translateX(3px);
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #6ee7b7;
 }
 .nav-item.theme-document.active {
   background: rgba(16, 185, 129, 0.22);
-  color: #6ee7b7;
+  color: #ffffff;
   font-weight: 700;
-  border-left-color: #10b981;
 }
 
 .nav-item-icon {
-  width: 20px; /* High Intensity line-art 20px */
+  width: 20px;
   height: 20px;
   flex-shrink: 0;
-  transition: transform 0.2s ease, color 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .nav-item:hover .nav-item-icon {
-  transform: scale(1.08);
+  color: currentColor;
 }
 
 /* Sidebar bottom user block styles matching High Density */
@@ -504,74 +485,17 @@ h1, h2, h3, h4, h5, h6 {
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
 }
 
-/* Base glow class settings for background depth - optimized GPU rendering */
+/* Clean card borders without glowing radial overlays */
 .card-glow-blue, .card-glow-red, .card-glow-yellow, .card-glow-green {
   position: relative;
 }
 
-.card-glow-blue::before, .card-glow-red::before, .card-glow-yellow::before, .card-glow-green::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 14px;
-  z-index: -1;
-  pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  opacity: 0.4;
-}
-
-/* Colored radial backdrop overlays */
-.card-glow-blue::before {
-  background: radial-gradient(circle at top right, rgba(0, 102, 255, 0.06) 0%, transparent 70%);
-}
-.card-glow-red::before {
-  background: radial-gradient(circle at top right, rgba(239, 68, 68, 0.06) 0%, transparent 70%);
-}
-.card-glow-yellow::before {
-  background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.07) 0%, transparent 70%);
-}
-.card-glow-green::before {
-  background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.07) 0%, transparent 70%);
-}
-
-/* Hover behaviors for interactive dashboard grid cards */
 #dashboard-bento .card:hover,
 #home-dashboard .card-glow-blue:hover,
 #home-dashboard .card-glow-red:hover,
 #home-dashboard .card-glow-yellow:hover {
-  transform: translateY(-5px);
-  border-color: rgba(0, 102, 255, 0.12);
-  box-shadow: 0 20px 38px rgba(18, 28, 51, 0.08), 0 4px 12px rgba(18, 28, 51, 0.03);
-}
-
-/* Intense halo glow on element hover */
-#dashboard-bento .card:hover::before,
-#home-dashboard .card-glow-blue:hover::before {
-  opacity: 1;
-  transform: scale(1.15);
-  background: radial-gradient(circle at center, rgba(0, 102, 255, 0.18) 0%, rgba(0, 102, 255, 0.02) 75%, transparent 100%);
-}
-
-#home-dashboard .card-glow-red:hover::before {
-  opacity: 1;
-  transform: scale(1.15);
-  background: radial-gradient(circle at center, rgba(239, 68, 68, 0.18) 0%, rgba(239, 68, 68, 0.02) 75%, transparent 100%);
-}
-
-#dashboard-bento .card-glow-yellow:hover::before,
-#home-dashboard .card-glow-yellow:hover::before {
-  opacity: 1;
-  transform: scale(1.15);
-  background: radial-gradient(circle at center, rgba(245, 158, 11, 0.20) 0%, rgba(245, 158, 11, 0.03) 75%, transparent 100%);
-}
-
-#dashboard-bento .card-glow-green:hover::before {
-  opacity: 1;
-  transform: scale(1.15);
-  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.20) 0%, rgba(16, 185, 129, 0.03) 75%, transparent 100%);
+  border-color: var(--border2);
+  box-shadow: 0 4px 12px rgba(18, 28, 51, 0.05);
 }
 
 /* Tables CSS */
@@ -1046,41 +970,35 @@ h1, h2, h3, h4, h5, h6 {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Sophisticated group-specific item hovers matching MACE design guidelines */
+/* Clean group-specific item hovers */
 .card-glow-blue .module-card-link:hover {
   background-color: #f1f7fe !important;
   border-color: rgba(0, 102, 255, 0.12) !important;
   color: var(--text);
-  transform: translateX(4px);
 }
 .card-glow-blue .module-card-link:hover .module-card-icon-container {
   background-color: var(--accent);
   color: #ffffff;
-  transform: scale(1.1) rotate(4deg);
 }
 
 .card-glow-yellow .module-card-link:hover {
   background-color: #fffbeb !important;
   border-color: rgba(245, 158, 11, 0.12) !important;
   color: var(--text);
-  transform: translateX(4px);
 }
 .card-glow-yellow .module-card-link:hover .module-card-icon-container {
   background-color: var(--yellow);
   color: #ffffff;
-  transform: scale(1.1) rotate(-4deg);
 }
 
 .card-glow-green .module-card-link:hover {
   background-color: #f0fdf4 !important;
   border-color: rgba(16, 185, 129, 0.12) !important;
   color: var(--text);
-  transform: translateX(4px);
 }
 .card-glow-green .module-card-link:hover .module-card-icon-container {
   background-color: var(--green);
   color: #ffffff;
-  transform: scale(1.1) rotate(4deg);
 }
 
 .badge-count {
