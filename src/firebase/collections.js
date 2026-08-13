@@ -122,7 +122,7 @@ export async function batchWriteOperations(operations) {
   // operations is an array of objects: { type: 'set'|'update'|'delete', collectionName, id, data }
   if (!operations || operations.length === 0) return;
 
-  const CHUNK_SIZE = 400; // Safe below Firestore 500 limit
+  const CHUNK_SIZE = 50; // Smaller chunk size to ensure fast, reliable batch commits without payload timeout
   for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
     const chunk = operations.slice(i, i + CHUNK_SIZE);
     const batch = writeBatch(db);

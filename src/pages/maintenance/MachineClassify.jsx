@@ -51,7 +51,14 @@ export function calculateGradeAndRank(influenceRate, redundancy, quality) {
 }
 
 export default function MachineClassify() {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mace_machine_classify_cache');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [showCriteria, setShowCriteria] = useState(false);
   const [isCriteriaModalOpen, setIsCriteriaModalOpen] = useState(false);
@@ -80,11 +87,52 @@ export default function MachineClassify() {
 
   const { showToast } = useToast();
 
+  // Save items to localStorage cache whenever items state updates
+  useEffect(() => {
+    if (items && items.length > 0) {
+      try {
+        localStorage.setItem('mace_machine_classify_cache', JSON.stringify(items));
+      } catch (e) {
+        console.error("Failed to save to localStorage cache:", e);
+      }
+    }
+  }, [items]);
+
   useEffect(() => {
     const unsubscribe = subscribeCollection('mace_machine_classify', (data) => {
-      // Sort items by Item number
-      const sorted = [...data].sort((a, b) => (Number(a.item) || 0) - (Number(b.item) || 0));
-      setItems(sorted);
+      if (data && data.length > 0) {
+        const sorted = [...data].sort((a, b) => (Number(a.item) || 0) - (Number(b.item) || 0));
+        setItems(sorted);
+        try {
+          localStorage.setItem('mace_machine_classify_cache', JSON.stringify(sorted));
+        } catch (e) {}
+      } else {
+        // If Firestore returned empty, load from localStorage cache and auto-sync to Firestore
+        try {
+          const cached = localStorage.getItem('mace_machine_classify_cache');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed.length > 0) {
+              setItems(parsed);
+              const syncOps = parsed.map(item => ({
+                type: 'create',
+                collectionName: 'mace_machine_classify',
+                data: {
+                  department: item.department || 'RFG',
+                  item: Number(item.item) || 1,
+                  section: item.section || 'Utility',
+                  machine: item.machine || '',
+                  machine2: item.machine2 || '',
+                  influenceRate: Number(item.influenceRate) || 1,
+                  redundancy: Number(item.redundancy) || 1,
+                  quality: Number(item.quality) || 1
+                }
+              }));
+              batchWriteOperations(syncOps).catch(console.error);
+            }
+          }
+        } catch (e) {}
+      }
       setLoading(false);
     }, (error) => {
       console.error("Machine Classify load error:", error);
