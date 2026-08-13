@@ -61,7 +61,6 @@ export default function MachineClassify() {
   });
   const [loading, setLoading] = useState(true);
   const [showCriteria, setShowCriteria] = useState(false);
-  const [isCriteriaModalOpen, setIsCriteriaModalOpen] = useState(false);
   const [showSidePanel, setShowSidePanel] = useState(true);
 
   // Search and Filters
@@ -472,16 +471,6 @@ export default function MachineClassify() {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <button 
-            onClick={() => setIsCriteriaModalOpen(true)} 
-            className="btn btn-secondary" 
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text2)' }}
-            title="View detailed evaluation criteria"
-          >
-            <HelpCircle size={16} />
-            Evaluation Criteria
-          </button>
-
           <label className="btn btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
             <Upload size={15} />
             Import CSV
@@ -1209,122 +1198,6 @@ export default function MachineClassify() {
               Import Items
             </button>
           </div>
-        </div>
-      </Modal>
-
-      {/* Dedicated Evaluation Criteria Reference Modal */}
-      <Modal
-        isOpen={isCriteriaModalOpen}
-        onClose={() => setIsCriteriaModalOpen(false)}
-        title="Machine Classification Evaluation Criteria"
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxHeight: '70vh', overflowY: 'auto', paddingRight: '4px' }}>
-          {/* Section 1: Influence rate */}
-          <div style={{ border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ background: '#f8fafc', padding: '10px 14px', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>
-              1. Influence Rate Criteria
-            </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.5px' }}>
-              <thead>
-                <tr style={{ background: 'var(--surface2)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '8px 10px', width: '50px' }}>Rate</th>
-                  <th style={{ padding: '8px 10px', width: '160px' }}>Utility</th>
-                  <th style={{ padding: '8px 10px', width: '180px' }}>Inspection Line</th>
-                  <th style={{ padding: '8px 10px' }}>Other</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '8px 10px', fontWeight: 700, textAlign: 'center' }}>1</td>
-                  <td style={{ padding: '8px 10px' }}>[High possibility] Production stoppage or environmental abnormality.</td>
-                  <td style={{ padding: '8px 10px' }}>Equipment failure causes production loss and may result in quality defects reaching the customer.</td>
-                  <td style={{ padding: '8px 10px' }}>Equipment which affect production loss Over 3 hours with significant failure.</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
-                  <td style={{ padding: '8px 10px', fontWeight: 700, textAlign: 'center' }}>2</td>
-                  <td style={{ padding: '8px 10px' }}>[Small possibility] Production stoppage or environmental abnormality.</td>
-                  <td style={{ padding: '8px 10px' }}>—</td>
-                  <td style={{ padding: '8px 10px' }}>Production can continue, but productivity must be reduced.</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '8px 10px', fontWeight: 700, textAlign: 'center' }}>3</td>
-                  <td style={{ padding: '8px 10px' }}>[Opportunity] Production stoppage or environmental abnormality.</td>
-                  <td style={{ padding: '8px 10px' }}>—</td>
-                  <td style={{ padding: '8px 10px' }}>Equipment which affect production loss Less 3 hours with significant failure.</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px 10px', fontWeight: 700, textAlign: 'center' }}>4</td>
-                  <td style={{ padding: '8px 10px' }}>[No possibility] Production stoppage or environmental abnormality.</td>
-                  <td style={{ padding: '8px 10px' }}>Other</td>
-                  <td style={{ padding: '8px 10px' }}>Other</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* Section 2: Redundancy */}
-          <div style={{ border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ background: '#f8fafc', padding: '10px 14px', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>
-              2. Redundancy Criteria
-            </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.5px' }}>
-              <thead>
-                <tr style={{ background: 'var(--surface2)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '8px 10px', width: '60px' }}>Rate</th>
-                  <th style={{ padding: '8px 10px' }}>Contents</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '8px 10px', fontWeight: 700, textAlign: 'center' }}>1</td>
-                  <td style={{ padding: '8px 10px' }}>No redundant equipment available.</td>
-                </tr>
-                <tr style={{ background: 'var(--surface2)' }}>
-                  <td style={{ padding: '8px 10px', fontWeight: 700, textAlign: 'center' }}>4</td>
-                  <td style={{ padding: '8px 10px' }}>Redundant equipment is available and can be switched over.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* Section 3: Quality */}
-          <div style={{ border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ background: '#f8fafc', padding: '10px 14px', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: '13px', color: 'var(--text)' }}>
-              3. Quality Criteria
-            </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.5px' }}>
-              <thead>
-                <tr style={{ background: 'var(--surface2)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '8px 10px', width: '60px' }}>Rate</th>
-                  <th style={{ padding: '8px 10px' }}>Contents</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '8px 10px', fontWeight: 700, textAlign: 'center' }}>1</td>
-                  <td style={{ padding: '8px 10px' }}>Equipment failure may result in quality defects being delivered to the customer, requiring production stoppage.</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
-                  <td style={{ padding: '8px 10px', fontWeight: 700, textAlign: 'center' }}>2</td>
-                  <td style={{ padding: '8px 10px' }}>Equipment failure requires process adjustment or recovery time exceeding 3 hours.</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '8px 10px', fontWeight: 700, textAlign: 'center' }}>3</td>
-                  <td style={{ padding: '8px 10px' }}>Equipment failure requires process adjustment or recovery time of less than 3 hours.</td>
-                </tr>
-                <tr style={{ background: 'var(--surface2)' }}>
-                  <td style={{ padding: '8px 10px', fontWeight: 700, textAlign: 'center' }}>4</td>
-                  <td style={{ padding: '8px 10px' }}>No impact on product quality.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-          <button type="button" onClick={() => setIsCriteriaModalOpen(false)} className="btn btn-primary">
-            Close Reference
-          </button>
         </div>
       </Modal>
     </div>
