@@ -21,6 +21,7 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [currentDateStr, setCurrentDateStr] = useState('');
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
