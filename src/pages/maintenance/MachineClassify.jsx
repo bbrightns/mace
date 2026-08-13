@@ -402,7 +402,7 @@ export default function MachineClassify() {
         </div>
       </div>
 
-      {/* Summary KPI Badges */}
+      {/* Summary KPI Cards - Rich Full-Tinted Backgrounds */}
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
@@ -414,36 +414,36 @@ export default function MachineClassify() {
           <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: 'var(--text)' }}>{rankStats.total}</span>
         </div>
 
-        <div style={{ background: 'var(--surface)', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: '4px solid #dc2626', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: '#fff1f2', padding: '16px 20px', borderRadius: '12px', border: '1px solid #fecdd3', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#dc2626', textTransform: 'uppercase' }}>Rank S (Critical)</span>
-            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#fef2f2', color: '#dc2626', fontWeight: 700, border: '1px solid #fecaca' }}>Grade 1-6</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#9f1239', textTransform: 'uppercase' }}>Rank S (Critical)</span>
+            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#ffe4e6', color: '#9f1239', fontWeight: 700 }}>Grade 1-6</span>
           </div>
-          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: 'var(--text)' }}>{rankStats.S}</span>
+          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: '#be123c' }}>{rankStats.S}</span>
         </div>
 
-        <div style={{ background: 'var(--surface)', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: '4px solid #d97706', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: '#fefce8', padding: '16px 20px', borderRadius: '12px', border: '1px solid #fef08a', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#d97706', textTransform: 'uppercase' }}>Rank A</span>
-            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#fefce8', color: '#d97706', fontWeight: 700, border: '1px solid #fef08a' }}>Grade 7-12</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#854d0e', textTransform: 'uppercase' }}>Rank A</span>
+            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#fef9c3', color: '#854d0e', fontWeight: 700 }}>Grade 7-12</span>
           </div>
-          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: 'var(--text)' }}>{rankStats.A}</span>
+          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: '#a16207' }}>{rankStats.A}</span>
         </div>
 
-        <div style={{ background: 'var(--surface)', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: '4px solid #2563eb', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: '#eff6ff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #bfdbfe', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase' }}>Rank B</span>
-            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#eff6ff', color: '#2563eb', fontWeight: 700, border: '1px solid #bfdbfe' }}>Grade 13-18</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase' }}>Rank B</span>
+            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#dbeafe', color: '#1e40af', fontWeight: 700 }}>Grade 13-18</span>
           </div>
-          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: 'var(--text)' }}>{rankStats.B}</span>
+          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: '#2563eb' }}>{rankStats.B}</span>
         </div>
 
-        <div style={{ background: 'var(--surface)', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: '4px solid #64748b', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: '#f8fafc', padding: '16px 20px', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Rank C</span>
-            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#f1f5f9', color: '#475569', fontWeight: 700, border: '1px solid #cbd5e1' }}>Grade 19~</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155', textTransform: 'uppercase' }}>Rank C</span>
+            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#e2e8f0', color: '#334155', fontWeight: 700 }}>Grade 19~</span>
           </div>
-          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: 'var(--text)' }}>{rankStats.C}</span>
+          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: '#475569' }}>{rankStats.C}</span>
         </div>
       </div>
 
@@ -985,33 +985,33 @@ export default function MachineClassify() {
 
           </div>
 
-          {/* Non-Alarming Premium Computed Status Preview Card */}
+          {/* Rich Full-Tinted Computed Status Preview Card */}
           {(() => {
             const rank = calculatedFormState.rank;
-            const borderAccent = rank === 'S' ? '#dc2626' : rank === 'A' ? '#d97706' : rank === 'B' ? '#2563eb' : '#64748b';
-            const badgeBg = rank === 'S' ? '#fef2f2' : rank === 'A' ? '#fefce8' : rank === 'B' ? '#eff6ff' : '#f1f5f9';
-            const badgeColor = rank === 'S' ? '#dc2626' : rank === 'A' ? '#d97706' : rank === 'B' ? '#2563eb' : '#475569';
-            const badgeBorder = rank === 'S' ? '#fecaca' : rank === 'A' ? '#fef08a' : rank === 'B' ? '#bfdbfe' : '#cbd5e1';
+            const cardBg = rank === 'S' ? '#fff1f2' : rank === 'A' ? '#fefce8' : rank === 'B' ? '#eff6ff' : '#f8fafc';
+            const cardBorder = rank === 'S' ? '#fecdd3' : rank === 'A' ? '#fef08a' : rank === 'B' ? '#bfdbfe' : '#cbd5e1';
+            const titleColor = rank === 'S' ? '#9f1239' : rank === 'A' ? '#854d0e' : rank === 'B' ? '#1e40af' : '#334155';
+            const gradeColor = rank === 'S' ? '#be123c' : rank === 'A' ? '#a16207' : rank === 'B' ? '#2563eb' : '#475569';
+            const badgeBg = rank === 'S' ? '#ffe4e6' : rank === 'A' ? '#fef9c3' : rank === 'B' ? '#dbeafe' : '#e2e8f0';
 
             return (
               <div style={{ 
-                background: 'var(--surface)', 
+                background: cardBg, 
                 padding: '14px 16px', 
                 borderRadius: '10px',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                border: '1px solid var(--border)',
-                borderLeft: `5px solid ${borderAccent}`,
-                boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+                border: `1px solid ${cardBorder}`,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
               }}>
                 <div>
-                  <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.5px' }}>
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, color: titleColor, letterSpacing: '0.5px' }}>
                     Calculated Classification
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
-                    <span style={{ fontSize: '13px', color: 'var(--text2)' }}>
-                      Grade: <strong style={{ fontFamily: 'var(--font-mono)', fontSize: '15px', color: 'var(--text)' }}>{calculatedFormState.grade}</strong>
+                    <span style={{ fontSize: '13px', color: titleColor }}>
+                      Grade: <strong style={{ fontFamily: 'var(--font-mono)', fontSize: '15px', color: gradeColor }}>{calculatedFormState.grade}</strong>
                     </span>
                     <span style={{ 
                       padding: '2px 10px', 
@@ -1019,14 +1019,14 @@ export default function MachineClassify() {
                       fontWeight: 800, 
                       fontSize: '13px',
                       background: badgeBg,
-                      color: badgeColor,
-                      border: `1px solid ${badgeBorder}`
+                      color: titleColor,
+                      border: `1px solid ${cardBorder}`
                     }}>
                       Rank {rank}
                     </span>
                   </div>
                 </div>
-                <div style={{ fontSize: '11.5px', textAlign: 'right', maxWidth: '240px', fontWeight: 600, color: 'var(--text2)', lineHeight: '1.4' }}>
+                <div style={{ fontSize: '11.5px', textAlign: 'right', maxWidth: '240px', fontWeight: 700, color: titleColor, lineHeight: '1.4' }}>
                   {calculatedFormState.maintenanceSituation}
                 </div>
               </div>
