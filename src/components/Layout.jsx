@@ -13,7 +13,8 @@ import {
   FileText, 
   BookOpen, 
   FileCheck2,
-  Cpu 
+  Cpu,
+  HelpCircle
 } from 'lucide-react';
 
 export default function Layout({ children, currentPage, setCurrentPage, syncStatus = 'synced' }) {
@@ -195,6 +196,19 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
                 {currentDateStr}
               </span>
             )}
+
+            <button 
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setShowHelpModal(true)}
+              title="Keyboard Shortcuts Guide"
+              style={{ padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}
+              aria-label="Keyboard Shortcuts"
+            >
+              <HelpCircle size={14} />
+              <span className="font-mono">Shortcuts</span>
+            </button>
+
             <div className="sync-status" id="workspace-sync-status">
               <span className={`sync-dot ${syncStatus === 'syncing' ? 'syncing' : ''}`}></span>
               <span>{syncStatus === 'syncing' ? 'Updating...' : 'LIVE'}</span>
@@ -206,6 +220,62 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
         {!isOnline && (
           <div className="offline-banner" id="mobile-offline-warning">
             Workspace running in standalone offline mode. Connectivity auto-restores when online.
+          </div>
+        )}
+
+        {/* Shortcuts Helper Dialog Modal */}
+        {showHelpModal && (
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px'
+            }}
+            onClick={() => setShowHelpModal(false)}
+          >
+            <div 
+              className="card" 
+              style={{ width: '100%', maxWidth: '480px', padding: '24px', backgroundColor: 'var(--surface)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Keyboard Shortcuts</h3>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowHelpModal(false)} style={{ padding: '4px 8px' }}>
+                  <X size={16} />
+                </button>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', backgroundColor: 'var(--surface2)', borderRadius: '6px' }}>
+                  <span>Focus Search Input</span>
+                  <kbd style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>Ctrl + K</kbd>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', backgroundColor: 'var(--surface2)', borderRadius: '6px' }}>
+                  <span>Go to Dashboard Home</span>
+                  <kbd style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>Alt + H</kbd>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', backgroundColor: 'var(--surface2)', borderRadius: '6px' }}>
+                  <span>Go to Trouble Record</span>
+                  <kbd style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>Alt + T</kbd>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', backgroundColor: 'var(--surface2)', borderRadius: '6px' }}>
+                  <span>Go to PM Plan</span>
+                  <kbd style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>Alt + P</kbd>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', backgroundColor: 'var(--surface2)', borderRadius: '6px' }}>
+                  <span>Multi-Row Range Select</span>
+                  <kbd style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>Shift + Click</kbd>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

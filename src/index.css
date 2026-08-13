@@ -16,7 +16,7 @@
   --blue-soft: #eff6ff;
   --text: #1b1b1d;     /* on-surface text */
   --text2: #45464d;    /* on-surface-variant */
-  --text3: #76777d;    /* Muted outlines and metadata captions */
+  --text3: #64656b;    /* Muted outlines and metadata captions (4.8:1 contrast) */
 
   /* Standard fonts */
   --font-sans: 'Hanken Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
@@ -549,6 +549,18 @@ h1, h2, h3, h4, h5, h6 {
 
 .data-table tr:hover td {
   background-color: rgba(244, 247, 252, 0.5);
+}
+
+/* Mobile Sticky First Column Utility */
+@media (max-width: 768px) {
+  .data-table th:first-child,
+  .data-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background-color: var(--surface);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+  }
 }
 
 /* Forms layout */
