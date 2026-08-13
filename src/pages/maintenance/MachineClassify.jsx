@@ -562,39 +562,32 @@ export default function MachineClassify() {
 
       {/* Main Table Layout with Reference Guide Panel */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px', alignItems: 'start' }}>
-        {/* Main Excel-style Machine Table */}
-        <div style={{ 
-          background: '#ffffff', 
-          borderRadius: '8px', 
-          border: '1px solid #000000', 
-          overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)'
-        }}>
+        {/* Main Machine Classification Data Table Container */}
+        <div className="table-container" style={{ background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', color: '#000000', fontFamily: 'Segoe UI, Tahoma, sans-serif' }}>
+            <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                {/* Secondary Header Row matching Example 2 */}
-                <tr style={{ background: '#ffffff', borderBottom: '1px solid #000000' }}>
-                  <th colSpan={5} style={{ borderRight: '1px solid #000000', borderBottom: '1px solid #000000', padding: '4px' }}></th>
-                  <th style={{ background: '#ffffff', borderRight: '1px solid #000000', borderBottom: '1px solid #000000', textAlign: 'center', fontWeight: 'bold', padding: '4px' }}>1-4</th>
-                  <th style={{ background: '#ffffff', borderRight: '1px solid #000000', borderBottom: '1px solid #000000', textAlign: 'center', fontWeight: 'bold', padding: '4px' }}>1 or 4</th>
-                  <th style={{ background: '#ffffff', borderRight: '1px solid #000000', borderBottom: '1px solid #000000', textAlign: 'center', fontWeight: 'bold', padding: '4px' }}>1-4</th>
-                  <th colSpan={2} style={{ borderBottom: '1px solid #000000', padding: '4px' }}></th>
-                  <th style={{ borderBottom: '1px solid #000000', padding: '4px' }}></th>
+                {/* Clean Sub-header scale bounds row */}
+                <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
+                  <th colSpan={5} style={{ borderRight: '1px solid var(--border)', padding: '6px' }}></th>
+                  <th style={{ textAlign: 'center', fontWeight: 600, fontSize: '10px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', borderRight: '1px solid var(--border)', padding: '6px 4px' }}>Range: 1–4</th>
+                  <th style={{ textAlign: 'center', fontWeight: 600, fontSize: '10px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', borderRight: '1px solid var(--border)', padding: '6px 4px' }}>1 or 4</th>
+                  <th style={{ textAlign: 'center', fontWeight: 600, fontSize: '10px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', borderRight: '1px solid var(--border)', padding: '6px 4px' }}>Range: 1–4</th>
+                  <th colSpan={3} style={{ padding: '6px' }}></th>
                 </tr>
-                {/* Primary Yellow Excel Header Row */}
-                <tr style={{ background: '#ffd700', color: '#000000', textAlign: 'center', fontWeight: 'bold' }}>
-                  <th style={{ border: '1px solid #000000', padding: '8px 10px', width: '90px' }}>Department</th>
-                  <th style={{ border: '1px solid #000000', padding: '8px 10px', width: '50px' }}>Item</th>
-                  <th style={{ border: '1px solid #000000', padding: '8px 10px', width: '80px' }}>Section</th>
-                  <th style={{ border: '1px solid #000000', padding: '8px 12px', minWidth: '180px' }}>Machine</th>
-                  <th style={{ border: '1px solid #000000', padding: '8px 12px', minWidth: '240px' }}>Machine 2</th>
-                  <th style={{ border: '1px solid #000000', padding: '8px 8px', width: '85px' }}>Influence rate</th>
-                  <th style={{ border: '1px solid #000000', padding: '8px 8px', width: '85px' }}>Redundancy</th>
-                  <th style={{ border: '1px solid #000000', padding: '8px 8px', width: '70px' }}>Quality</th>
-                  <th style={{ border: '1px solid #000000', padding: '8px 8px', width: '65px' }}>Grade</th>
-                  <th style={{ border: '1px solid #000000', padding: '8px 8px', width: '60px' }}>Rank</th>
-                  <th style={{ border: '1px solid #000000', padding: '8px 8px', width: '75px' }}>Actions</th>
+                {/* Modern Slate/Indigo Header Row */}
+                <tr style={{ background: 'var(--surface3)', color: 'var(--text)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ padding: '10px 12px', width: '95px', fontWeight: 700 }}>Department</th>
+                  <th style={{ padding: '10px 10px', width: '55px', textAlign: 'center', fontWeight: 700 }}>Item</th>
+                  <th style={{ padding: '10px 12px', width: '85px', fontWeight: 700 }}>Section</th>
+                  <th style={{ padding: '10px 12px', minWidth: '180px', fontWeight: 700 }}>Machine</th>
+                  <th style={{ padding: '10px 12px', minWidth: '220px', fontWeight: 700 }}>Machine 2</th>
+                  <th style={{ padding: '10px 8px', width: '90px', textAlign: 'center', fontWeight: 700 }}>Influence rate</th>
+                  <th style={{ padding: '10px 8px', width: '85px', textAlign: 'center', fontWeight: 700 }}>Redundancy</th>
+                  <th style={{ padding: '10px 8px', width: '70px', textAlign: 'center', fontWeight: 700 }}>Quality</th>
+                  <th style={{ padding: '10px 8px', width: '70px', textAlign: 'center', fontWeight: 700 }}>Grade</th>
+                  <th style={{ padding: '10px 8px', width: '70px', textAlign: 'center', fontWeight: 700 }}>Rank</th>
+                  <th style={{ padding: '10px 12px', width: '75px', textAlign: 'center', fontWeight: 700 }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -614,55 +607,75 @@ export default function MachineClassify() {
                   filteredItems.map((row) => {
                     const calc = calculateGradeAndRank(row.influenceRate, row.redundancy, row.quality);
                     
-                    // Highlight Rank S with soft pink/red tint matching sample image
-                    let rankBg = '#ffffff';
-                    if (calc.rank === 'S') rankBg = '#ffd3d8'; // Soft pink red tint
-                    else if (calc.rank === 'A') rankBg = '#fef08a'; // Soft yellow tint
-                    else if (calc.rank === 'B') rankBg = '#ffffff';
+                    // Elegant Rank Badge styling matching design system
+                    let badgeBg = '#f1f5f9';
+                    let badgeColor = '#475569';
+                    let badgeBorder = '#cbd5e1';
+
+                    if (calc.rank === 'S') {
+                      badgeBg = '#fef2f2';
+                      badgeColor = '#dc2626';
+                      badgeBorder = '#fecaca';
+                    } else if (calc.rank === 'A') {
+                      badgeBg = '#fefce8';
+                      badgeColor = '#d97706';
+                      badgeBorder = '#fef08a';
+                    } else if (calc.rank === 'B') {
+                      badgeBg = '#eff6ff';
+                      badgeColor = '#2563eb';
+                      badgeBorder = '#bfdbfe';
+                    }
 
                     return (
                       <tr 
                         key={row.id} 
                         style={{ 
-                          borderBottom: '1px solid #000000', 
-                          height: '32px',
+                          borderBottom: '1px solid var(--border)', 
                           transition: 'background-color 0.15s ease' 
                         }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface2)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       >
-                        <td style={{ border: '1px solid #000000', padding: '4px 8px', textAlign: 'center' }}>{row.department}</td>
-                        <td style={{ border: '1px solid #000000', padding: '4px 8px', textAlign: 'center' }}>{row.item}</td>
-                        <td style={{ border: '1px solid #000000', padding: '4px 8px', textAlign: 'center' }}>{row.section}</td>
-                        <td style={{ border: '1px solid #000000', padding: '4px 10px', fontWeight: 500 }}>{row.machine}</td>
-                        <td style={{ border: '1px solid #000000', padding: '4px 10px' }}>{row.machine2}</td>
-                        <td style={{ border: '1px solid #000000', padding: '4px 8px', textAlign: 'center' }}>{row.influenceRate}</td>
-                        <td style={{ border: '1px solid #000000', padding: '4px 8px', textAlign: 'center' }}>{row.redundancy}</td>
-                        <td style={{ border: '1px solid #000000', padding: '4px 8px', textAlign: 'center' }}>{row.quality}</td>
-                        <td style={{ border: '1px solid #000000', padding: '4px 8px', textAlign: 'center', fontWeight: 'bold' }}>{calc.grade}</td>
-                        <td style={{ 
-                          border: '1px solid #000000', 
-                          padding: '4px 8px', 
-                          textAlign: 'center', 
-                          fontWeight: 'bold',
-                          backgroundColor: rankBg,
-                          color: calc.rank === 'S' ? '#990000' : '#000000'
-                        }}>
-                          {calc.rank}
+                        <td style={{ padding: '10px 12px', color: 'var(--text)', fontWeight: 600 }}>{row.department}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text3)' }}>#{row.item}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--text2)' }}>{row.section}</td>
+                        <td style={{ padding: '10px 12px', fontWeight: 600, color: 'var(--text)' }}>{row.machine}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--text2)' }}>{row.machine2}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{row.influenceRate}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{row.redundancy}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{row.quality}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{calc.grade}</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                          <span style={{ 
+                            display: 'inline-block',
+                            padding: '3px 10px',
+                            borderRadius: '6px',
+                            fontWeight: 800,
+                            fontSize: '12px',
+                            backgroundColor: badgeBg,
+                            color: badgeColor,
+                            border: `1px solid ${badgeBorder}`
+                          }}>
+                            {calc.rank}
+                          </span>
                         </td>
-                        <td style={{ border: '1px solid #000000', padding: '4px 8px', textAlign: 'center' }}>
+                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
                           <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
                             <button 
                               onClick={() => handleOpenEdit(row)}
                               title="Edit item"
-                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#0052cc', padding: '2px' }}
+                              className="btn btn-secondary"
+                              style={{ padding: '4px 8px', height: '28px', minWidth: 'auto', border: '1px solid var(--border)' }}
                             >
-                              <Edit2 size={14} />
+                              <Edit2 size={13} style={{ color: 'var(--accent)' }} />
                             </button>
                             <button 
                               onClick={() => handleDelete(row.id)}
                               title="Delete item"
-                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#ef4444', padding: '2px' }}
+                              className="btn btn-secondary"
+                              style={{ padding: '4px 8px', height: '28px', minWidth: 'auto', border: '1px solid #fecaca' }}
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={13} style={{ color: 'var(--red)' }} />
                             </button>
                           </div>
                         </td>
@@ -675,46 +688,54 @@ export default function MachineClassify() {
           </div>
         </div>
 
-        {/* Right Reference Legend Panel matching Example 2 */}
+        {/* Right Reference Legend Panel - Clean Web App Design */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ 
-            background: '#ffffff', 
-            border: '1px solid #000000', 
-            borderRadius: '6px', 
-            padding: '12px',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
+            background: 'var(--surface)', 
+            border: '1px solid var(--border)', 
+            borderRadius: '12px', 
+            padding: '16px',
+            boxShadow: '0 4px 20px rgba(18, 28, 51, 0.03)'
           }}>
-            <h3 style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <h3 style={{ fontSize: '13px', fontWeight: 700, marginBottom: '12px', color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Maintenance Rank Guide
             </h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', color: '#000000', border: '1px solid #000000' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead>
-                <tr style={{ background: '#f3f4f6', fontWeight: 'bold', textAlign: 'center' }}>
-                  <th style={{ border: '1px solid #000000', padding: '6px 4px', width: '45px' }}>Rank</th>
-                  <th style={{ border: '1px solid #000000', padding: '6px 4px', width: '55px' }}>Grade</th>
-                  <th style={{ border: '1px solid #000000', padding: '6px 8px' }}>Maintenance situation</th>
+                <tr style={{ background: 'var(--surface2)', fontWeight: 700, borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ padding: '6px 8px', width: '50px', textAlign: 'center', color: 'var(--text2)' }}>Rank</th>
+                  <th style={{ padding: '6px 8px', width: '60px', textAlign: 'center', color: 'var(--text2)' }}>Grade</th>
+                  <th style={{ padding: '6px 8px', color: 'var(--text2)' }}>Maintenance Situation</th>
                 </tr>
               </thead>
               <tbody>
-                <tr style={{ background: '#ffd3d8' }}>
-                  <td style={{ border: '1px solid #000000', padding: '6px', textAlign: 'center', fontWeight: 'bold', color: '#990000' }}>S</td>
-                  <td style={{ border: '1px solid #000000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>1 ~ 6</td>
-                  <td style={{ border: '1px solid #000000', padding: '6px', fontSize: '10.5px' }}>Condition-Based Maintenance (CBM) and Lifetime Maintenance</td>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#fef2f2', color: '#dc2626', fontWeight: 800, border: '1px solid #fecaca', fontSize: '11px' }}>S</span>
+                  </td>
+                  <td style={{ padding: '8px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>1 ~ 6</td>
+                  <td style={{ padding: '8px', fontSize: '11px', color: 'var(--text2)', lineHeight: '1.4' }}>Condition-Based (CBM) & Lifetime Maint.</td>
                 </tr>
-                <tr style={{ background: '#fef08a' }}>
-                  <td style={{ border: '1px solid #000000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>A</td>
-                  <td style={{ border: '1px solid #000000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>7 ~ 12</td>
-                  <td style={{ border: '1px solid #000000', padding: '6px', fontSize: '10.5px' }}>Condition-Based Maintenance (CBM) and Lifetime Maintenance</td>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#fefce8', color: '#d97706', fontWeight: 800, border: '1px solid #fef08a', fontSize: '11px' }}>A</span>
+                  </td>
+                  <td style={{ padding: '8px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>7 ~ 12</td>
+                  <td style={{ padding: '8px', fontSize: '11px', color: 'var(--text2)', lineHeight: '1.4' }}>Condition-Based (CBM) & Lifetime Maint.</td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#eff6ff', color: '#2563eb', fontWeight: 800, border: '1px solid #bfdbfe', fontSize: '11px' }}>B</span>
+                  </td>
+                  <td style={{ padding: '8px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>13 ~ 18</td>
+                  <td style={{ padding: '8px', fontSize: '11px', color: 'var(--text2)', lineHeight: '1.4' }}>Lifetime Maintenance</td>
                 </tr>
                 <tr>
-                  <td style={{ border: '1px solid #000000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>B</td>
-                  <td style={{ border: '1px solid #000000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>13 ~ 18</td>
-                  <td style={{ border: '1px solid #000000', padding: '6px', fontSize: '10.5px' }}>Lifetime Maintenance</td>
-                </tr>
-                <tr>
-                  <td style={{ border: '1px solid #000000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>C</td>
-                  <td style={{ border: '1px solid #000000', padding: '6px', textAlign: 'center', fontWeight: 'bold' }}>19 ~</td>
-                  <td style={{ border: '1px solid #000000', padding: '6px', fontSize: '10.5px' }}>Breakdown Maintenance</td>
+                  <td style={{ padding: '8px', textAlign: 'center' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#f1f5f9', color: '#475569', fontWeight: 800, border: '1px solid #cbd5e1', fontSize: '11px' }}>C</span>
+                  </td>
+                  <td style={{ padding: '8px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>19 ~</td>
+                  <td style={{ padding: '8px', fontSize: '11px', color: 'var(--text2)', lineHeight: '1.4' }}>Breakdown Maintenance</td>
                 </tr>
               </tbody>
             </table>
