@@ -1292,8 +1292,20 @@ export default function TaskManagement() {
     const taskMap = new Map();
     tasks.forEach(t => {
       if (t.taskDate) {
-        if (!taskMap.has(t.taskDate) || hasAnyContent(t) || t.eeWorkAft || t.mechWorkAft || t.rfgRev || t.mirRev) {
-          taskMap.set(t.taskDate, t);
+        if (!taskMap.has(t.taskDate)) {
+          taskMap.set(t.taskDate, { ...t });
+        } else {
+          // Merge properties if multiple task documents exist for the same date
+          const existing = taskMap.get(t.taskDate);
+          taskMap.set(t.taskDate, {
+            ...existing,
+            rfgRev: t.rfgRev || existing.rfgRev || '',
+            mirRev: t.mirRev || existing.mirRev || '',
+            eeWorkSupp: [existing.eeWorkSupp, t.eeWorkSupp].filter(Boolean).join('\n'),
+            eeWorkAft: [existing.eeWorkAft, t.eeWorkAft].filter(Boolean).join('\n'),
+            mechWorkSupp: [existing.mechWorkSupp, t.mechWorkSupp].filter(Boolean).join('\n'),
+            mechWorkAft: [existing.mechWorkAft, t.mechWorkAft].filter(Boolean).join('\n')
+          });
         }
       }
     });
