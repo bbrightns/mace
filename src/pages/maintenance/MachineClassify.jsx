@@ -55,6 +55,7 @@ export default function MachineClassify() {
   const [loading, setLoading] = useState(true);
   const [showCriteria, setShowCriteria] = useState(false);
   const [isCriteriaModalOpen, setIsCriteriaModalOpen] = useState(false);
+  const [showSidePanel, setShowSidePanel] = useState(true);
 
   // Search and Filters
   const [search, setSearch] = useState('');
@@ -376,7 +377,8 @@ export default function MachineClassify() {
           <button 
             onClick={() => setIsCriteriaModalOpen(true)} 
             className="btn btn-secondary" 
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderColor: 'var(--accent)', color: 'var(--accent)' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--text2)' }}
+            title="View detailed evaluation criteria"
           >
             <HelpCircle size={16} />
             Evaluation Criteria
@@ -412,36 +414,36 @@ export default function MachineClassify() {
           <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: 'var(--text)' }}>{rankStats.total}</span>
         </div>
 
-        <div style={{ background: '#fdf2f2', padding: '16px 20px', borderRadius: '12px', border: '1px solid #fecdd3', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: 'var(--surface)', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: '4px solid #dc2626', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#9f1239', textTransform: 'uppercase' }}>Rank S (Critical)</span>
-            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#ffe4e6', color: '#9f1239', fontWeight: 700 }}>Grade 1-6</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#dc2626', textTransform: 'uppercase' }}>Rank S (Critical)</span>
+            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#fef2f2', color: '#dc2626', fontWeight: 700, border: '1px solid #fecaca' }}>Grade 1-6</span>
           </div>
-          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: '#be123c' }}>{rankStats.S}</span>
+          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: 'var(--text)' }}>{rankStats.S}</span>
         </div>
 
-        <div style={{ background: '#fefce8', padding: '16px 20px', borderRadius: '12px', border: '1px solid #fef08a', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: 'var(--surface)', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: '4px solid #d97706', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#854d0e', textTransform: 'uppercase' }}>Rank A</span>
-            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#fef9c3', color: '#854d0e', fontWeight: 700 }}>Grade 7-12</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#d97706', textTransform: 'uppercase' }}>Rank A</span>
+            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#fefce8', color: '#d97706', fontWeight: 700, border: '1px solid #fef08a' }}>Grade 7-12</span>
           </div>
-          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: '#a16207' }}>{rankStats.A}</span>
+          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: 'var(--text)' }}>{rankStats.A}</span>
         </div>
 
-        <div style={{ background: '#f8fafc', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: 'var(--surface)', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: '4px solid #2563eb', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#334155', textTransform: 'uppercase' }}>Rank B</span>
-            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#e2e8f0', color: '#334155', fontWeight: 700 }}>Grade 13-18</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase' }}>Rank B</span>
+            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#eff6ff', color: '#2563eb', fontWeight: 700, border: '1px solid #bfdbfe' }}>Grade 13-18</span>
           </div>
-          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: '#475569' }}>{rankStats.B}</span>
+          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: 'var(--text)' }}>{rankStats.B}</span>
         </div>
 
-        <div style={{ background: '#f1f5f9', padding: '16px 20px', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: 'var(--surface)', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border)', borderLeft: '4px solid #64748b', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>Rank C</span>
-            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#cbd5e1', color: '#1e293b', fontWeight: 700 }}>Grade 19~</span>
+            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#f1f5f9', color: '#475569', fontWeight: 700, border: '1px solid #cbd5e1' }}>Grade 19~</span>
           </div>
-          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: '#64748b' }}>{rankStats.C}</span>
+          <span style={{ fontSize: '26px', fontWeight: 800, marginTop: '4px', color: 'var(--text)' }}>{rankStats.C}</span>
         </div>
       </div>
 
@@ -514,6 +516,16 @@ export default function MachineClassify() {
           </select>
         </div>
 
+        <button
+          onClick={() => setShowSidePanel(!showSidePanel)}
+          className="btn btn-secondary"
+          style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+          title={showSidePanel ? "Hide side reference guide" : "Show side reference guide"}
+        >
+          <Layers size={14} />
+          {showSidePanel ? "Hide Guide Panel" : "Show Guide Panel"}
+        </button>
+
         {(filterDept !== 'all' || filterSection !== 'all' || filterRank !== 'all' || search) && (
           <button 
             onClick={() => {
@@ -530,8 +542,8 @@ export default function MachineClassify() {
         )}
       </div>
 
-      {/* Main Table Layout with Reference Guide Panel */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '20px', alignItems: 'start' }}>
+      {/* Main Table Layout with Responsive Grid Toggle */}
+      <div style={{ display: 'grid', gridTemplateColumns: showSidePanel ? '1fr 320px' : '1fr', gap: '20px', alignItems: 'start', transition: 'grid-template-columns 0.2s ease' }}>
         {/* Main Machine Classification Data Table Container */}
         <div className="table-container" style={{ background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
@@ -633,19 +645,21 @@ export default function MachineClassify() {
                           <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
                             <button 
                               onClick={() => handleOpenEdit(row)}
-                              title="Edit item"
+                              title="Edit machine item"
+                              aria-label="Edit machine item"
                               className="btn btn-secondary"
-                              style={{ padding: '4px 8px', height: '28px', minWidth: 'auto', border: '1px solid var(--border)' }}
+                              style={{ width: '34px', height: '34px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}
                             >
-                              <Edit2 size={13} style={{ color: 'var(--accent)' }} />
+                              <Edit2 size={14} style={{ color: 'var(--accent)' }} />
                             </button>
                             <button 
                               onClick={() => handleDelete(row.id)}
-                              title="Delete item"
+                              title="Delete machine item"
+                              aria-label="Delete machine item"
                               className="btn btn-secondary"
-                              style={{ padding: '4px 8px', height: '28px', minWidth: 'auto', border: '1px solid #fecaca' }}
+                              style={{ width: '34px', height: '34px', padding: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #fecaca' }}
                             >
-                              <Trash2 size={13} style={{ color: 'var(--red)' }} />
+                              <Trash2 size={14} style={{ color: 'var(--red)' }} />
                             </button>
                           </div>
                         </td>
@@ -658,128 +672,130 @@ export default function MachineClassify() {
           </div>
         </div>
 
-        {/* Right Reference Legend Panel - Clean Web App Design */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ 
-            background: 'var(--surface)', 
-            border: '1px solid var(--border)', 
-            borderRadius: '12px', 
-            padding: '16px',
-            boxShadow: '0 4px 20px rgba(18, 28, 51, 0.03)'
-          }}>
-            <h3 style={{ fontSize: '13px', fontWeight: 700, marginBottom: '12px', color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Maintenance Rank Guide
-            </h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-              <thead>
-                <tr style={{ background: 'var(--surface2)', fontWeight: 700, borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '6px 8px', width: '50px', textAlign: 'center', color: 'var(--text2)' }}>Rank</th>
-                  <th style={{ padding: '6px 8px', width: '60px', textAlign: 'center', color: 'var(--text2)' }}>Grade</th>
-                  <th style={{ padding: '6px 8px', color: 'var(--text2)' }}>Maintenance Situation</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#fef2f2', color: '#dc2626', fontWeight: 800, border: '1px solid #fecaca', fontSize: '11px' }}>S</span>
-                  </td>
-                  <td style={{ padding: '8px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>1 ~ 6</td>
-                  <td style={{ padding: '8px', fontSize: '11px', color: 'var(--text2)', lineHeight: '1.4' }}>Condition-Based (CBM) & Lifetime Maint.</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#fefce8', color: '#d97706', fontWeight: 800, border: '1px solid #fef08a', fontSize: '11px' }}>A</span>
-                  </td>
-                  <td style={{ padding: '8px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>7 ~ 12</td>
-                  <td style={{ padding: '8px', fontSize: '11px', color: 'var(--text2)', lineHeight: '1.4' }}>Condition-Based (CBM) & Lifetime Maint.</td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#eff6ff', color: '#2563eb', fontWeight: 800, border: '1px solid #bfdbfe', fontSize: '11px' }}>B</span>
-                  </td>
-                  <td style={{ padding: '8px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>13 ~ 18</td>
-                  <td style={{ padding: '8px', fontSize: '11px', color: 'var(--text2)', lineHeight: '1.4' }}>Lifetime Maintenance</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '8px', textAlign: 'center' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#f1f5f9', color: '#475569', fontWeight: 800, border: '1px solid #cbd5e1', fontSize: '11px' }}>C</span>
-                  </td>
-                  <td style={{ padding: '8px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>19 ~</td>
-                  <td style={{ padding: '8px', fontSize: '11px', color: 'var(--text2)', lineHeight: '1.4' }}>Breakdown Maintenance</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div style={{ 
-            background: 'var(--surface)', 
-            border: '1px solid var(--border)', 
-            borderRadius: '8px', 
-            padding: '14px',
-            fontSize: '12px',
-            lineHeight: '1.6'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <h4 style={{ fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Info size={15} style={{ color: 'var(--accent)' }} /> Formula & Parameters
-              </h4>
-              <button 
-                onClick={() => setShowCriteria(!showCriteria)} 
-                className="btn btn-secondary" 
-                style={{ padding: '2px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
-              >
-                {showCriteria ? <ChevronUp size={13} /> : <ChevronDown size={13} />} Criteria Details
-              </button>
+        {/* Right Reference Legend Panel - Collapsible */}
+        {showSidePanel && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ 
+              background: 'var(--surface)', 
+              border: '1px solid var(--border)', 
+              borderRadius: '12px', 
+              padding: '16px',
+              boxShadow: '0 4px 20px rgba(18, 28, 51, 0.03)'
+            }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 700, marginBottom: '12px', color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Maintenance Rank Guide
+              </h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                <thead>
+                  <tr style={{ background: 'var(--surface2)', fontWeight: 700, borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ padding: '6px 8px', width: '50px', textAlign: 'center', color: 'var(--text2)' }}>Rank</th>
+                    <th style={{ padding: '6px 8px', width: '60px', textAlign: 'center', color: 'var(--text2)' }}>Grade</th>
+                    <th style={{ padding: '6px 8px', color: 'var(--text2)' }}>Maintenance Situation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#fef2f2', color: '#dc2626', fontWeight: 800, border: '1px solid #fecaca', fontSize: '11px' }}>S</span>
+                    </td>
+                    <td style={{ padding: '8px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>1 ~ 6</td>
+                    <td style={{ padding: '8px', fontSize: '11px', color: 'var(--text2)', lineHeight: '1.4' }}>Condition-Based (CBM) & Lifetime Maint.</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#fefce8', color: '#d97706', fontWeight: 800, border: '1px solid #fef08a', fontSize: '11px' }}>A</span>
+                    </td>
+                    <td style={{ padding: '8px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>7 ~ 12</td>
+                    <td style={{ padding: '8px', fontSize: '11px', color: 'var(--text2)', lineHeight: '1.4' }}>Condition-Based (CBM) & Lifetime Maint.</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#eff6ff', color: '#2563eb', fontWeight: 800, border: '1px solid #bfdbfe', fontSize: '11px' }}>B</span>
+                    </td>
+                    <td style={{ padding: '8px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>13 ~ 18</td>
+                    <td style={{ padding: '8px', fontSize: '11px', color: 'var(--text2)', lineHeight: '1.4' }}>Lifetime Maintenance</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#f1f5f9', color: '#475569', fontWeight: 800, border: '1px solid #cbd5e1', fontSize: '11px' }}>C</span>
+                    </td>
+                    <td style={{ padding: '8px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>19 ~</td>
+                    <td style={{ padding: '8px', fontSize: '11px', color: 'var(--text2)', lineHeight: '1.4' }}>Breakdown Maintenance</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <p style={{ color: 'var(--text2)', marginBottom: '8px' }}>
-              <strong>Grade Formula:</strong><br />
-              <code style={{ background: 'var(--surface2)', padding: '2px 6px', borderRadius: '4px', fontFamily: 'var(--font-mono)' }}>
-                Grade = Influence rate × Redundancy × Quality
-              </code>
-            </p>
-            <ul style={{ paddingLeft: '18px', color: 'var(--text2)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <li><strong>Influence rate:</strong> Scale 1 to 4</li>
-              <li><strong>Redundancy:</strong> 1 (No Redundancy) or 4 (Redundant)</li>
-              <li><strong>Quality:</strong> Scale 1 to 4</li>
-            </ul>
-
-            {/* Expandable Criteria Details in Side Panel */}
-            {showCriteria && (
-              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)' }}>Evaluation Criteria</div>
-                
-                <div>
-                  <strong style={{ color: 'var(--text)' }}>1. Influence Rate</strong>
-                  <div style={{ fontSize: '10.5px', color: 'var(--text2)', marginTop: '2px' }}>
-                    • 1: High possibility of production stoppage or environmental abnormality.<br />
-                    • 2: Small possibility.<br />
-                    • 3: Opportunity.<br />
-                    • 4: No possibility / Other.
-                  </div>
-                </div>
-
-                <div>
-                  <strong style={{ color: 'var(--text)' }}>2. Redundancy</strong>
-                  <div style={{ fontSize: '10.5px', color: 'var(--text2)', marginTop: '2px' }}>
-                    • 1: No redundant equipment available.<br />
-                    • 4: Redundant equipment available & switchable.
-                  </div>
-                </div>
-
-                <div>
-                  <strong style={{ color: 'var(--text)' }}>3. Quality</strong>
-                  <div style={{ fontSize: '10.5px', color: 'var(--text2)', marginTop: '2px' }}>
-                    • 1: Quality defect reaching customer / stoppage.<br />
-                    • 2: Recovery / adjustment &gt; 3 hours.<br />
-                    • 3: Recovery / adjustment &lt; 3 hours.<br />
-                    • 4: No impact on product quality.
-                  </div>
-                </div>
+            <div style={{ 
+              background: 'var(--surface)', 
+              border: '1px solid var(--border)', 
+              borderRadius: '8px', 
+              padding: '14px',
+              fontSize: '12px',
+              lineHeight: '1.6'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <h4 style={{ fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Info size={15} style={{ color: 'var(--accent)' }} /> Formula & Parameters
+                </h4>
+                <button 
+                  onClick={() => setShowCriteria(!showCriteria)} 
+                  className="btn btn-secondary" 
+                  style={{ padding: '2px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  {showCriteria ? <ChevronUp size={13} /> : <ChevronDown size={13} />} Criteria Details
+                </button>
               </div>
-            )}
+
+              <p style={{ color: 'var(--text2)', marginBottom: '8px' }}>
+                <strong>Grade Formula:</strong><br />
+                <code style={{ background: 'var(--surface2)', padding: '2px 6px', borderRadius: '4px', fontFamily: 'var(--font-mono)' }}>
+                  Grade = Influence rate × Redundancy × Quality
+                </code>
+              </p>
+              <ul style={{ paddingLeft: '18px', color: 'var(--text2)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <li><strong>Influence rate:</strong> Scale 1 to 4</li>
+                <li><strong>Redundancy:</strong> 1 (No Redundancy) or 4 (Redundant)</li>
+                <li><strong>Quality:</strong> Scale 1 to 4</li>
+              </ul>
+
+              {/* Expandable Criteria Details in Side Panel */}
+              {showCriteria && (
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)' }}>Evaluation Criteria</div>
+                  
+                  <div>
+                    <strong style={{ color: 'var(--text)' }}>1. Influence Rate</strong>
+                    <div style={{ fontSize: '10.5px', color: 'var(--text2)', marginTop: '2px' }}>
+                      • 1: High possibility of production stoppage or environmental abnormality.<br />
+                      • 2: Small possibility.<br />
+                      • 3: Opportunity.<br />
+                      • 4: No possibility / Other.
+                    </div>
+                  </div>
+
+                  <div>
+                    <strong style={{ color: 'var(--text)' }}>2. Redundancy</strong>
+                    <div style={{ fontSize: '10.5px', color: 'var(--text2)', marginTop: '2px' }}>
+                      • 1: No redundant equipment available.<br />
+                      • 4: Redundant equipment available & switchable.
+                    </div>
+                  </div>
+
+                  <div>
+                    <strong style={{ color: 'var(--text)' }}>3. Quality</strong>
+                    <div style={{ fontSize: '10.5px', color: 'var(--text2)', marginTop: '2px' }}>
+                      • 1: Quality defect reaching customer / stoppage.<br />
+                      • 2: Recovery / adjustment &gt; 3 hours.<br />
+                      • 3: Recovery / adjustment &lt; 3 hours.<br />
+                      • 4: No impact on product quality.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Add / Edit Item Modal */}
@@ -858,70 +874,164 @@ export default function MachineClassify() {
             />
           </div>
 
-          {/* Rating Inputs */}
-          <div style={{ background: 'var(--surface2)', padding: '12px', borderRadius: '8px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+          {/* Interactive Rating Inputs (Segmented Pill Selectors) */}
+          <div style={{ background: 'var(--surface2)', padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--border)' }}>
+            
+            {/* 1. Influence Rate Pills */}
             <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '4px' }}>Influence rate (1-4)</label>
-              <input 
-                type="number"
-                min="1"
-                max="4"
-                required
-                value={influenceRate}
-                onChange={(e) => setInfluenceRate(e.target.value)}
-                className="input"
-                style={{ width: '100%' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '4px' }}>Redundancy (1 or 4)</label>
-              <select 
-                value={redundancy}
-                onChange={(e) => setRedundancy(e.target.value)}
-                className="input"
-                style={{ width: '100%' }}
-              >
-                <option value={1}>1 (No Redundancy)</option>
-                <option value={4}>4 (Redundant)</option>
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '4px' }}>Quality (1-4)</label>
-              <input 
-                type="number"
-                min="1"
-                max="4"
-                required
-                value={quality}
-                onChange={(e) => setQuality(e.target.value)}
-                className="input"
-                style={{ width: '100%' }}
-              />
-            </div>
-          </div>
-
-          {/* Computed Preview inside Modal */}
-          <div style={{ 
-            background: calculatedFormState.rank === 'S' ? '#ffd3d8' : calculatedFormState.rank === 'A' ? '#fef08a' : 'var(--surface3)', 
-            padding: '12px', 
-            borderRadius: '8px',
-            display: 'flex',
-            justify: 'space-between',
-            alignItems: 'center',
-            border: '1px solid var(--border)'
-          }}>
-            <div>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, color: 'var(--text2)' }}>Calculated Rating</div>
-              <div style={{ fontSize: '13px', fontWeight: 600, marginTop: '2px', color: 'var(--text)' }}>
-                Grade: <strong>{calculatedFormState.grade}</strong> | Rank: <strong style={{ fontSize: '15px' }}>{calculatedFormState.rank}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text)' }}>1. Influence Rate (Scale 1–4)</label>
+                <span style={{ fontSize: '11px', color: 'var(--text3)' }}>1 = Critical Stoppage | 4 = No Stoppage Impact</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                {[
+                  { val: 1, label: "1 · High Stoppage Risk" },
+                  { val: 2, label: "2 · Low Stoppage Risk" },
+                  { val: 3, label: "3 · Opportunity Loss" },
+                  { val: 4, label: "4 · No Stoppage / Other" }
+                ].map((opt) => (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => setInfluenceRate(opt.val)}
+                    style={{
+                      padding: '8px 4px',
+                      borderRadius: '6px',
+                      border: Number(influenceRate) === opt.val ? '2px solid var(--accent)' : '1px solid var(--border)',
+                      background: Number(influenceRate) === opt.val ? 'var(--surface)' : 'transparent',
+                      color: Number(influenceRate) === opt.val ? 'var(--accent)' : 'var(--text2)',
+                      fontWeight: Number(influenceRate) === opt.val ? 700 : 500,
+                      fontSize: '11px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
             </div>
-            <div style={{ fontSize: '11px', textAlign: 'right', maxWidth: '200px', fontWeight: 500 }}>
-              {calculatedFormState.maintenanceSituation}
+
+            {/* 2. Redundancy Pills */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text)' }}>2. Redundancy (1 or 4)</label>
+                <span style={{ fontSize: '11px', color: 'var(--text3)' }}>1 = No Spare Machine | 4 = Redundant & Switchable</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {[
+                  { val: 1, label: "1 · No Redundancy (Single Point Failure)" },
+                  { val: 4, label: "4 · Redundant Equipment Available" }
+                ].map((opt) => (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => setRedundancy(opt.val)}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      border: Number(redundancy) === opt.val ? '2px solid var(--accent)' : '1px solid var(--border)',
+                      background: Number(redundancy) === opt.val ? 'var(--surface)' : 'transparent',
+                      color: Number(redundancy) === opt.val ? 'var(--accent)' : 'var(--text2)',
+                      fontWeight: Number(redundancy) === opt.val ? 700 : 500,
+                      fontSize: '11.5px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* 3. Quality Pills */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text)' }}>3. Quality Impact (Scale 1–4)</label>
+                <span style={{ fontSize: '11px', color: 'var(--text3)' }}>1 = Customer Defect | 4 = No Product Impact</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                {[
+                  { val: 1, label: "1 · Defect to Customer" },
+                  { val: 2, label: "2 · Adjust > 3 Hours" },
+                  { val: 3, label: "3 · Adjust < 3 Hours" },
+                  { val: 4, label: "4 · No Product Impact" }
+                ].map((opt) => (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => setQuality(opt.val)}
+                    style={{
+                      padding: '8px 4px',
+                      borderRadius: '6px',
+                      border: Number(quality) === opt.val ? '2px solid var(--accent)' : '1px solid var(--border)',
+                      background: Number(quality) === opt.val ? 'var(--surface)' : 'transparent',
+                      color: Number(quality) === opt.val ? 'var(--accent)' : 'var(--text2)',
+                      fontWeight: Number(quality) === opt.val ? 700 : 500,
+                      fontSize: '11px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
           </div>
+
+          {/* Non-Alarming Premium Computed Status Preview Card */}
+          {(() => {
+            const rank = calculatedFormState.rank;
+            const borderAccent = rank === 'S' ? '#dc2626' : rank === 'A' ? '#d97706' : rank === 'B' ? '#2563eb' : '#64748b';
+            const badgeBg = rank === 'S' ? '#fef2f2' : rank === 'A' ? '#fefce8' : rank === 'B' ? '#eff6ff' : '#f1f5f9';
+            const badgeColor = rank === 'S' ? '#dc2626' : rank === 'A' ? '#d97706' : rank === 'B' ? '#2563eb' : '#475569';
+            const badgeBorder = rank === 'S' ? '#fecaca' : rank === 'A' ? '#fef08a' : rank === 'B' ? '#bfdbfe' : '#cbd5e1';
+
+            return (
+              <div style={{ 
+                background: 'var(--surface)', 
+                padding: '14px 16px', 
+                borderRadius: '10px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                border: '1px solid var(--border)',
+                borderLeft: `5px solid ${borderAccent}`,
+                boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+              }}>
+                <div>
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.5px' }}>
+                    Calculated Classification
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
+                    <span style={{ fontSize: '13px', color: 'var(--text2)' }}>
+                      Grade: <strong style={{ fontFamily: 'var(--font-mono)', fontSize: '15px', color: 'var(--text)' }}>{calculatedFormState.grade}</strong>
+                    </span>
+                    <span style={{ 
+                      padding: '2px 10px', 
+                      borderRadius: '6px', 
+                      fontWeight: 800, 
+                      fontSize: '13px',
+                      background: badgeBg,
+                      color: badgeColor,
+                      border: `1px solid ${badgeBorder}`
+                    }}>
+                      Rank {rank}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ fontSize: '11.5px', textAlign: 'right', maxWidth: '240px', fontWeight: 600, color: 'var(--text2)', lineHeight: '1.4' }}>
+                  {calculatedFormState.maintenanceSituation}
+                </div>
+              </div>
+            );
+          })()}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
             <button type="button" onClick={() => setIsOpen(false)} className="btn btn-secondary">
