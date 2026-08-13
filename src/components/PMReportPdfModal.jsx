@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Printer, Download, X, UserCheck, FileText, Loader2 } from 'lucide-react';
+import { Download, X, UserCheck, FileText, Loader2 } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -15,6 +15,8 @@ const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
 ];
+
+const ITEMS_PER_PAGE = 12;
 
 export default function PMReportPdfModal({
   isOpen,
@@ -43,6 +45,19 @@ export default function PMReportPdfModal({
     }
     return true;
   });
+
+  // Chunk items into pages of 12 items each
+  const itemChunks = [];
+  if (filteredItems.length === 0) {
+    itemChunks.push([]);
+  } else {
+    for (let i = 0; i < filteredItems.length; i += ITEMS_PER_PAGE) {
+      itemChunks.push(filteredItems.slice(i, i + ITEMS_PER_PAGE));
+    }
+  }
+
+  const totalTablePages = itemChunks.length;
+  const totalPages = totalTablePages + 1; // + 1 for Trend Graph page
 
   // Calculate KPIs
   const today = new Date();
@@ -114,14 +129,12 @@ export default function PMReportPdfModal({
       const reportElement = document.getElementById('printable-pm-report');
       if (!reportElement) throw new Error('Report element not found');
 
-      // Load html2pdf dynamically if not attached to window
       let html2pdfLib = window.html2pdf;
       if (!html2pdfLib) {
         try {
           const module = await import('html2pdf.js');
           html2pdfLib = module.default || module;
         } catch (err) {
-          // CDN Fallback if local import fails
           html2pdfLib = await new Promise((resolve, reject) => {
             if (window.html2pdf) return resolve(window.html2pdf);
             const script = document.createElement('script');
@@ -149,15 +162,11 @@ export default function PMReportPdfModal({
 
       await html2pdfLib().set(opt).from(reportElement).save();
     } catch (err) {
-      console.error('PDF Generation Failed, fallback to window.print():', err);
+      console.error('PDF Generation Error:', err);
       window.print();
     } finally {
       setIsGeneratingPdf(false);
     }
-  };
-
-  const handlePrint = () => {
-    window.print();
   };
 
   return (
@@ -168,9 +177,11 @@ export default function PMReportPdfModal({
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <FileText size={20} style={{ color: 'var(--accent)' }} />
             <div>
-              <h3 className="modal-title" style={{ fontSize: '16px' }}>Export PM Report PDF (2 Pages)</h3>
+              <h3 className="modal-title" style={{ fontSize: '16px' }}>
+                Export PM Report PDF ({totalPages} Pages)
+              </h3>
               <p style={{ fontSize: '12px', color: 'var(--text3)' }}>
-                Page 1: PM Schedule Table | Page 2: Achievement Trend Graph | Dual Signature Blocks
+                {totalTablePages} Schedule Table Page{totalTablePages > 1 ? 's' : ''} + 1 Achievement Trend Dashboard | Dual Signatures
               </p>
             </div>
           </div>
@@ -184,10 +195,6 @@ export default function PMReportPdfModal({
             >
               {isGeneratingPdf ? <Loader2 size={16} className="spin-icon" /> : <Download size={16} />}
               <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download PDF File'}</span>
-            </button>
-            <button className="btn" onClick={handlePrint} id="btn-do-print" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Printer size={14} />
-              <span>Print Browser</span>
             </button>
             <button className="modal-close-btn" onClick={onClose} aria-label="Close">
               <X size={18} />
@@ -269,151 +276,164 @@ export default function PMReportPdfModal({
 
         {/* Printable Document Body */}
         <div className="pdf-modal-body" id="printable-pm-report">
-          {/* Page 1 Preview Banner */}
-          <div className="pdf-page-indicator no-print">
-            <span>📄 PAGE 1: PREVENTIVE MAINTENANCE SCHEDULE TABLE ({filteredItems.length} ITEMS)</span>
-          </div>
+          {/* ============================================================== */}
+          {/* PAGES 1 to N-1: PM SCHEDULE TABLE CHUNKS (12 ITEMS PER PAGE) */}
+          {/* ============================================================== */}
+          {itemChunks.map((chunk, pageIdx) => {
+            const pageNum = pageIdx + 1;
+            const startItemIdx = pageIdx * ITEMS_PER_PAGE + 1;
+            const endItemIdx = Math.min((pageIdx + 1) * ITEMS_PER_PAGE, filteredItems.length);
 
-          {/* ============================================================== */}
-          {/* PAGE 1: PM SCHEDULE TABLE & DUAL SIGNATURE BLOCK */}
-          {/* ============================================================== */}
-          <div className="pdf-page pdf-page-1">
-            {/* Header */}
-            <div className="pdf-header">
-              <div className="pdf-header-title-box">
-                <div className="pdf-company-logo">MACE</div>
-                <div>
-                  <h1 className="pdf-title">PREVENTIVE MAINTENANCE ANNUAL PLAN ({selectedYear})</h1>
-                  <p className="pdf-subtitle">MAINTENANCE & EQUIPMENT MANAGEMENT REPORT</p>
+            return (
+              <React.Fragment key={pageIdx}>
+                {/* Page Indicator Banner for Screen Preview */}
+                <div className="pdf-page-indicator no-print" style={{ marginTop: pageIdx > 0 ? '20px' : '0' }}>
+                  <span>
+                    📄 PAGE {pageNum} OF {totalPages}: PM SCHEDULE TABLE (Items {filteredItems.length === 0 ? '0' : `${startItemIdx} - ${endItemIdx}`})
+                  </span>
                 </div>
-              </div>
-              <div className="pdf-meta-box">
-                <div><strong>Doc No:</strong> {documentNo}</div>
-                <div><strong>Plant:</strong> {filterPlant === 'all' ? 'ALL PLANTS' : filterPlant.toUpperCase()}</div>
-                <div><strong>Date:</strong> {reportDate}</div>
-                <div><strong>Total Machines:</strong> {filteredItems.length}</div>
-                <div><strong>Page:</strong> 1 of 2</div>
-              </div>
-            </div>
 
-            {/* PM Schedule Table */}
-            <div className="pdf-table-wrapper">
-              <table className="pdf-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: '28px' }}>#</th>
-                    <th style={{ width: '45px' }}>Plant</th>
-                    <th style={{ textAlign: 'left', minWidth: '140px' }}>Machine / Equipment</th>
-                    <th style={{ width: '75px' }}>Cycle</th>
-                    <th style={{ width: '85px' }}>Checksheet ID</th>
-                    {MONTH_NAMES.map(m => (
-                      <th key={m} style={{ width: '30px', textAlign: 'center' }}>{m}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredItems.length === 0 ? (
-                    <tr>
-                      <td colSpan={17} style={{ textAlign: 'center', padding: '20px' }}>No PM items found for the selected filter.</td>
-                    </tr>
-                  ) : (
-                    filteredItems.map((item, idx) => {
-                      return (
-                        <tr key={item.id || idx}>
-                          <td style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: '500' }}>{idx + 1}</td>
-                          <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{item.plant || 'RFG'}</td>
-                          <td style={{ textAlign: 'left', fontWeight: '600' }}>
-                            <div>{item.machineName}</div>
-                            <div style={{ fontSize: '8.5px', color: '#64748b', fontWeight: 'normal' }}>
-                              {item.responsible === 'Own Team' ? 'My Team' : (item.responsible || 'My Team')}
-                            </div>
-                          </td>
-                          <td style={{ textTransform: 'capitalize', fontSize: '9.5px' }}>{item.cycle}</td>
-                          <td className="font-mono" style={{ fontSize: '9.5px' }}>{item.checksheetId || '-'}</td>
-                          {Array.from({ length: 12 }).map((_, mIdx) => {
-                            const monthNum = mIdx + 1;
-                            const cellState = getCellStatus(item, selectedYear, monthNum);
+                <div className="pdf-page pdf-page-table">
+                  {/* Header */}
+                  <div className="pdf-header">
+                    <div className="pdf-header-title-box">
+                      <div className="pdf-company-logo">MACE</div>
+                      <div>
+                        <h1 className="pdf-title">PREVENTIVE MAINTENANCE ANNUAL PLAN ({selectedYear})</h1>
+                        <p className="pdf-subtitle">MAINTENANCE & EQUIPMENT MANAGEMENT REPORT</p>
+                      </div>
+                    </div>
+                    <div className="pdf-meta-box">
+                      <div><strong>Doc No:</strong> {documentNo}</div>
+                      <div><strong>Plant:</strong> {filterPlant === 'all' ? 'ALL PLANTS' : filterPlant.toUpperCase()}</div>
+                      <div><strong>Date:</strong> {reportDate}</div>
+                      <div><strong>Total Machines:</strong> {filteredItems.length}</div>
+                      <div><strong>Page:</strong> {pageNum} of {totalPages}</div>
+                    </div>
+                  </div>
 
-                            let cellText = '';
-                            let cellBgClass = 'pdf-cell-faded';
-
-                            if (cellState === 'done') {
-                              cellBgClass = 'pdf-cell-done';
-                              const matchingLog = logs.find(
-                                (log) => log.planId === item.id && Number(log.year) === selectedYear && Number(log.month) === monthNum
-                              );
-                              if (matchingLog && matchingLog.doneDate) {
-                                const parts = matchingLog.doneDate.split('-');
-                                cellText = parts.length === 3 ? parseInt(parts[2], 10).toString() : '✓';
-                              } else {
-                                cellText = '✓';
-                              }
-                            } else if (cellState === 'pending') {
-                              cellBgClass = 'pdf-cell-pending';
-                              cellText = '';
-                            } else if (cellState === 'overdue') {
-                              cellBgClass = 'pdf-cell-overdue';
-                              cellText = '!';
-                            }
-
-                            return (
-                              <td key={monthNum} className={`pdf-month-cell ${cellBgClass}`}>
-                                {cellText}
-                              </td>
-                            );
-                          })}
+                  {/* PM Schedule Table */}
+                  <div className="pdf-table-wrapper">
+                    <table className="pdf-table">
+                      <thead>
+                        <tr>
+                          <th style={{ width: '28px' }}>#</th>
+                          <th style={{ width: '45px' }}>Plant</th>
+                          <th style={{ textAlign: 'left', minWidth: '140px' }}>Machine / Equipment</th>
+                          <th style={{ width: '75px' }}>Cycle</th>
+                          <th style={{ width: '85px' }}>Checksheet ID</th>
+                          {MONTH_NAMES.map(m => (
+                            <th key={m} style={{ width: '30px', textAlign: 'center' }}>{m}</th>
+                          ))}
                         </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      </thead>
+                      <tbody>
+                        {chunk.length === 0 ? (
+                          <tr>
+                            <td colSpan={17} style={{ textAlign: 'center', padding: '20px' }}>
+                              No PM items found for the selected filter.
+                            </td>
+                          </tr>
+                        ) : (
+                          chunk.map((item, idx) => {
+                            const globalIdx = pageIdx * ITEMS_PER_PAGE + idx + 1;
+                            return (
+                              <tr key={item.id || globalIdx}>
+                                <td style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: '500' }}>{globalIdx}</td>
+                                <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{item.plant || 'RFG'}</td>
+                                <td style={{ textAlign: 'left', fontWeight: '600' }}>
+                                  <div>{item.machineName}</div>
+                                  <div style={{ fontSize: '8.5px', color: '#64748b', fontWeight: 'normal' }}>
+                                    {item.responsible === 'Own Team' ? 'My Team' : (item.responsible || 'My Team')}
+                                  </div>
+                                </td>
+                                <td style={{ textTransform: 'capitalize', fontSize: '9.5px' }}>{item.cycle}</td>
+                                <td className="font-mono" style={{ fontSize: '9.5px' }}>{item.checksheetId || '-'}</td>
+                                {Array.from({ length: 12 }).map((_, mIdx) => {
+                                  const monthNum = mIdx + 1;
+                                  const cellState = getCellStatus(item, selectedYear, monthNum);
 
-            {/* Legend */}
-            <div className="pdf-legend">
-              <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-pending"></span> Scheduled / Pending</span>
-              <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-done"></span> Completed (e.g. 17)</span>
-              <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-overdue"></span> Overdue (!)</span>
-              <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-faded"></span> N/A</span>
-            </div>
+                                  let cellText = '';
+                                  let cellBgClass = 'pdf-cell-faded';
 
-            {/* Dual Signature Block Page 1 */}
-            <div className="pdf-signature-section">
-              <div className="pdf-signature-box">
-                <div className="pdf-sig-role">PREPARED / ACTION BY</div>
-                <div className="pdf-sig-line-area">
-                  <div className="pdf-sig-line"></div>
+                                  if (cellState === 'done') {
+                                    cellBgClass = 'pdf-cell-done';
+                                    const matchingLog = logs.find(
+                                      (log) => log.planId === item.id && Number(log.year) === selectedYear && Number(log.month) === monthNum
+                                    );
+                                    if (matchingLog && matchingLog.doneDate) {
+                                      const parts = matchingLog.doneDate.split('-');
+                                      cellText = parts.length === 3 ? parseInt(parts[2], 10).toString() : '✓';
+                                    } else {
+                                      cellText = '✓';
+                                    }
+                                  } else if (cellState === 'pending') {
+                                    cellBgClass = 'pdf-cell-pending';
+                                    cellText = '';
+                                  } else if (cellState === 'overdue') {
+                                    cellBgClass = 'pdf-cell-overdue';
+                                    cellText = '!';
+                                  }
+
+                                  return (
+                                    <td key={monthNum} className={`pdf-month-cell ${cellBgClass}`}>
+                                      {cellText}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="pdf-legend">
+                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-pending"></span> Scheduled / Pending</span>
+                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-done"></span> Completed (e.g. 17)</span>
+                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-overdue"></span> Overdue (!)</span>
+                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-faded"></span> N/A</span>
+                  </div>
+
+                  {/* Dual Signature Block on every page */}
+                  <div className="pdf-signature-section">
+                    <div className="pdf-signature-box">
+                      <div className="pdf-sig-role">PREPARED / ACTION BY</div>
+                      <div className="pdf-sig-line-area">
+                        <div className="pdf-sig-line"></div>
+                      </div>
+                      <div className="pdf-sig-name">( {engineerName || '....................................................................'} )</div>
+                      <div className="pdf-sig-title">{engineerTitle || 'Maintenance Engineer'}</div>
+                      <div className="pdf-sig-date">Date: ........ / ........ / ................</div>
+                    </div>
+
+                    <div className="pdf-signature-box">
+                      <div className="pdf-sig-role">APPROVED / VERIFIED BY</div>
+                      <div className="pdf-sig-line-area">
+                        <div className="pdf-sig-line"></div>
+                      </div>
+                      <div className="pdf-sig-name">( {managerName || '....................................................................'} )</div>
+                      <div className="pdf-sig-title">{managerTitle || 'Maintenance Manager'}</div>
+                      <div className="pdf-sig-date">Date: ........ / ........ / ................</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="pdf-sig-name">( {engineerName || '....................................................................'} )</div>
-                <div className="pdf-sig-title">{engineerTitle || 'Maintenance Engineer'}</div>
-                <div className="pdf-sig-date">Date: ........ / ........ / ................</div>
-              </div>
 
-              <div className="pdf-signature-box">
-                <div className="pdf-sig-role">APPROVED / VERIFIED BY</div>
-                <div className="pdf-sig-line-area">
-                  <div className="pdf-sig-line"></div>
-                </div>
-                <div className="pdf-sig-name">( {managerName || '....................................................................'} )</div>
-                <div className="pdf-sig-title">{managerTitle || 'Maintenance Manager'}</div>
-                <div className="pdf-sig-date">Date: ........ / ........ / ................</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Page 2 Preview Banner */}
-          <div className="pdf-page-indicator no-print" style={{ marginTop: '16px' }}>
-            <span>📊 PAGE 2: PREVENTIVE MAINTENANCE ACHIEVEMENT TREND GRAPH & KPI DASHBOARD</span>
-          </div>
-
-          {/* PAGE BREAK FOR PRINT */}
-          <div className="pdf-page-break"></div>
+                <div className="pdf-page-break"></div>
+              </React.Fragment>
+            );
+          })}
 
           {/* ============================================================== */}
-          {/* PAGE 2: PM ACHIEVEMENT TREND GRAPH & DUAL SIGNATURE BLOCK */}
+          {/* FINAL PAGE (Page N): PM ACHIEVEMENT TREND GRAPH & DUAL SIGNATURE BLOCK */}
           {/* ============================================================== */}
-          <div className="pdf-page pdf-page-2">
+          <div className="pdf-page-indicator no-print" style={{ marginTop: '20px' }}>
+            <span>📊 PAGE {totalPages} OF {totalPages}: PM ACHIEVEMENT TREND GRAPH & KPI DASHBOARD</span>
+          </div>
+
+          <div className="pdf-page pdf-page-trend">
             {/* Header */}
             <div className="pdf-header">
               <div className="pdf-header-title-box">
@@ -427,7 +447,7 @@ export default function PMReportPdfModal({
                 <div><strong>Doc No:</strong> {documentNo}</div>
                 <div><strong>Plant:</strong> {filterPlant === 'all' ? 'ALL PLANTS' : filterPlant.toUpperCase()}</div>
                 <div><strong>Date:</strong> {reportDate}</div>
-                <div><strong>Page:</strong> 2 of 2</div>
+                <div><strong>Page:</strong> {totalPages} of {totalPages}</div>
               </div>
             </div>
 
@@ -537,7 +557,7 @@ export default function PMReportPdfModal({
               </table>
             </div>
 
-            {/* Dual Signature Block Page 2 */}
+            {/* Dual Signature Block Page N */}
             <div className="pdf-signature-section">
               <div className="pdf-signature-box">
                 <div className="pdf-sig-role">PREPARED / ACTION BY</div>

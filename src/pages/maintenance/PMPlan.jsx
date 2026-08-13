@@ -1644,7 +1644,7 @@ export default function PMPlan() {
             <Download size={14} />
             <span>Export CSV</span>
           </button>
-          <button className="btn" onClick={() => setIsPdfModalOpen(true)} id="export-pdf-report-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--surface2)', borderColor: 'var(--accent)' }} title="Generate 2-page print PDF report with schedule table, trend graph, and engineer/manager signature blocks">
+          <button className="btn" onClick={() => setIsPdfModalOpen(true)} id="export-pdf-report-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--surface2)', borderColor: 'var(--accent)' }} title="Generate multi-page PDF report with schedule table, trend graph, and engineer/manager signature blocks">
             <Printer size={14} style={{ color: 'var(--accent)' }} />
             <span style={{ fontWeight: '600', color: 'var(--accent)' }}>Export PDF Report</span>
           </button>
