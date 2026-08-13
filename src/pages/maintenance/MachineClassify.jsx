@@ -47,31 +47,8 @@ export function calculateGradeAndRank(influenceRate, redundancy, quality) {
     rank = '-';
     maintenanceSituation = '-';
   }
-
   return { grade, rank, maintenanceSituation };
 }
-
-// Initial sample data if collection is empty
-const INITIAL_MACHINE_CLASSIFY_DATA = [
-  { department: 'RFG', item: 1, section: 'Utility', machine: 'RFG DI Plant (G-32 + G55)', machine2: 'DI Treatment Unit (Vessels, Internal Resin, Valves, Piping)', influenceRate: 1, redundancy: 4, quality: 2 },
-  { department: 'RFG', item: 2, section: 'Utility', machine: 'RFG DI Plant (G-32 + G55)', machine2: 'Regeneration Tank System', influenceRate: 2, redundancy: 4, quality: 2 },
-  { department: 'RFG', item: 3, section: 'Utility', machine: 'RFG DI Plant (G-32 + G55)', machine2: 'DI Feed / Transfer Pumps (Motor & Pump, Check Valves, Strainers)', influenceRate: 1, redundancy: 4, quality: 3 },
-  { department: 'RFG', item: 4, section: 'Utility', machine: 'RFG DI Plant (G-32 + G55)', machine2: 'Storage Tank System', influenceRate: 2, redundancy: 4, quality: 2 },
-  { department: 'RFG', item: 5, section: 'Utility', machine: 'RFG DI Plant (G-32 + G55)', machine2: 'Control Panel & Instruments (PLC, pH/EC Meter, Pressure Gauges, Flow Meters)', influenceRate: 1, redundancy: 4, quality: 3 },
-  { department: 'RFG', item: 6, section: 'Utility', machine: 'RFG DI Regeneration (G-79)', machine2: 'DI Treatment Unit (Vessels, Internal Resin, Valves, Piping)', influenceRate: 2, redundancy: 1, quality: 2 },
-  { department: 'RFG', item: 7, section: 'Utility', machine: 'RFG DI Regeneration (G-79)', machine2: 'DI Feed / Transfer Pumps (Motor & Pump, Check Valves, Strainers)', influenceRate: 2, redundancy: 1, quality: 2 },
-  { department: 'RFG', item: 8, section: 'Utility', machine: 'RFG DI Regeneration (G-79)', machine2: 'Storage Tank System', influenceRate: 2, redundancy: 1, quality: 2 },
-  { department: 'RFG', item: 9, section: 'Utility', machine: 'RFG DI Regeneration (G-79)', machine2: 'Control Panel & Instruments (PLC, pH/EC Meter, Pressure Gauges, Flow Meters)', influenceRate: 2, redundancy: 1, quality: 3 },
-  { department: 'RFG', item: 10, section: 'Utility', machine: 'RFG RO Plant', machine2: 'RO Membrane Unit (Housing & Elements)', influenceRate: 2, redundancy: 1, quality: 2 },
-  { department: 'RFG', item: 11, section: 'Utility', machine: 'RFG RO Plant', machine2: 'High Pressure Pump Set and Feed / Transfer Pumps', influenceRate: 1, redundancy: 1, quality: 2 },
-  { department: 'RFG', item: 12, section: 'Utility', machine: 'RFG RO Plant', machine2: 'Pre-Treatment System', influenceRate: 2, redundancy: 1, quality: 2 },
-  { department: 'RFG', item: 13, section: 'Utility', machine: 'RFG RO Plant', machine2: 'RO Control & Monitoring Panel', influenceRate: 1, redundancy: 1, quality: 3 },
-  { department: 'RFG', item: 14, section: 'Utility', machine: 'RFG Water Treatment (G55)', machine2: 'Chemical Storage Tank (Acid/Base)', influenceRate: 1, redundancy: 1, quality: 4 },
-  { department: 'RFG', item: 15, section: 'Utility', machine: 'RFG Water Treatment (G55)', machine2: 'Chemical Dosing & Transfer Set (Dosing Pumps & Motors)', influenceRate: 1, redundancy: 1, quality: 4 },
-  { department: 'RFG', item: 16, section: 'Utility', machine: 'RFG Water Treatment (G55)', machine2: 'Regeneration Control & Valve Set (Solenoid Valves)', influenceRate: 1, redundancy: 1, quality: 4 },
-  { department: 'RFG', item: 17, section: 'Utility', machine: 'Water Cooling System', machine2: 'Chiller System (Chiller Unit, Heat Exchanger, Temp Sensor, Flow Switch)', influenceRate: 1, redundancy: 4, quality: 4 },
-  { department: 'RFG', item: 18, section: 'Utility', machine: 'Water Cooling System', machine2: 'Cooling Tower (Structure, Support, Motor, Driving Parts, Blades, Level Switch)', influenceRate: 1, redundancy: 4, quality: 4 }
-];
 
 export default function MachineClassify() {
   const [items, setItems] = useState([]);
@@ -416,13 +393,6 @@ export default function MachineClassify() {
             Export CSV
           </button>
 
-          {items.length === 0 && (
-            <button onClick={handleSeedData} className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <RefreshCw size={15} />
-              Load Sample Data
-            </button>
-          )}
-
           <button onClick={handleOpenAdd} className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
             <Plus size={16} />
             Add Machine Item
@@ -600,7 +570,7 @@ export default function MachineClassify() {
                 ) : filteredItems.length === 0 ? (
                   <tr>
                     <td colSpan={11} style={{ textAlign: 'center', padding: '40px', color: 'var(--text2)' }}>
-                      No machine items found. Click "Add Machine Item" or "Load Sample Data" to start.
+                      No machine items found. Click "Add Machine Item" or "Import CSV" to start.
                     </td>
                   </tr>
                 ) : (
