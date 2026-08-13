@@ -874,21 +874,18 @@ export default function MachineClassify() {
             />
           </div>
 
-          {/* Interactive Rating Inputs (Segmented Pill Selectors) */}
-          <div style={{ background: 'var(--surface2)', padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--border)' }}>
+          {/* Interactive Rating Inputs (Clean Segmented Pill Selectors) */}
+          <div style={{ background: 'var(--surface2)', padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid var(--border)' }}>
             
             {/* 1. Influence Rate Pills */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text)' }}>1. Influence Rate (Scale 1–4)</label>
-                <span style={{ fontSize: '11px', color: 'var(--text3)' }}>1 = Critical Stoppage | 4 = No Stoppage Impact</span>
-              </div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>1. Influence Rate (1–4)</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                 {[
-                  { val: 1, label: "1 · High Stoppage Risk" },
-                  { val: 2, label: "2 · Low Stoppage Risk" },
-                  { val: 3, label: "3 · Opportunity Loss" },
-                  { val: 4, label: "4 · No Stoppage / Other" }
+                  { val: 1, label: "1 · High Risk" },
+                  { val: 2, label: "2 · Low Risk" },
+                  { val: 3, label: "3 · Opportunity" },
+                  { val: 4, label: "4 · No Impact" }
                 ].map((opt) => (
                   <button
                     key={opt.val}
@@ -901,7 +898,7 @@ export default function MachineClassify() {
                       background: Number(influenceRate) === opt.val ? 'var(--surface)' : 'transparent',
                       color: Number(influenceRate) === opt.val ? 'var(--accent)' : 'var(--text2)',
                       fontWeight: Number(influenceRate) === opt.val ? 700 : 500,
-                      fontSize: '11px',
+                      fontSize: '11.5px',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
                       textAlign: 'center'
@@ -915,13 +912,10 @@ export default function MachineClassify() {
 
             {/* 2. Redundancy Pills */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text)' }}>2. Redundancy (1 or 4)</label>
-                <span style={{ fontSize: '11px', color: 'var(--text3)' }}>1 = No Spare Machine | 4 = Redundant & Switchable</span>
-              </div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>2. Redundancy (1 or 4)</label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                 {[
-                  { val: 1, label: "1 · No Redundancy (Single Point Failure)" },
+                  { val: 1, label: "1 · Single Equipment (No Redundancy)" },
                   { val: 4, label: "4 · Redundant Equipment Available" }
                 ].map((opt) => (
                   <button
@@ -949,16 +943,13 @@ export default function MachineClassify() {
 
             {/* 3. Quality Pills */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text)' }}>3. Quality Impact (Scale 1–4)</label>
-                <span style={{ fontSize: '11px', color: 'var(--text3)' }}>1 = Customer Defect | 4 = No Product Impact</span>
-              </div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>3. Quality Impact (1–4)</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                 {[
-                  { val: 1, label: "1 · Defect to Customer" },
-                  { val: 2, label: "2 · Adjust > 3 Hours" },
-                  { val: 3, label: "3 · Adjust < 3 Hours" },
-                  { val: 4, label: "4 · No Product Impact" }
+                  { val: 1, label: "1 · Defect Risk" },
+                  { val: 2, label: "2 · Adjust >3h" },
+                  { val: 3, label: "3 · Adjust <3h" },
+                  { val: 4, label: "4 · No Impact" }
                 ].map((opt) => (
                   <button
                     key={opt.val}
@@ -971,7 +962,7 @@ export default function MachineClassify() {
                       background: Number(quality) === opt.val ? 'var(--surface)' : 'transparent',
                       color: Number(quality) === opt.val ? 'var(--accent)' : 'var(--text2)',
                       fontWeight: Number(quality) === opt.val ? 700 : 500,
-                      fontSize: '11px',
+                      fontSize: '11.5px',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
                       textAlign: 'center'

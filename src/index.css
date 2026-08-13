@@ -45,6 +45,28 @@ body {
   font-family: var(--font-mono) !important;
 }
 
+/* Form inputs styling */
+.input {
+  background-color: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.12);
+}
+
+.input::placeholder {
+  color: var(--text3);
+  opacity: 0.75;
+}
+
 /* Typographic rhythms */
 h1, h2, h3, h4, h5, h6 {
   color: var(--text);
