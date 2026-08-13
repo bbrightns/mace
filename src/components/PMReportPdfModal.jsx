@@ -125,10 +125,12 @@ export default function PMReportPdfModal({
   // Direct PDF File Generation & Download
   const handleDownloadPdf = async () => {
     setIsGeneratingPdf(true);
+    let container = null;
     try {
       const reportElement = document.getElementById('printable-pm-report');
       if (!reportElement) throw new Error('Report element not found');
 
+      // Load html2pdf dynamically if not attached to window
       let html2pdfLib = window.html2pdf;
       if (!html2pdfLib) {
         try {
@@ -146,6 +148,23 @@ export default function PMReportPdfModal({
         }
       }
 
+      // Clone reportElement to bypass modal scroll container offset
+      const clone = reportElement.cloneNode(true);
+
+      // Remove screen-only preview banners from PDF clone
+      const noPrintEls = clone.querySelectorAll('.no-print');
+      noPrintEls.forEach(el => el.remove());
+
+      // Create a temporary off-screen container attached directly to document.body
+      container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = '1120px'; // A4 Landscape width
+      container.style.backgroundColor = '#ffffff';
+      container.appendChild(clone);
+      document.body.appendChild(container);
+
       const opt = {
         margin: [4, 4, 4, 4],
         filename: `${documentNo || 'PM-Report'}.pdf`,
@@ -154,17 +173,22 @@ export default function PMReportPdfModal({
           scale: 2,
           useCORS: true,
           logging: false,
-          backgroundColor: '#ffffff'
+          backgroundColor: '#ffffff',
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: 1200
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-        pagebreak: { mode: ['css', 'legacy'] }
+        pagebreak: { mode: ['css', 'legacy'], after: '.pdf-page-break' }
       };
 
-      await html2pdfLib().set(opt).from(reportElement).save();
+      await html2pdfLib().set(opt).from(clone).save();
     } catch (err) {
       console.error('PDF Generation Error:', err);
-      window.print();
     } finally {
+      if (container && container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
       setIsGeneratingPdf(false);
     }
   };

@@ -1443,6 +1443,8 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
 }
 
 /* Header Section */
@@ -1692,10 +1694,13 @@ h1, h2, h3, h4, h5, h6 {
   text-transform: uppercase;
 }
 
-/* Page Break Divider */
+/* Page Break Divider for PDF Generation & Printing */
 .pdf-page-break {
-  height: 1px;
-  display: block;
+  page-break-after: always !important;
+  break-after: page !important;
+  height: 0 !important;
+  display: block !important;
+  clear: both !important;
 }
 
 /* PRINT MEDIA OVERRIDES - ISOLATED 2-PAGE REPORT PRINTING */
