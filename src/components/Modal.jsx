@@ -3,28 +3,36 @@ import { X } from 'lucide-react';
 
 export default function Modal({ isOpen, onClose, title, children, footerActions }) {
   const modalRef = useRef(null);
+  const onCloseRef = useRef(onClose);
 
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // Handle Escape key listener
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onClose();
+        if (onCloseRef.current) onCloseRef.current();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
 
-    // Focus the modal container on open for keyboard accessibility
-    if (modalRef.current) {
-      modalRef.current.focus();
-    }
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
+
+  // Focus the modal container ONCE when opening for keyboard accessibility
+  useEffect(() => {
+    if (isOpen && modalRef.current) {
+      modalRef.current.focus();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
