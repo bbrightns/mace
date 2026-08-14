@@ -2345,7 +2345,7 @@ export default function PMPlan() {
                     />
                   </th>
                   {renderSortableHeader('plant', 'Plant', { width: '65px', position: 'sticky', left: '42px', zIndex: 10, background: 'var(--surface2)' })}
-                  {renderSortableHeader('machineName', 'Machine / Equipment', { width: '220px', textAlign: 'left', position: 'sticky', left: '107px', zIndex: 10, background: 'var(--surface2)', borderRight: '2px solid var(--border2)' })}
+                  {renderSortableHeader('machineName', 'Machine / Equipment', { width: '235px', textAlign: 'left', position: 'sticky', left: '107px', zIndex: 10, background: 'var(--surface2)', borderRight: '2px solid var(--border2)' })}
                   {renderSortableHeader('cycle', 'Cycle', { width: '110px' })}
                   {renderSortableHeader('checksheetId', 'Checksheet ID', { width: '120px' })}
                   {MONTH_NAMES.map((name, i) => {
@@ -2400,25 +2400,38 @@ export default function PMPlan() {
                           zIndex: 5, 
                           background: isSelected ? 'var(--surface2)' : 'var(--surface)', 
                           borderRight: '2px solid var(--border2)',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          padding: '6px 10px'
                         }}
                         onClick={() => handleOpenEdit(item)}
                         title="Click to edit schedule"
                       >
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
                             <span className={`pm-type-badge type-${item.itemType || item.type || 'pm'}`}>
                               {(item.itemType || item.type || 'pm') === 'calibrate' ? '⚖️ Cal' : '🔧 PM'}
                             </span>
                             <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
-                              {item.rank || 'B'}
+                              Rank {item.rank || 'B'}
                             </span>
-                            <span style={{ fontWeight: '600', color: 'var(--accent)', textDecoration: 'underline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {item.machineName}
+                            <span style={{ fontSize: '9.5px', color: 'var(--text3)', fontWeight: '600', textTransform: 'uppercase', marginLeft: 'auto' }}>
+                              {displayResponsible}
                             </span>
                           </div>
-                          <span style={{ fontSize: '10px', color: 'var(--text3)', fontWeight: 'normal', textTransform: 'uppercase' }}>
-                            {displayResponsible}
+                          <span style={{ 
+                            fontWeight: '600', 
+                            color: 'var(--accent)', 
+                            textDecoration: 'underline', 
+                            fontSize: '12px',
+                            lineHeight: '1.35',
+                            wordBreak: 'break-word',
+                            whiteSpace: 'normal',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden'
+                          }}>
+                            {item.machineName}
                           </span>
                         </div>
                       </td>
