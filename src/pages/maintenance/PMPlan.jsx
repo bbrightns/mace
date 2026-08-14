@@ -1993,16 +1993,15 @@ export default function PMPlan() {
         </button>
       </div>
 
-      {/* Global Filter Bar */}
-      <div className="card controls-bar" id="pm-filters-bar" style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px 16px', marginBottom: '16px' }}>
-        {/* Row 1: Search & Year Selector / Reset */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Global Filter Bar: Search + Dropdown Filters */}
+      <div className="card controls-bar" id="pm-filters-bar" style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px 16px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
           {/* Search Machine & Checksheet ID */}
-          <div style={{ position: 'relative', width: '320px', maxWidth: '100%' }}>
+          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px' }}>
             <Search size={14} style={{ position: 'absolute', left: '10px', top: '9px', color: 'var(--text3)' }} />
             <input 
               type="text" 
-              placeholder="Search machine, type, rank, or checksheet ID..." 
+              placeholder="Search machine, checksheet ID, or keyword..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="form-input"
@@ -2020,203 +2019,147 @@ export default function PMPlan() {
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            {/* Year Selector */}
-            {activeTab === 'schedule' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="filter-label" style={{ minWidth: 'auto', fontSize: '11px' }}>Year</span>
-                <div style={{ display: 'flex', gap: '4px' }}>
-                  {[2025, 2026, 2027, 2028].map((yr) => (
-                    <button
-                      key={yr}
-                      className={`year-selector-btn ${selectedYear === yr ? 'active' : ''}`}
-                      onClick={() => setSelectedYear(yr)}
-                      style={{ padding: '3px 10px', fontSize: '12px', height: '26px', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
-                    >
-                      {yr}
-                    </button>
-                  ))}
-                </div>
+          {/* Activity Tag Filter Dropdown */}
+          <div style={{ minWidth: '130px' }}>
+            <select
+              className="form-select"
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              style={{ height: '32px', fontSize: '12px', padding: '4px 8px' }}
+              id="filter-type-select"
+              title="Filter by Activity Tag"
+            >
+              <option value="all">🏷️ All Tags ({typeStats.all})</option>
+              <option value="pm">🔧 PM ({typeStats.pm})</option>
+              <option value="calibrate">⚖️ Calibrate ({typeStats.calibrate})</option>
+            </select>
+          </div>
+
+          {/* Rank Filter Dropdown */}
+          <div style={{ minWidth: '120px' }}>
+            <select
+              className="form-select"
+              value={filterRank}
+              onChange={(e) => setFilterRank(e.target.value)}
+              style={{ height: '32px', fontSize: '12px', padding: '4px 8px' }}
+              id="filter-rank-select"
+              title="Filter by Criticality Rank"
+            >
+              <option value="all">🏅 All Ranks</option>
+              <option value="S">Rank S ({rankStats.S})</option>
+              <option value="A">Rank A ({rankStats.A})</option>
+              <option value="B">Rank B ({rankStats.B})</option>
+              <option value="C">Rank C ({rankStats.C})</option>
+            </select>
+          </div>
+
+          {/* Plant Filter Dropdown */}
+          <div style={{ minWidth: '110px' }}>
+            <select
+              className="form-select"
+              value={filterPlant}
+              onChange={(e) => setFilterPlant(e.target.value)}
+              style={{ height: '32px', fontSize: '12px', padding: '4px 8px' }}
+              id="filter-plant-select"
+              title="Filter by Plant"
+            >
+              <option value="all">🏭 All Plants</option>
+              {plantOptions.map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Team / Responsible Filter Dropdown */}
+          <div style={{ minWidth: '115px' }}>
+            <select
+              className="form-select"
+              value={filterResponsible}
+              onChange={(e) => setFilterResponsible(e.target.value)}
+              style={{ height: '32px', fontSize: '12px', padding: '4px 8px' }}
+              id="filter-responsible-select"
+              title="Filter by Team"
+            >
+              <option value="all">👥 All Teams</option>
+              <option value="My team">My team</option>
+              <option value="Contractor">Contractor</option>
+            </select>
+          </div>
+
+          {/* Cycle Filter Dropdown */}
+          <div style={{ minWidth: '120px' }}>
+            <select
+              className="form-select"
+              value={filterCycle}
+              onChange={(e) => setFilterCycle(e.target.value)}
+              style={{ height: '32px', fontSize: '12px', padding: '4px 8px' }}
+              id="filter-cycle-select"
+              title="Filter by Cycle"
+            >
+              <option value="all">🔄 All Cycles</option>
+              <option value="monthly">Monthly</option>
+              <option value="every 2 months">Every 2 Months</option>
+              <option value="every 6 months">Every 6 Months</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+
+          {/* Month Filter Dropdown */}
+          <div style={{ minWidth: '125px' }}>
+            <select
+              className="form-select"
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+              style={{ height: '32px', fontSize: '12px', padding: '4px 8px' }}
+              id="filter-month-select"
+              title="Filter by Target Month"
+            >
+              <option value="all">📅 All Months</option>
+              {MONTH_NAMES.map((mName, i) => (
+                <option key={mName} value={i + 1}>{mName} (M{i + 1})</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Year Selector */}
+          {activeTab === 'schedule' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text3)', fontWeight: '600', textTransform: 'uppercase' }}>Year:</span>
+              <div style={{ display: 'flex', gap: '3px' }}>
+                {[2025, 2026, 2027, 2028].map((yr) => (
+                  <button
+                    key={yr}
+                    className={`year-selector-btn ${selectedYear === yr ? 'active' : ''}`}
+                    onClick={() => setSelectedYear(yr)}
+                    style={{ padding: '2px 8px', fontSize: '12px', height: '30px', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
+                  >
+                    {yr}
+                  </button>
+                ))}
               </div>
-            )}
-
-            {/* Reset Filters */}
-            {(search || filterPlant !== 'all' || filterResponsible !== 'all' || filterCycle !== 'all' || filterType !== 'all' || filterRank !== 'all' || filterMonth !== 'all') && (
-              <button 
-                className="btn btn-sm"
-                onClick={() => {
-                  setSearch('');
-                  setFilterPlant('all');
-                  setFilterResponsible('all');
-                  setFilterCycle('all');
-                  setFilterType('all');
-                  setFilterRank('all');
-                  setFilterMonth('all');
-                }}
-                style={{ fontSize: '11px', padding: '4px 10px', height: '26px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text2)' }}
-              >
-                <X size={12} />
-                <span>Reset Filters</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div style={{ height: '1px', backgroundColor: 'var(--border)', width: '100%' }} />
-
-        {/* Row 2: Tag / Activity Type & Machine Rank Filters */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'center' }}>
-          {/* Tag / Activity Type Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="filter-label" style={{ minWidth: 'auto', fontSize: '11px', fontWeight: 'bold' }}>Activity Tag</span>
-            <div className="filter-chips" style={{ gap: '4px' }}>
-              {[
-                { value: 'all', label: `All Tags (${typeStats.all})` },
-                { value: 'pm', label: `🔧 PM (${typeStats.pm})` },
-                { value: 'calibrate', label: `⚖️ Calibrate (${typeStats.calibrate})` }
-              ].map((chip) => (
-                <button
-                  key={chip.value}
-                  className={`filter-chip ${filterType === chip.value ? 'active' : ''}`}
-                  onClick={() => setFilterType(chip.value)}
-                  style={{
-                    padding: '3px 10px',
-                    fontSize: '11px',
-                    borderRadius: '12px',
-                    height: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontWeight: filterType === chip.value ? '700' : '500'
-                  }}
-                >
-                  {chip.label}
-                </button>
-              ))}
             </div>
-          </div>
+          )}
 
-          {/* Machine Rank Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="filter-label" style={{ minWidth: 'auto', fontSize: '11px', fontWeight: 'bold' }}>Rank</span>
-            <div className="filter-chips" style={{ gap: '4px' }}>
-              {[
-                { value: 'all', label: `All Ranks` },
-                { value: 'S', label: `Rank S (${rankStats.S})`, color: '#be123c' },
-                { value: 'A', label: `Rank A (${rankStats.A})`, color: '#b45309' },
-                { value: 'B', label: `Rank B (${rankStats.B})`, color: '#0369a1' },
-                { value: 'C', label: `Rank C (${rankStats.C})`, color: '#475569' }
-              ].map((chip) => (
-                <button
-                  key={chip.value}
-                  className={`filter-chip ${filterRank === chip.value ? 'active' : ''}`}
-                  onClick={() => setFilterRank(chip.value)}
-                  style={{
-                    padding: '3px 10px',
-                    fontSize: '11px',
-                    borderRadius: '12px',
-                    height: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontWeight: filterRank === chip.value ? '700' : '500'
-                  }}
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Row 3: Category Filters (Plant, Team, Cycle) */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'center' }}>
-          {/* Plant Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="filter-label" style={{ minWidth: 'auto', fontSize: '11px' }}>Plant</span>
-            <div className="filter-chips" style={{ gap: '4px' }}>
-              {['all', ...plantOptions].map((pVal) => (
-                <button
-                  key={pVal}
-                  className={`filter-chip ${filterPlant === pVal ? 'active' : ''}`}
-                  onClick={() => setFilterPlant(pVal)}
-                  style={{ padding: '3px 10px', fontSize: '11px', borderRadius: '12px', height: '24px', display: 'flex', alignItems: 'center' }}
-                >
-                  {pVal === 'all' ? 'All Plants' : pVal}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Responsible Filter (My team / Contractor) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="filter-label" style={{ minWidth: 'auto', fontSize: '11px' }}>Team</span>
-            <div className="filter-chips" style={{ gap: '4px' }}>
-              {[
-                { value: 'all', label: 'All Teams' },
-                { value: 'My team', label: 'My Team' },
-                { value: 'Contractor', label: 'Contractor' }
-              ].map((chip) => (
-                <button
-                  key={chip.value}
-                  className={`filter-chip ${filterResponsible === chip.value ? 'active' : ''}`}
-                  onClick={() => setFilterResponsible(chip.value)}
-                  style={{ padding: '3px 10px', fontSize: '11px', borderRadius: '12px', height: '24px', display: 'flex', alignItems: 'center' }}
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Cycle Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="filter-label" style={{ minWidth: 'auto', fontSize: '11px' }}>Cycle</span>
-            <div className="filter-chips" style={{ gap: '4px' }}>
-              {[
-                { value: 'all', label: 'All Cycles' },
-                { value: 'monthly', label: 'Monthly' },
-                { value: 'every 2 months', label: 'Every 2M' },
-                { value: 'every 6 months', label: 'Every 6M' },
-                { value: 'yearly', label: 'Yearly' }
-              ].map((chip) => (
-                <button
-                  key={chip.value}
-                  className={`filter-chip ${filterCycle === chip.value ? 'active' : ''}`}
-                  onClick={() => setFilterCycle(chip.value)}
-                  style={{ padding: '3px 10px', fontSize: '11px', borderRadius: '12px', height: '24px', display: 'flex', alignItems: 'center' }}
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Row 4: Month Filter Chips */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '6px', borderTop: '1px dashed var(--border)' }}>
-          <span className="filter-label" style={{ minWidth: 'auto', fontSize: '11px' }}>Month</span>
-          <div className="filter-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-            {[
-              { value: 'all', label: 'ALL MONTHS' },
-              ...MONTH_NAMES.map((name, i) => ({ value: i + 1, label: name.toUpperCase() }))
-            ].map((chip) => (
-              <button
-                key={chip.value}
-                className={`filter-chip ${filterMonth === chip.value ? 'active' : ''}`}
-                onClick={() => setFilterMonth(chip.value)}
-                style={{
-                  padding: '3px 10px',
-                  fontSize: '11px',
-                  borderRadius: '12px',
-                  height: '24px',
-                  display: 'flex',
-                  alignItems: 'center'
-                }}
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
+          {/* Reset Filters Button */}
+          {(search || filterPlant !== 'all' || filterResponsible !== 'all' || filterCycle !== 'all' || filterType !== 'all' || filterRank !== 'all' || filterMonth !== 'all') && (
+            <button 
+              className="btn btn-sm"
+              onClick={() => {
+                setSearch('');
+                setFilterPlant('all');
+                setFilterResponsible('all');
+                setFilterCycle('all');
+                setFilterType('all');
+                setFilterRank('all');
+                setFilterMonth('all');
+              }}
+              style={{ fontSize: '11.5px', padding: '4px 10px', height: '30px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text2)' }}
+              title="Reset all filters"
+            >
+              <X size={12} />
+              <span>Reset</span>
+            </button>
+          )}
         </div>
       </div>
 
