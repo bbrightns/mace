@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Plus, 
   Search, 
@@ -829,6 +829,14 @@ export default function PMPlan() {
       case 'plant':
         valA = a.plant || '';
         valB = b.plant || '';
+        break;
+      case 'itemType':
+        valA = a.itemType || a.type || 'pm';
+        valB = b.itemType || b.type || 'pm';
+        break;
+      case 'rank':
+        valA = a.rank || 'B';
+        valB = b.rank || 'B';
         break;
       case 'machineName':
         valA = a.machineName || '';
