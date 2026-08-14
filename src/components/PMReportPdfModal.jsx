@@ -25,6 +25,8 @@ export default function PMReportPdfModal({
   logs = [],
   selectedYear = 2026,
   filterPlant = 'all',
+  filterType = 'all',
+  filterRank = 'all',
   isMonthRequired,
   getCellStatus
 }) {
@@ -38,9 +40,17 @@ export default function PMReportPdfModal({
 
   if (!isOpen) return null;
 
-  // Filter items based on plant
+  // Filter items based on plant, type, and rank
   const filteredItems = items.filter(item => {
     if (filterPlant !== 'all' && (item.plant || 'RFG').toLowerCase() !== filterPlant.toLowerCase()) {
+      return false;
+    }
+    const t = item.itemType || item.type || 'pm';
+    if (filterType !== 'all' && t !== filterType) {
+      return false;
+    }
+    const r = item.rank || 'B';
+    if (filterRank !== 'all' && r !== filterRank) {
       return false;
     }
     return true;
@@ -58,6 +68,13 @@ export default function PMReportPdfModal({
 
   const totalTablePages = itemChunks.length;
   const totalPages = totalTablePages + 1; // + 1 for Trend Graph page
+
+  // Calculate dynamic report title
+  const reportMainTitle = filterType === 'calibrate' 
+    ? `CALIBRATION ANNUAL PLAN (${selectedYear})`
+    : filterType === 'pm'
+    ? `PREVENTIVE MAINTENANCE ANNUAL PLAN (${selectedYear})`
+    : `MAINTENANCE & CALIBRATION ANNUAL PLAN (${selectedYear})`;
 
   // Calculate KPIs
   const today = new Date();
@@ -109,9 +126,7 @@ export default function PMReportPdfModal({
   const monthlyData = MONTH_NAMES.map((name, i) => {
     const monthNum = i + 1;
     const planCount = filteredItems.filter(item => isMonthRequired(item, selectedYear, monthNum)).length;
-    const actualCount = filteredItems.filter(
-      item => isMonthRequired(item, selectedYear, monthNum) && getCellStatus(item, selectedYear, monthNum) === 'done'
-    ).length;
+    const actualCount = filteredItems.filter(item => isMonthRequired(item, selectedYear, monthNum) && getCellStatus(item, selectedYear, monthNum) === 'done').length;
     const pct = planCount > 0 ? Math.round((actualCount / planCount) * 100) : 100;
 
     return {
@@ -202,7 +217,7 @@ export default function PMReportPdfModal({
             <FileText size={20} style={{ color: 'var(--accent)' }} />
             <div>
               <h3 className="modal-title" style={{ fontSize: '16px' }}>
-                Export PM Report PDF ({totalPages} Pages)
+                Export Maintenance Report PDF ({totalPages} Pages)
               </h3>
               <p style={{ fontSize: '12px', color: 'var(--text3)' }}>
                 {totalTablePages} Schedule Table Page{totalTablePages > 1 ? 's' : ''} + 1 Achievement Trend Dashboard | Dual Signatures
@@ -323,7 +338,7 @@ export default function PMReportPdfModal({
                     <div className="pdf-header-title-box">
                       <div className="pdf-company-logo">MACE</div>
                       <div>
-                        <h1 className="pdf-title">PREVENTIVE MAINTENANCE ANNUAL PLAN ({selectedYear})</h1>
+                        <h1 className="pdf-title">{reportMainTitle}</h1>
                         <p className="pdf-subtitle">MAINTENANCE & EQUIPMENT MANAGEMENT REPORT</p>
                       </div>
                     </div>
@@ -331,7 +346,7 @@ export default function PMReportPdfModal({
                       <div><strong>Doc No:</strong> {documentNo}</div>
                       <div><strong>Plant:</strong> {filterPlant === 'all' ? 'ALL PLANTS' : filterPlant.toUpperCase()}</div>
                       <div><strong>Date:</strong> {reportDate}</div>
-                      <div><strong>Total Machines:</strong> {filteredItems.length}</div>
+                      <div><strong>Total Items:</strong> {filteredItems.length}</div>
                       <div><strong>Page:</strong> {pageNum} of {totalPages}</div>
                     </div>
                   </div>
@@ -341,38 +356,48 @@ export default function PMReportPdfModal({
                     <table className="pdf-table">
                       <thead>
                         <tr>
-                          <th style={{ width: '28px' }}>#</th>
-                          <th style={{ width: '45px' }}>Plant</th>
-                          <th style={{ textAlign: 'left', minWidth: '140px' }}>Machine / Equipment</th>
-                          <th style={{ width: '75px' }}>Cycle</th>
-                          <th style={{ width: '85px' }}>Checksheet ID</th>
+                          <th style={{ width: '26px' }}>#</th>
+                          <th style={{ width: '40px' }}>Plant</th>
+                          <th style={{ width: '38px', textAlign: 'center' }}>Tag</th>
+                          <th style={{ width: '32px', textAlign: 'center' }}>Rank</th>
+                          <th style={{ textAlign: 'left', minWidth: '130px' }}>Machine / Equipment</th>
+                          <th style={{ width: '70px' }}>Cycle</th>
+                          <th style={{ width: '75px' }}>Checksheet</th>
                           {MONTH_NAMES.map(m => (
-                            <th key={m} style={{ width: '30px', textAlign: 'center' }}>{m}</th>
+                            <th key={m} style={{ width: '28px', textAlign: 'center' }}>{m}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {chunk.length === 0 ? (
                           <tr>
-                            <td colSpan={17} style={{ textAlign: 'center', padding: '20px' }}>
-                              No PM items found for the selected filter.
+                            <td colSpan={19} style={{ textAlign: 'center', padding: '20px' }}>
+                              No items found for the selected filter.
                             </td>
                           </tr>
                         ) : (
                           chunk.map((item, idx) => {
                             const globalIdx = pageIdx * ITEMS_PER_PAGE + idx + 1;
+                            const itemTypeVal = item.itemType || item.type || 'pm';
+                            const itemRankVal = item.rank || 'B';
                             return (
                               <tr key={item.id || globalIdx}>
-                                <td style={{ textAlign: 'center', fontSize: '9.5px', fontWeight: '500' }}>{globalIdx}</td>
+                                <td style={{ textAlign: 'center', fontSize: '9px', fontWeight: '500' }}>{globalIdx}</td>
                                 <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{item.plant || 'RFG'}</td>
+                                <td style={{ textAlign: 'center', fontSize: '8.5px', fontWeight: 'bold', color: itemTypeVal === 'calibrate' ? '#7e22ce' : '#0369a1' }}>
+                                  {itemTypeVal === 'calibrate' ? 'Cal' : 'PM'}
+                                </td>
+                                <td style={{ textAlign: 'center', fontSize: '9px', fontWeight: 'bold' }}>
+                                  {itemRankVal}
+                                </td>
                                 <td style={{ textAlign: 'left', fontWeight: '600' }}>
                                   <div>{item.machineName}</div>
                                   <div style={{ fontSize: '8.5px', color: '#64748b', fontWeight: 'normal' }}>
                                     {item.responsible === 'Own Team' ? 'My Team' : (item.responsible || 'My Team')}
                                   </div>
                                 </td>
-                                <td style={{ textTransform: 'capitalize', fontSize: '9.5px' }}>{item.cycle}</td>
-                                <td className="font-mono" style={{ fontSize: '9.5px' }}>{item.checksheetId || '-'}</td>
+                                <td style={{ textTransform: 'capitalize', fontSize: '9px' }}>{item.cycle}</td>
+                                <td className="font-mono" style={{ fontSize: '9px' }}>{item.checksheetId || '-'}</td>
                                 {Array.from({ length: 12 }).map((_, mIdx) => {
                                   const monthNum = mIdx + 1;
                                   const cellState = getCellStatus(item, selectedYear, monthNum);

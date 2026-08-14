@@ -43,6 +43,69 @@ import Modal from '../../components/Modal';
 import PMReportPdfModal from '../../components/PMReportPdfModal';
 import { useToast } from '../../components/Toast';
 import { formatDate, toInputDate } from '../../utils';
+import { calculateGradeAndRank } from './MachineClassify';
+
+// Normalization helper for machine names
+export function normalizeMachineName(name) {
+  if (!name) return '';
+  return name
+    .toLowerCase()
+    .replace(/[#_/\-\\()[\].:,]/g, ' ')
+    .replace(/\b(no|num|number|m\/c|mc|machine)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Fuzzy rank suggestion helper from Machine Classification
+export function findSuggestedRank(pmMachineName, classifyItems = []) {
+  if (!pmMachineName || !classifyItems.length) return null;
+  const pmClean = normalizeMachineName(pmMachineName);
+  if (!pmClean) return null;
+
+  // Tier 1: Exact / normalized match
+  for (const item of classifyItems) {
+    const mClean = normalizeMachineName(item.machine);
+    const m2Clean = normalizeMachineName(item.machine2);
+    if (pmClean === mClean || (m2Clean && pmClean === m2Clean)) {
+      const calc = calculateGradeAndRank(item.influenceRate, item.redundancy, item.quality);
+      return { rank: calc.rank, source: item.machine || item.machine2, confidence: 'exact' };
+    }
+  }
+
+  // Tier 2: Contains / Substring match
+  for (const item of classifyItems) {
+    const mClean = normalizeMachineName(item.machine);
+    const m2Clean = normalizeMachineName(item.machine2);
+    if (mClean && (pmClean.includes(mClean) || mClean.includes(pmClean))) {
+      const calc = calculateGradeAndRank(item.influenceRate, item.redundancy, item.quality);
+      return { rank: calc.rank, source: item.machine, confidence: 'high' };
+    }
+    if (m2Clean && (pmClean.includes(m2Clean) || m2Clean.includes(pmClean))) {
+      const calc = calculateGradeAndRank(item.influenceRate, item.redundancy, item.quality);
+      return { rank: calc.rank, source: item.machine2, confidence: 'high' };
+    }
+  }
+
+  // Tier 3: Token similarity (words overlap >= 50%)
+  const pmTokens = pmClean.split(' ').filter(t => t.length > 1);
+  if (pmTokens.length > 0) {
+    let bestMatch = null;
+    let maxOverlap = 0;
+    for (const item of classifyItems) {
+      const mTokens = normalizeMachineName(item.machine).split(' ').filter(t => t.length > 1);
+      const overlap = pmTokens.filter(t => mTokens.includes(t)).length;
+      const score = overlap / Math.max(pmTokens.length, mTokens.length);
+      if (score >= 0.5 && score > maxOverlap) {
+        maxOverlap = score;
+        const calc = calculateGradeAndRank(item.influenceRate, item.redundancy, item.quality);
+        bestMatch = { rank: calc.rank, source: item.machine, confidence: 'fuzzy' };
+      }
+    }
+    if (bestMatch) return bestMatch;
+  }
+
+  return null;
+}
 
 const MONTH_NAMES = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -55,10 +118,22 @@ export default function PMPlan() {
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [loadingLogs, setLoadingLogs] = useState(true);
   
+  // Machine Classification dataset for rank auto-sync & suggestions
+  const [classifyItems, setClassifyItems] = useState(() => {
+    try {
+      const cached = localStorage.getItem('mace_machine_classify_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
   // Views and filtration
   const [activeTab, setActiveTab] = useState('schedule'); // 'schedule' or 'list'
   const [selectedYear, setSelectedYear] = useState(2026);
   const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState('all'); // 'all', 'pm', 'calibrate'
+  const [filterRank, setFilterRank] = useState('all'); // 'all', 'S', 'A', 'B', 'C'
   const [filterCycle, setFilterCycle] = useState('all');
   const [filterPlant, setFilterPlant] = useState('all');
   const [filterResponsible, setFilterResponsible] = useState('all');
@@ -78,9 +153,18 @@ export default function PMPlan() {
   const [isBatchDueDateModalOpen, setIsBatchDueDateModalOpen] = useState(false);
   const [batchCycle, setBatchCycle] = useState('keep'); // 'keep' or specific cycle
   const [batchStartMonth, setBatchStartMonth] = useState(1);
+
+  // Batch Set Rank & Batch Set Tag States
+  const [isBatchRankModalOpen, setIsBatchRankModalOpen] = useState(false);
+  const [batchRankValue, setBatchRankValue] = useState('A');
+  const [isBatchRankSaving, setIsBatchRankSaving] = useState(false);
+
+  const [isBatchTypeModalOpen, setIsBatchTypeModalOpen] = useState(false);
+  const [batchTypeValue, setBatchTypeValue] = useState('pm');
+  const [isBatchTypeSaving, setIsBatchTypeSaving] = useState(false);
   
   // Sorting state
-  const [sortField, setSortField] = useState('plant'); // 'plant', 'machineName', 'cycle', 'checksheetId', 'responsible', 'lastDone', 'nextDue'
+  const [sortField, setSortField] = useState('plant'); // 'plant', 'machineName', 'itemType', 'rank', 'cycle', 'checksheetId', 'responsible', 'lastDone', 'nextDue'
   const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
 
   const handleSort = (field) => {
@@ -120,6 +204,9 @@ export default function PMPlan() {
   
   // Form states (Plans)
   const [machineName, setMachineName] = useState('');
+  const [itemType, setItemType] = useState('pm'); // 'pm' or 'calibrate'
+  const [rank, setRank] = useState('B'); // 'S', 'A', 'B', 'C'
+  const [suggestedRankInfo, setSuggestedRankInfo] = useState(null);
   const [plant, setPlant] = useState('RFG');
   const [responsible, setResponsible] = useState('My team');
   const [cycle, setCycle] = useState('monthly');
@@ -200,11 +287,29 @@ export default function PMPlan() {
       setLoadingLogs(false);
     });
 
+    const unsubscribeClassify = subscribeCollection('mace_machine_classify', (data) => {
+      if (data && data.length > 0) {
+        setClassifyItems(data);
+        localStorage.setItem('mace_machine_classify_cache', JSON.stringify(data));
+      }
+    }, () => {});
+
     return () => {
       unsubscribePlans();
       unsubscribeLogs();
+      unsubscribeClassify();
     };
   }, [showToast]);
+
+  // Live Auto Rank Suggestion when typing Machine Name in Modal
+  useEffect(() => {
+    if (isOpen && machineName.trim() && classifyItems.length > 0) {
+      const suggestion = findSuggestedRank(machineName, classifyItems);
+      setSuggestedRankInfo(suggestion);
+    } else {
+      setSuggestedRankInfo(null);
+    }
+  }, [machineName, isOpen, classifyItems]);
 
   // Helper to calculate Next Due Date reactively
   const calculateNextDueDate = (lastDone, cycleValue) => {
@@ -246,6 +351,9 @@ export default function PMPlan() {
   const handleOpenAdd = () => {
     setEditingItem(null);
     setMachineName('');
+    setItemType('pm');
+    setRank('B');
+    setSuggestedRankInfo(null);
     setPlant('RFG');
     setResponsible('My team');
     setCycle('monthly');
@@ -261,6 +369,9 @@ export default function PMPlan() {
   const handleOpenEdit = (item) => {
     setEditingItem(item);
     setMachineName(item.machineName || '');
+    setItemType(item.itemType || item.type || 'pm');
+    setRank(item.rank || 'B');
+    setSuggestedRankInfo(null);
     setPlant(item.plant || 'RFG');
     setResponsible(item.responsible === 'Own Team' ? 'My team' : (item.responsible || 'My team'));
     setCycle(item.cycle || 'monthly');
@@ -286,6 +397,8 @@ export default function PMPlan() {
 
     const payload = {
       machineName: machineName.trim(),
+      itemType: itemType || 'pm',
+      rank: rank || 'B',
       plant,
       responsible,
       cycle,
@@ -304,6 +417,51 @@ export default function PMPlan() {
       setIsOpen(false);
     } catch (error) {
       showToast('Error saving PM Schedule. Please try again.', 'error');
+    }
+  };
+
+  // Batch Save Rank Handler
+  const handleSaveBatchRank = async (e) => {
+    if (e) e.preventDefault();
+    if (selectedPlanIds.length === 0) return;
+    setIsBatchRankSaving(true);
+    try {
+      const operations = selectedPlanIds.map(id => ({
+        type: 'update',
+        collectionName: 'mace_pm_plans',
+        docId: id,
+        data: { rank: batchRankValue }
+      }));
+      await batchWriteOperations(operations);
+      showToast(`Updated Rank to "${batchRankValue}" for ${selectedPlanIds.length} items.`, 'success');
+      setIsBatchRankModalOpen(false);
+    } catch (err) {
+      showToast('Failed to update rank in batch.', 'error');
+    } finally {
+      setIsBatchRankSaving(false);
+    }
+  };
+
+  // Batch Save Tag / Type Handler
+  const handleSaveBatchType = async (e) => {
+    if (e) e.preventDefault();
+    if (selectedPlanIds.length === 0) return;
+    setIsBatchTypeSaving(true);
+    try {
+      const operations = selectedPlanIds.map(id => ({
+        type: 'update',
+        collectionName: 'mace_pm_plans',
+        docId: id,
+        data: { itemType: batchTypeValue }
+      }));
+      await batchWriteOperations(operations);
+      const label = batchTypeValue === 'calibrate' ? 'Calibrate' : 'PM';
+      showToast(`Updated Activity Type to "${label}" for ${selectedPlanIds.length} items.`, 'success');
+      setIsBatchTypeModalOpen(false);
+    } catch (err) {
+      showToast('Failed to update type in batch.', 'error');
+    } finally {
+      setIsBatchTypeSaving(false);
     }
   };
 
@@ -393,12 +551,37 @@ export default function PMPlan() {
   // Dynamic Plant options extracted from dataset
   const plantOptions = Array.from(new Set(['RFG', 'MIR', 'BOTH', ...items.map(item => item.plant).filter(Boolean)])).sort();
 
+  // Summary counts for filter badges
+  const typeStats = useMemo(() => {
+    const stats = { all: items.length, pm: 0, calibrate: 0 };
+    items.forEach(item => {
+      const t = item.itemType || item.type || 'pm';
+      if (t === 'calibrate') stats.calibrate++;
+      else stats.pm++;
+    });
+    return stats;
+  }, [items]);
+
+  const rankStats = useMemo(() => {
+    const stats = { all: items.length, S: 0, A: 0, B: 0, C: 0 };
+    items.forEach(item => {
+      const r = item.rank || 'B';
+      if (stats[r] !== undefined) stats[r]++;
+    });
+    return stats;
+  }, [items]);
+
   // Filter & Search logic
   const filteredItems = items.filter((item) => {
     const searchLower = search.toLowerCase().trim();
+    const itemTypeVal = (item.itemType || item.type || 'pm').toLowerCase();
+    const itemRankVal = (item.rank || 'B').toLowerCase();
+
     const matchesSearch = !searchLower || 
       item.machineName?.toLowerCase().includes(searchLower) || 
-      item.checksheetId?.toLowerCase().includes(searchLower);
+      item.checksheetId?.toLowerCase().includes(searchLower) ||
+      itemTypeVal.includes(searchLower) ||
+      `rank ${itemRankVal}`.includes(searchLower);
 
     const matchesPlant = filterPlant === 'all' || (item.plant || 'RFG') === filterPlant;
     
@@ -406,24 +589,34 @@ export default function PMPlan() {
     const matchesResponsible = filterResponsible === 'all' || displayResp === filterResponsible;
 
     const matchesCycle = filterCycle === 'all' || item.cycle === filterCycle;
+    const matchesType = filterType === 'all' || (item.itemType || item.type || 'pm') === filterType;
+    const matchesRank = filterRank === 'all' || (item.rank || 'B') === filterRank;
+
     const matchesMonth = filterMonth === 'all' || isMonthRequired(item, selectedYear, Number(filterMonth));
 
-    return matchesSearch && matchesPlant && matchesResponsible && matchesCycle && matchesMonth;
+    return matchesSearch && matchesPlant && matchesResponsible && matchesCycle && matchesType && matchesRank && matchesMonth;
   });
 
   const trendItems = items.filter((item) => {
     const searchLower = search.toLowerCase().trim();
+    const itemTypeVal = (item.itemType || item.type || 'pm').toLowerCase();
+    const itemRankVal = (item.rank || 'B').toLowerCase();
+
     const matchesSearch = !searchLower || 
       item.machineName?.toLowerCase().includes(searchLower) || 
-      item.checksheetId?.toLowerCase().includes(searchLower);
+      item.checksheetId?.toLowerCase().includes(searchLower) ||
+      itemTypeVal.includes(searchLower) ||
+      `rank ${itemRankVal}`.includes(searchLower);
 
     const matchesPlant = filterPlant === 'all' || (item.plant || 'RFG') === filterPlant;
     const displayResp = item.responsible === 'Own Team' ? 'My team' : (item.responsible || 'My team');
     const matchesResponsible = filterResponsible === 'all' || displayResp === filterResponsible;
 
     const matchesCycle = filterCycle === 'all' || item.cycle === filterCycle;
+    const matchesType = filterType === 'all' || (item.itemType || item.type || 'pm') === filterType;
+    const matchesRank = filterRank === 'all' || (item.rank || 'B') === filterRank;
 
-    return matchesSearch && matchesPlant && matchesResponsible && matchesCycle;
+    return matchesSearch && matchesPlant && matchesResponsible && matchesCycle && matchesType && matchesRank;
   });
 
   // Shift key range selection state
@@ -911,6 +1104,8 @@ export default function PMPlan() {
     try {
       const headers = [
         'Machine/Equipment',
+        'Activity Type',
+        'Rank',
         'Plant',
         'Responsible',
         'Cycle',
@@ -928,6 +1123,8 @@ export default function PMPlan() {
         const startM = item.cycle === 'monthly' ? '' : (item.startMonth ? Number(item.startMonth) : (item.lastDoneDate ? (new Date(item.lastDoneDate).getMonth() + 1) : 1));
         
         const machineEscaped = `"${(item.machineName || '').replace(/"/g, '""')}"`;
+        const typeEscaped = `"${(item.itemType || item.type || 'pm').toUpperCase()}"`;
+        const rankEscaped = `"${item.rank || 'B'}"`;
         const plantEscaped = `"${(item.plant || 'RFG').replace(/"/g, '""')}"`;
         const responsibleEscaped = `"${(item.responsible === 'Own Team' ? 'My team' : (item.responsible || 'My team')).replace(/"/g, '""')}"`;
         const cycleEscaped = `"${(item.cycle || 'monthly').replace(/"/g, '""')}"`;
@@ -945,6 +1142,8 @@ export default function PMPlan() {
           for (const log of sortedLogs) {
             rows.push([
               machineEscaped,
+              typeEscaped,
+              rankEscaped,
               plantEscaped,
               responsibleEscaped,
               cycleEscaped,
@@ -959,6 +1158,8 @@ export default function PMPlan() {
         } else {
           rows.push([
             machineEscaped,
+            typeEscaped,
+            rankEscaped,
             plantEscaped,
             responsibleEscaped,
             cycleEscaped,
@@ -993,6 +1194,10 @@ export default function PMPlan() {
     if (lines.length < 2) return { plans: [], logs: [] };
     const plansMap = {};
     const parsedLogs = [];
+
+    const headerCols = lines[0].split(',').map(h => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
+    const hasTypeCol = headerCols.some(h => h.includes('type') || h.includes('tag'));
+    const hasRankCol = headerCols.some(h => h.includes('rank'));
 
     const parseImportDate = (dateStr, yearHint, monthHint) => {
       if (!dateStr) return '';
@@ -1096,11 +1301,45 @@ export default function PMPlan() {
       const machineName = cols[0]?.replace(/^["']|["']$/g, '') || '';
       if (!machineName) continue;
 
-      const plant = cols[1]?.replace(/^["']|["']$/g, '') || 'RFG';
-      const responsible = cols[2]?.replace(/^["']|["']$/g, '') || 'My team';
-      const cycle = cols[3]?.replace(/^["']|["']$/g, '').toLowerCase() || 'monthly';
-      const startMonthValue = cols[4]?.replace(/^["']|["']$/g, '') || '';
-      const checksheetId = cols[5]?.replace(/^["']|["']$/g, '') || '';
+      let itemType = 'pm';
+      let rank = 'B';
+      let plant = 'RFG';
+      let responsible = 'My team';
+      let cycle = 'monthly';
+      let startMonthValue = '';
+      let checksheetId = '';
+      let scheduledYearStr = '';
+      let scheduledMonthStr = '';
+      let actualDoneDate = '';
+      let note = '';
+
+      if (hasTypeCol && hasRankCol) {
+        // Modern 12-column format
+        const rawType = cols[1]?.replace(/^["']|["']$/g, '').toLowerCase() || 'pm';
+        itemType = rawType.includes('cal') ? 'calibrate' : 'pm';
+        const rawRank = cols[2]?.replace(/^["']|["']$/g, '').toUpperCase() || 'B';
+        rank = ['S', 'A', 'B', 'C'].includes(rawRank) ? rawRank : 'B';
+        plant = cols[3]?.replace(/^["']|["']$/g, '') || 'RFG';
+        responsible = cols[4]?.replace(/^["']|["']$/g, '') || 'My team';
+        cycle = cols[5]?.replace(/^["']|["']$/g, '').toLowerCase() || 'monthly';
+        startMonthValue = cols[6]?.replace(/^["']|["']$/g, '') || '';
+        checksheetId = cols[7]?.replace(/^["']|["']$/g, '') || '';
+        scheduledYearStr = cols[8]?.replace(/^["']|["']$/g, '').trim();
+        scheduledMonthStr = cols[9]?.replace(/^["']|["']$/g, '').trim();
+        actualDoneDate = cols[10]?.replace(/^["']|["']$/g, '').trim();
+        note = cols[11]?.replace(/^["']|["']$/g, '').trim();
+      } else {
+        // Legacy 10-column format
+        plant = cols[1]?.replace(/^["']|["']$/g, '') || 'RFG';
+        responsible = cols[2]?.replace(/^["']|["']$/g, '') || 'My team';
+        cycle = cols[3]?.replace(/^["']|["']$/g, '').toLowerCase() || 'monthly';
+        startMonthValue = cols[4]?.replace(/^["']|["']$/g, '') || '';
+        checksheetId = cols[5]?.replace(/^["']|["']$/g, '') || '';
+        scheduledYearStr = cols[6]?.replace(/^["']|["']$/g, '').trim();
+        scheduledMonthStr = cols[7]?.replace(/^["']|["']$/g, '').trim();
+        actualDoneDate = cols[8]?.replace(/^["']|["']$/g, '').trim();
+        note = cols[9]?.replace(/^["']|["']$/g, '').trim();
+      }
 
       let startMonthNum = 1;
       if (startMonthValue) {
@@ -1119,6 +1358,8 @@ export default function PMPlan() {
         plansMap[key] = {
           id: 'temp_plan_' + Math.random().toString(36).substring(2, 11),
           machineName,
+          itemType,
+          rank,
           plant,
           responsible: responsible === 'Own Team' ? 'My team' : responsible,
           cycle,
@@ -1573,6 +1814,61 @@ export default function PMPlan() {
           to { box-shadow: inset 0 0 10px rgba(220, 38, 38, 0.15); }
         }
 
+        /* Type & Rank Badges */
+        .pm-type-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          padding: 1px 6px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.3px;
+          text-transform: uppercase;
+        }
+        .pm-type-badge.type-pm {
+          background-color: #eff6ff;
+          color: #1d4ed8;
+          border: 1px solid #bfdbfe;
+        }
+        .pm-type-badge.type-calibrate {
+          background-color: #f3e8ff;
+          color: #7e22ce;
+          border: 1px solid #e9d5ff;
+        }
+        
+        .pm-rank-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1px 6px;
+          border-radius: 4px;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.2px;
+          font-family: var(--font-mono);
+        }
+        .pm-rank-badge.rank-S {
+          background-color: #ffe4e6;
+          color: #be123c;
+          border: 1px solid #fecdd3;
+        }
+        .pm-rank-badge.rank-A {
+          background-color: #fef3c7;
+          color: #b45309;
+          border: 1px solid #fde68a;
+        }
+        .pm-rank-badge.rank-B {
+          background-color: #e0f2fe;
+          color: #0369a1;
+          border: 1px solid #bae6fd;
+        }
+        .pm-rank-badge.rank-C {
+          background-color: #f1f5f9;
+          color: #475569;
+          border: 1px solid #cbd5e1;
+        }
+
         /* Legend details */
         .schedule-legend {
           display: flex;
@@ -1700,7 +1996,7 @@ export default function PMPlan() {
             <Search size={14} style={{ position: 'absolute', left: '10px', top: '9px', color: 'var(--text3)' }} />
             <input 
               type="text" 
-              placeholder="Search machine or checksheet ID..." 
+              placeholder="Search machine, type, rank, or checksheet ID..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="form-input"
@@ -1739,7 +2035,7 @@ export default function PMPlan() {
             )}
 
             {/* Reset Filters */}
-            {(search || filterPlant !== 'all' || filterResponsible !== 'all' || filterCycle !== 'all' || filterMonth !== 'all') && (
+            {(search || filterPlant !== 'all' || filterResponsible !== 'all' || filterCycle !== 'all' || filterType !== 'all' || filterRank !== 'all' || filterMonth !== 'all') && (
               <button 
                 className="btn btn-sm"
                 onClick={() => {
@@ -1747,6 +2043,8 @@ export default function PMPlan() {
                   setFilterPlant('all');
                   setFilterResponsible('all');
                   setFilterCycle('all');
+                  setFilterType('all');
+                  setFilterRank('all');
                   setFilterMonth('all');
                 }}
                 style={{ fontSize: '11px', padding: '4px 10px', height: '26px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text2)' }}
@@ -1761,7 +2059,70 @@ export default function PMPlan() {
         {/* Divider */}
         <div style={{ height: '1px', backgroundColor: 'var(--border)', width: '100%' }} />
 
-        {/* Row 2: Category Filters (Plant, Team, Cycle) */}
+        {/* Row 2: Tag / Activity Type & Machine Rank Filters */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'center' }}>
+          {/* Tag / Activity Type Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="filter-label" style={{ minWidth: 'auto', fontSize: '11px', fontWeight: 'bold' }}>Activity Tag</span>
+            <div className="filter-chips" style={{ gap: '4px' }}>
+              {[
+                { value: 'all', label: `All Tags (${typeStats.all})` },
+                { value: 'pm', label: `🔧 PM (${typeStats.pm})` },
+                { value: 'calibrate', label: `⚖️ Calibrate (${typeStats.calibrate})` }
+              ].map((chip) => (
+                <button
+                  key={chip.value}
+                  className={`filter-chip ${filterType === chip.value ? 'active' : ''}`}
+                  onClick={() => setFilterType(chip.value)}
+                  style={{
+                    padding: '3px 10px',
+                    fontSize: '11px',
+                    borderRadius: '12px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontWeight: filterType === chip.value ? '700' : '500'
+                  }}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Machine Rank Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="filter-label" style={{ minWidth: 'auto', fontSize: '11px', fontWeight: 'bold' }}>Rank</span>
+            <div className="filter-chips" style={{ gap: '4px' }}>
+              {[
+                { value: 'all', label: `All Ranks` },
+                { value: 'S', label: `Rank S (${rankStats.S})`, color: '#be123c' },
+                { value: 'A', label: `Rank A (${rankStats.A})`, color: '#b45309' },
+                { value: 'B', label: `Rank B (${rankStats.B})`, color: '#0369a1' },
+                { value: 'C', label: `Rank C (${rankStats.C})`, color: '#475569' }
+              ].map((chip) => (
+                <button
+                  key={chip.value}
+                  className={`filter-chip ${filterRank === chip.value ? 'active' : ''}`}
+                  onClick={() => setFilterRank(chip.value)}
+                  style={{
+                    padding: '3px 10px',
+                    fontSize: '11px',
+                    borderRadius: '12px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontWeight: filterRank === chip.value ? '700' : '500'
+                  }}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Row 3: Category Filters (Plant, Team, Cycle) */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'center' }}>
           {/* Plant Filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1825,7 +2186,7 @@ export default function PMPlan() {
           </div>
         </div>
 
-        {/* Row 3: Month Filter Chips */}
+        {/* Row 4: Month Filter Chips */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '6px', borderTop: '1px dashed var(--border)' }}>
           <span className="filter-label" style={{ minWidth: 'auto', fontSize: '11px' }}>Month</span>
           <div className="filter-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
@@ -1866,7 +2227,9 @@ export default function PMPlan() {
             borderRadius: '8px',
             marginBottom: '16px',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-            animation: 'fadeIn 0.2s ease-in-out'
+            animation: 'fadeIn 0.2s ease-in-out',
+            flexWrap: 'wrap',
+            gap: '10px'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1883,16 +2246,34 @@ export default function PMPlan() {
               {selectedPlanIds.length} Selected
             </div>
             <span style={{ fontSize: '13px', color: 'var(--text)', fontWeight: '500' }}>
-              Batch process completion dates for selected PM machines
+              Batch process PM / Calibration items
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button 
               className="btn btn-sm" 
               onClick={() => setSelectedPlanIds([])}
               style={{ fontSize: '12px' }}
             >
               Deselect All
+            </button>
+            <button 
+              className="btn btn-sm" 
+              onClick={() => setIsBatchTypeModalOpen(true)}
+              id="open-batch-type-btn"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 'bold', background: '#f3e8ff', color: '#7e22ce', borderColor: '#d8b4fe' }}
+              title="Change Tag / Activity Type for selected items"
+            >
+              <span>🏷️ Set Tag</span>
+            </button>
+            <button 
+              className="btn btn-sm" 
+              onClick={() => setIsBatchRankModalOpen(true)}
+              id="open-batch-rank-btn"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 'bold', background: '#fef3c7', color: '#b45309', borderColor: '#fde68a' }}
+              title="Change Rank (S/A/B/C) for selected items"
+            >
+              <span>🏅 Set Rank</span>
             </button>
             <button 
               className="btn btn-primary btn-sm" 
@@ -2022,10 +2403,18 @@ export default function PMPlan() {
                         onClick={() => handleOpenEdit(item)}
                         title="Click to edit schedule"
                       >
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontWeight: '600', color: 'var(--accent)', textDecoration: 'underline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {item.machineName}
-                          </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'nowrap' }}>
+                            <span className={`pm-type-badge type-${item.itemType || item.type || 'pm'}`}>
+                              {(item.itemType || item.type || 'pm') === 'calibrate' ? '⚖️ Cal' : '🔧 PM'}
+                            </span>
+                            <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
+                              {item.rank || 'B'}
+                            </span>
+                            <span style={{ fontWeight: '600', color: 'var(--accent)', textDecoration: 'underline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {item.machineName}
+                            </span>
+                          </div>
                           <span style={{ fontSize: '10px', color: 'var(--text3)', fontWeight: 'normal', textTransform: 'uppercase' }}>
                             {displayResponsible}
                           </span>
@@ -2078,10 +2467,10 @@ export default function PMPlan() {
                             onClick={() => handleCellClick(item, selectedYear, mIndex, cellState)}
                             title={
                               cellState === 'faded' ? 'No inspection required' :
-                              cellState === 'done' ? 'Completed (Click to view log)' :
-                              cellState === 'overdue' ? 'ELAPSED & UNCOMPLETED (Click to log completion!)' :
-                              'Inspect Pending (Click to log completion)'
+                              cellState === 'pending' ? 'Scheduled (Click to log completion)' :
+                              cellState === 'done' ? 'Completed (Click to edit log)' : 'Overdue! Click to log completion'
                             }
+                            style={{ textAlign: 'center', cursor: cellState !== 'faded' ? 'pointer' : 'default' }}
                           >
                             <span style={{ fontWeight: 'bold' }}>{cellContent}</span>
                           </td>
@@ -2097,112 +2486,104 @@ export default function PMPlan() {
           <div className="schedule-legend">
             <div className="legend-item">
               <span className="legend-block pfaded"></span>
-              <span>Not Required</span>
+              <span>No Inspection (Faded)</span>
             </div>
             <div className="legend-item">
               <span className="legend-block ppending"></span>
-              <span>Pending PM</span>
+              <span>Pending / Scheduled (Blue)</span>
             </div>
             <div className="legend-item">
               <span className="legend-block pdone"></span>
-              <span>Completed / Logged (e.g. 14)</span>
+              <span>Completed / Done (Green with Day Number)</span>
             </div>
             <div className="legend-item">
               <span className="legend-block poverdue"></span>
-              <span>Overdue / Elapsed (!)</span>
+              <span>Overdue Past Due (Red with !)</span>
             </div>
           </div>
         </div>
       ) : activeTab === 'trend' ? (
-        /* --- VIEW 3: TREND VIEW (PLAN VS ACTUAL) --- */
-        <div className="card" id="trend-view-layout" style={{ padding: '20px', marginBottom: '20px' }}>
-          {/* Header & KPIs */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+        /* --- VIEW 3: TREND & ACHIEVEMENT VIEW --- */
+        <div className="card" id="trend-view-layout" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
             <div>
-              <h3 style={{ fontSize: '16px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <TrendingUp size={18} style={{ color: 'var(--accent)' }} />
-                <span>PM Plan Achievement Trend ({selectedYear})</span>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text)', margin: 0 }}>
+                Preventive Maintenance Trend &amp; Monthly Achievement ({selectedYear})
               </h3>
-              <p style={{ fontSize: '12px', color: 'var(--text3)' }}>
-                Comparing annual scheduled preventative maintenance tasks versus logged executions.
+              <p style={{ fontSize: '12px', color: 'var(--text3)', margin: '4px 0 0 0' }}>
+                Compare monthly planned PM inspections against completed inspections to measure schedule compliance.
               </p>
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {[2025, 2026, 2027, 2028].map((yr) => (
+                <button
+                  key={yr}
+                  className={`year-selector-btn ${selectedYear === yr ? 'active' : ''}`}
+                  onClick={() => setSelectedYear(yr)}
+                  style={{ padding: '3px 10px', fontSize: '12px', height: '28px', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
+                >
+                  {yr}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Quick KPI stats row */}
-          {(() => {
-            const today = new Date();
-            const currentYearVal = today.getFullYear();
-            const currentMonthVal = today.getMonth() + 1; // 7 for July
-            
-            let maxMonth = 12;
-            if (selectedYear === currentYearVal) {
-              maxMonth = currentMonthVal;
-            } else if (selectedYear > currentYearVal) {
-              maxMonth = 0;
-            }
-
-            const totalAnnualTarget = trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => isMonthRequired(item, selectedYear, mIdx + 1)).length, 0);
-            
-            const totalPlanYTD = trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => {
-              const mNum = mIdx + 1;
-              return mNum <= maxMonth && isMonthRequired(item, selectedYear, mNum);
-            }).length, 0);
-
-            const totalCompletedYTD = trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => {
-              const mNum = mIdx + 1;
-              return mNum <= maxMonth && isMonthRequired(item, selectedYear, mNum) && getCellStatus(item, selectedYear, mNum) === 'done';
-            }).length, 0);
-
-            const achievementRate = totalPlanYTD > 0 ? Math.round((totalCompletedYTD / totalPlanYTD) * 100) : 100;
-            
-            const totalOverdue = trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => isMonthRequired(item, selectedYear, mIdx + 1) && getCellStatus(item, selectedYear, mIdx + 1) === 'overdue').length, 0);
-
-            return (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '24px' }}>
-                <div className="card" style={{ padding: '12px', background: 'var(--surface2)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text3)', fontWeight: '600' }}>Annual Target</span>
-                  <strong style={{ fontSize: '20px', color: 'var(--text)' }}>
-                    {totalAnnualTarget} <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text2)' }}>PMs</span>
-                  </strong>
-                </div>
-                <div className="card" style={{ padding: '12px', background: 'var(--surface2)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text3)', fontWeight: '600' }}>Completed YTD</span>
-                  <strong style={{ fontSize: '20px', color: '#10b981' }}>
-                    {totalCompletedYTD} <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text2)' }}>PMs</span>
-                  </strong>
-                </div>
-                <div className="card" style={{ padding: '12px', background: 'var(--surface2)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text3)', fontWeight: '600' }}>Achievement Rate</span>
-                  <strong style={{ fontSize: '20px', color: 'var(--accent)' }}>
-                    {achievementRate}%
-                  </strong>
-                </div>
-                <div className="card" style={{ padding: '12px', background: 'var(--surface2)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text3)', fontWeight: '600' }}>Overdue</span>
-                  <strong style={{ fontSize: '20px', color: '#ef4444' }}>
-                    {totalOverdue} <span style={{ fontSize: '11px', fontWeight: 'normal', color: 'var(--text2)' }}>PMs</span>
-                  </strong>
-                </div>
+          {/* KPI Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            <div className="card" style={{ padding: '14px 18px', background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+              <span style={{ fontSize: '11.5px', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: '600' }}>Annual Target Inspections</span>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text)', marginTop: '4px' }}>
+                {trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => isMonthRequired(item, selectedYear, mIdx + 1)).length, 0)}
               </div>
-            );
-          })()}
+              <span style={{ fontSize: '11px', color: 'var(--text3)' }}>Total required inspections for {selectedYear}</span>
+            </div>
 
-          {/* Recharts Trend Graph */}
-          <div style={{ width: '100%', height: '320px', background: 'var(--surface)', padding: '10px', border: '1px solid var(--border)', borderRadius: '8px' }}>
+            <div className="card" style={{ padding: '14px 18px', background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+              <span style={{ fontSize: '11.5px', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: '600' }}>YTD Planned</span>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--accent)', marginTop: '4px' }}>
+                {trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => (mIdx + 1) <= (selectedYear === 2026 ? 5 : 12) && isMonthRequired(item, selectedYear, mIdx + 1)).length, 0)}
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text3)' }}>Year-To-Date Target</span>
+            </div>
+
+            <div className="card" style={{ padding: '14px 18px', background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+              <span style={{ fontSize: '11.5px', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: '600' }}>YTD Completed</span>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981', marginTop: '4px' }}>
+                {trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => (mIdx + 1) <= (selectedYear === 2026 ? 5 : 12) && isMonthRequired(item, selectedYear, mIdx + 1) && getCellStatus(item, selectedYear, mIdx + 1) === 'done').length, 0)}
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text3)' }}>Completed &amp; logged</span>
+            </div>
+
+            <div className="card" style={{ padding: '14px 18px', background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+              <span style={{ fontSize: '11.5px', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: '600' }}>Schedule Compliance %</span>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981', marginTop: '4px' }}>
+                {(() => {
+                  const maxM = selectedYear === 2026 ? 5 : 12;
+                  const p = trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => (mIdx + 1) <= maxM && isMonthRequired(item, selectedYear, mIdx + 1)).length, 0);
+                  const c = trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => (mIdx + 1) <= maxM && isMonthRequired(item, selectedYear, mIdx + 1) && getCellStatus(item, selectedYear, mIdx + 1) === 'done').length, 0);
+                  return p > 0 ? `${Math.round((c / p) * 100)}%` : '100%';
+                })()}
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text3)' }}>Overall Achievement rate</span>
+            </div>
+          </div>
+
+          {/* Recharts Bar Chart */}
+          <div style={{ width: '100%', height: '320px', minHeight: '320px' }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={MONTH_NAMES.map((name, i) => {
-                  const monthNum = i + 1;
-                  const planCount = trendItems.filter(item => isMonthRequired(item, selectedYear, monthNum)).length;
-                  const actualCount = trendItems.filter(item => isMonthRequired(item, selectedYear, monthNum) && getCellStatus(item, selectedYear, monthNum) === 'done').length;
+                  const planCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1)).length;
+                  const actualCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1) && getCellStatus(item, selectedYear, i + 1) === 'done').length;
+                  const pct = planCount > 0 ? Math.round((actualCount / planCount) * 100) : 100;
                   return {
-                    name: name,
+                    name,
                     Plan: planCount,
-                    Actual: actualCount
+                    Actual: actualCount,
+                    AchievementPct: pct
                   };
                 })}
-                margin={{ top: 20, right: 10, left: -20, bottom: 5 }}
+                margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--text2)' }} />
@@ -2248,79 +2629,6 @@ export default function PMPlan() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-
-          {/* Table below chart */}
-          <div className="table-container" style={{ marginTop: '24px', overflowX: 'auto', border: '1px solid var(--border)', borderRadius: '6px' }}>
-            <table className="data-table font-mono" style={{ fontSize: '12px', minWidth: '720px', width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ textTransform: 'uppercase', color: 'var(--text2)', fontWeight: 'bold', padding: '8px 12px', textAlign: 'left' }}>Job Metric</th>
-                  {MONTH_NAMES.map(name => (
-                    <th key={name} style={{ textAlign: 'center', fontWeight: 'bold', padding: '8px 4px' }}>{name}</th>
-                  ))}
-                  <th style={{ textAlign: 'center', fontWeight: 'bold', padding: '8px 12px', background: 'var(--surface3)' }}>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ fontWeight: '600', color: 'var(--text2)', padding: '8px 12px', textAlign: 'left' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ display: 'inline-block', width: '10px', height: '10px', backgroundColor: '#B4CDE6', borderRadius: '2px' }}></span>
-                      Planned (Plan)
-                    </div>
-                  </td>
-                  {MONTH_NAMES.map((_, i) => {
-                    const planCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1)).length;
-                    return <td key={i} style={{ textAlign: 'center', padding: '8px 4px' }}>{planCount}</td>;
-                  })}
-                  <td style={{ textAlign: 'center', fontWeight: 'bold', padding: '8px 12px', background: 'var(--surface3)' }}>
-                    {trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => isMonthRequired(item, selectedYear, mIdx + 1)).length, 0)}
-                  </td>
-                </tr>
-                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ fontWeight: '600', color: 'var(--text2)', padding: '8px 12px', textAlign: 'left' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ display: 'inline-block', width: '10px', height: '10px', backgroundColor: '#C2E2C5', borderRadius: '2px' }}></span>
-                      Actual (Actual)
-                    </div>
-                  </td>
-                  {MONTH_NAMES.map((_, i) => {
-                    const actualCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1) && getCellStatus(item, selectedYear, i + 1) === 'done').length;
-                    return <td key={i} style={{ textAlign: 'center', padding: '8px 4px', color: actualCount > 0 ? '#10b981' : 'inherit' }}>{actualCount}</td>;
-                  })}
-                  <td style={{ textAlign: 'center', fontWeight: 'bold', padding: '8px 12px', background: 'var(--surface3)', color: '#10b981' }}>
-                    {trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => isMonthRequired(item, selectedYear, mIdx + 1) && getCellStatus(item, selectedYear, mIdx + 1) === 'done').length, 0)}
-                  </td>
-                </tr>
-                <tr>
-                  <td style={{ fontWeight: '600', color: 'var(--text2)', padding: '8px 12px', textAlign: 'left' }}>Achievement %</td>
-                  {MONTH_NAMES.map((_, i) => {
-                    const planCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1)).length;
-                    const actualCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1) && getCellStatus(item, selectedYear, i + 1) === 'done').length;
-                    const pct = planCount > 0 ? Math.round((actualCount / planCount) * 100) : 100;
-                    let color = 'inherit';
-                    if (planCount > 0) {
-                      if (pct >= 100) color = '#10b981';
-                      else if (pct > 0) color = '#f59e0b';
-                      else color = 'var(--text3)';
-                    }
-                    return (
-                      <td key={i} style={{ textAlign: 'center', fontWeight: '600', padding: '8px 4px', color }}>
-                        {planCount > 0 ? `${pct}%` : '-'}
-                      </td>
-                    );
-                  })}
-                  <td style={{ textAlign: 'center', fontWeight: 'bold', padding: '8px 12px', background: 'var(--surface3)', color: '#10b981' }}>
-                    {(() => {
-                      const p = trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => isMonthRequired(item, selectedYear, mIdx + 1)).length, 0);
-                      const c = trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => isMonthRequired(item, selectedYear, mIdx + 1) && getCellStatus(item, selectedYear, mIdx + 1) === 'done').length, 0);
-                      return p > 0 ? `${Math.round((c / p) * 100)}%` : '100%';
-                    })()}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
         </div>
       ) : (
         /* --- VIEW 2: LIST VIEW (ORIGINAL CRUD MANAGER) --- */
@@ -2339,8 +2647,10 @@ export default function PMPlan() {
                       title="Select / Deselect all visible items"
                     />
                   </th>
-                  <th style={{ width: '50px' }}>No.</th>
-                  {renderSortableHeader('plant', 'Plant', { width: '100px' })}
+                  <th style={{ width: '45px' }}>No.</th>
+                  {renderSortableHeader('plant', 'Plant', { width: '80px' })}
+                  {renderSortableHeader('itemType', 'Tag', { width: '85px', textAlign: 'center' })}
+                  {renderSortableHeader('rank', 'Rank', { width: '75px', textAlign: 'center' })}
                   {renderSortableHeader('machineName', 'Machine / Equipment')}
                   {renderSortableHeader('checksheetId', 'Checksheet ID')}
                   {renderSortableHeader('responsible', 'Responsible')}
@@ -2384,6 +2694,16 @@ export default function PMPlan() {
                         title="Click to select item"
                       >
                         <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`}>{item.plant || 'RFG'}</span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`pm-type-badge type-${item.itemType || item.type || 'pm'}`}>
+                          {(item.itemType || item.type || 'pm') === 'calibrate' ? '⚖️ Cal' : '🔧 PM'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
+                          Rank {item.rank || 'B'}
+                        </span>
                       </td>
                       <td 
                         style={{ fontWeight: '600', color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}
@@ -2450,9 +2770,15 @@ export default function PMPlan() {
                 <div key={item.id} className={`mobile-table-card ${overdue ? 'overdue-row' : ''}`} id={`pm-card-${item.id}`}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         <span className="font-mono text3 text-xs">#{String(index + 1).padStart(2, '0')}</span>
                         <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`}>{item.plant || 'RFG'}</span>
+                        <span className={`pm-type-badge type-${item.itemType || item.type || 'pm'}`}>
+                          {(item.itemType || item.type || 'pm') === 'calibrate' ? '⚖️ Cal' : '🔧 PM'}
+                        </span>
+                        <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
+                          Rank {item.rank || 'B'}
+                        </span>
                       </div>
                       <h4 
                         style={{ fontSize: '14px', fontWeight: '600', marginTop: '4px', color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}
@@ -2510,7 +2836,7 @@ export default function PMPlan() {
       <Modal 
         isOpen={isOpen} 
         onClose={() => setIsOpen(false)} 
-        title={editingItem ? 'Edit PM Schedule' : 'New PM Schedule'}
+        title={editingItem ? 'Edit Maintenance Schedule' : 'New Maintenance Schedule'}
         footerActions={
           <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
             {editingItem ? (
@@ -2542,6 +2868,87 @@ export default function PMPlan() {
             </div>
           )}
 
+          {/* Activity Tag (PM vs Calibrate) */}
+          <div className="form-group form-full">
+            <label className="form-label" style={{ fontWeight: 'bold' }}>Activity Tag / Type *</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <button
+                type="button"
+                className={`btn ${itemType === 'pm' ? 'btn-primary' : ''}`}
+                onClick={() => setItemType('pm')}
+                style={{
+                  justifyContent: 'center',
+                  padding: '8px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  border: itemType === 'pm' ? '2px solid var(--accent)' : '1px solid var(--border)',
+                  backgroundColor: itemType === 'pm' ? 'var(--accent)' : 'var(--surface2)',
+                  color: itemType === 'pm' ? '#ffffff' : 'var(--text)'
+                }}
+              >
+                <span>🔧 Preventive Maintenance (PM)</span>
+              </button>
+              <button
+                type="button"
+                className={`btn ${itemType === 'calibrate' ? 'btn-primary' : ''}`}
+                onClick={() => setItemType('calibrate')}
+                style={{
+                  justifyContent: 'center',
+                  padding: '8px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  border: itemType === 'calibrate' ? '2px solid #7e22ce' : '1px solid var(--border)',
+                  backgroundColor: itemType === 'calibrate' ? '#7e22ce' : 'var(--surface2)',
+                  color: itemType === 'calibrate' ? '#ffffff' : 'var(--text)'
+                }}
+              >
+                <span>⚖️ Calibration (Calibrate)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Machine Rank Selector */}
+          <div className="form-group form-full">
+            <label className="form-label" style={{ fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Machine / Task Rank *</span>
+              <span style={{ fontSize: '11px', color: 'var(--text3)', fontWeight: 'normal' }}>
+                Aligned with Machine Classification
+              </span>
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+              {[
+                { r: 'S', label: 'Rank S', sub: 'Critical', bg: '#ffe4e6', text: '#be123c', border: '#fecdd3' },
+                { r: 'A', label: 'Rank A', sub: 'High', bg: '#fef3c7', text: '#b45309', border: '#fde68a' },
+                { r: 'B', label: 'Rank B', sub: 'Medium', bg: '#e0f2fe', text: '#0369a1', border: '#bae6fd' },
+                { r: 'C', label: 'Rank C', sub: 'Low', bg: '#f1f5f9', text: '#475569', border: '#cbd5e1' }
+              ].map(opt => {
+                const isSelected = rank === opt.r;
+                return (
+                  <button
+                    key={opt.r}
+                    type="button"
+                    onClick={() => setRank(opt.r)}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      padding: '6px 4px',
+                      borderRadius: '6px',
+                      border: isSelected ? `2px solid ${opt.text}` : '1px solid var(--border)',
+                      backgroundColor: isSelected ? opt.bg : 'var(--surface2)',
+                      color: isSelected ? opt.text : 'var(--text)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span style={{ fontWeight: '800', fontSize: '13px' }}>{opt.label}</span>
+                    <span style={{ fontSize: '10px', opacity: 0.85 }}>{opt.sub}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="form-group form-full">
             <label className="form-label">Machine Name / Equipment *</label>
             <input 
@@ -2550,9 +2957,57 @@ export default function PMPlan() {
               placeholder="e.g. MIR Glass Cutter Line 2" 
               value={machineName}
               onChange={(e) => setMachineName(e.target.value)}
+              list="machine-classify-datalist"
               required
               id="form-machineName"
             />
+            <datalist id="machine-classify-datalist">
+              {classifyItems.map(cItem => {
+                const calc = calculateGradeAndRank(cItem.influenceRate, cItem.redundancy, cItem.quality);
+                return (
+                  <option key={cItem.id} value={cItem.machine}>
+                    {cItem.machine} (Rank {calc.rank}) - {cItem.department || ''}
+                  </option>
+                );
+              })}
+            </datalist>
+
+            {/* Smart Suggested Rank Pill */}
+            {suggestedRankInfo && (
+              <div 
+                style={{ 
+                  marginTop: '8px', 
+                  padding: '8px 12px', 
+                  backgroundColor: 'rgba(59, 130, 246, 0.08)', 
+                  border: '1px dashed var(--accent)', 
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  fontSize: '12px'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>💡</span>
+                  <span>
+                    Detected from Machine Classify: <strong>"{suggestedRankInfo.source}"</strong> &rarr; <span className={`pm-rank-badge rank-${suggestedRankInfo.rank}`}>Rank {suggestedRankInfo.rank}</span>
+                  </span>
+                </div>
+                {rank !== suggestedRankInfo.rank ? (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-primary"
+                    onClick={() => setRank(suggestedRankInfo.rank)}
+                    style={{ fontSize: '11px', padding: '2px 8px', height: '22px' }}
+                  >
+                    Apply Rank {suggestedRankInfo.rank}
+                  </button>
+                ) : (
+                  <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 'bold' }}>✓ Matched</span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -2648,18 +3103,25 @@ export default function PMPlan() {
                   className={`btn ${showDeleteLogConfirm ? 'btn-danger bg-red-600 animate-pulse' : 'btn-danger'}`} 
                   onClick={handleDeleteLog} 
                   id="delete-log-btn"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  title="Delete this completion record"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                 >
-                  {showDeleteLogConfirm ? '⚠️ Confirm Delete Log' : 'Delete Log'}
+                  <Trash2 size={14} />
+                  <span>{showDeleteLogConfirm ? 'Click to Confirm Delete' : 'Delete Log'}</span>
                 </button>
               )}
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="btn" onClick={() => {
-                setIsLogModalOpen(false);
-                setShowDeleteLogConfirm(false);
-              }}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSaveLog} id="submit-log-btn">
+              <button 
+                className="btn" 
+                onClick={() => {
+                  setIsLogModalOpen(false);
+                  setShowDeleteLogConfirm(false);
+                }}
+              >
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleSaveLog} id="save-log-btn">
                 {existingLog ? 'Update Log' : 'Save Log'}
               </button>
             </div>
@@ -2667,41 +3129,42 @@ export default function PMPlan() {
         }
       >
         <form onSubmit={handleSaveLog} className="form-grid">
-          <div className="form-full" style={{ padding: '10px', background: 'var(--surface2)', borderRadius: '6px', fontSize: '12.5px', border: '1px solid var(--border)' }}>
-            <div style={{ fontWeight: 'bold', color: 'var(--text)' }}>
-              {selectedCellItem?.machineName}
+          {selectedCellItem && (
+            <div className="form-full" style={{ padding: '10px 14px', background: 'var(--surface2)', borderRadius: '6px', fontSize: '13px', border: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: '600', color: 'var(--accent)' }}>{selectedCellItem.machineName}</span>
+                <span className={`plant-badge ${(selectedCellItem.plant || 'RFG').toLowerCase()}`}>{selectedCellItem.plant || 'RFG'}</span>
+              </div>
+              <div style={{ display: 'flex', gap: '16px', marginTop: '6px', fontSize: '11.5px', color: 'var(--text3)' }}>
+                <span>Cycle: <strong style={{ textTransform: 'capitalize', color: 'var(--text)' }}>{selectedCellItem.cycle}</strong></span>
+                <span>Period: <strong style={{ color: 'var(--text)' }}>{MONTH_NAMES[selectedCellMonth - 1]} {selectedCellYear}</strong></span>
+              </div>
             </div>
-            <div style={{ color: 'var(--text2)', marginTop: '4px' }}>
-              Cycle: <strong style={{ textTransform: 'capitalize' }}>{selectedCellItem?.cycle}</strong> | Plant: <strong>{selectedCellItem?.plant}</strong>
-            </div>
-            <div style={{ color: 'var(--text2)', marginTop: '2px' }}>
-              Period: <strong>{MONTH_NAMES[selectedCellMonth - 1]} {selectedCellYear}</strong>
-            </div>
-          </div>
+          )}
 
           <div className="form-group form-full">
-            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
-              <span>Actual Done Day (1-{selectedCellYear && selectedCellMonth ? new Date(selectedCellYear, selectedCellMonth, 0).getDate() : 31}) *</span>
+            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Actual Completion Day (1-{new Date(selectedCellYear, selectedCellMonth, 0).getDate()}) *</span>
               <span style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '600' }}>
-                For {MONTH_NAMES[selectedCellMonth - 1]} {selectedCellYear}
+                Target Month: {MONTH_NAMES[selectedCellMonth - 1]} {selectedCellYear}
               </span>
             </label>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'stretch', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
               <input
                 ref={logDoneDayInputRef}
                 type="number"
                 className="form-input font-mono"
                 required
                 min={1}
-                max={selectedCellYear && selectedCellMonth ? new Date(selectedCellYear, selectedCellMonth, 0).getDate() : 31}
+                max={new Date(selectedCellYear, selectedCellMonth, 0).getDate()}
                 value={logDoneDay}
                 onChange={(e) => setLogDoneDay(e.target.value)}
-                id="log-form-done-day"
+                id="form-logDoneDay"
                 placeholder="Day"
                 style={{ width: '110px', fontSize: '16px', fontWeight: 'bold', textAlign: 'center' }}
               />
               <div style={{ 
-                flex: '1',
+                flex: '1', 
                 minWidth: '220px',
                 padding: '10px 14px', 
                 backgroundColor: 'var(--surface)', 
@@ -2720,33 +3183,41 @@ export default function PMPlan() {
                 </span>
               </div>
             </div>
-            <p style={{ fontSize: '11.5px', color: 'var(--text3)', marginTop: '6px', lineHeight: '1.4' }}>
-              💡 Enter the day number (e.g. <strong>6</strong> for the 6th). The system automatically locks it to the scheduled period (<strong>{MONTH_NAMES[selectedCellMonth - 1]} {selectedCellYear}</strong>).
-            </p>
           </div>
 
           <div className="form-group form-full">
-            <label className="form-label">Engineer Notes / Observations</label>
+            <label className="form-label">Completion Notes / Remarks (Optional)</label>
             <textarea
               className="form-input"
-              style={{ minHeight: '80px', fontFamily: 'var(--font-sans)', fontSize: '13px', resize: 'vertical' }}
-              placeholder="e.g. Cleared oil leaks, measured heater resistance at 24.1 Ohms, line is back online."
+              style={{ minHeight: '70px', fontFamily: 'var(--font-sans)', fontSize: '13px', resize: 'vertical' }}
+              placeholder="e.g. Completed without issues. Cleaned filter and checked belt tension."
               value={logNote}
               onChange={(e) => setLogNote(e.target.value)}
-              id="log-form-note"
+              id="form-logNote"
             />
           </div>
         </form>
       </Modal>
 
-      {/* MODAL 3: IMPORT PM DATA (JSON OR CSV) */}
+      {/* MODAL 3: IMPORT DATA MODAL (JSON / CSV) */}
       <Modal
         isOpen={isImportModalOpen}
-        onClose={handleCloseImport}
-        title="Import PM Data"
+        onClose={() => {
+          setIsImportModalOpen(false);
+          setImportFile(null);
+          setImportPreview(null);
+          setImportError('');
+        }}
+        title="Import PM Schedule &amp; Execution Data"
         footerActions={
           <>
-            <button className="btn" onClick={handleCloseImport} disabled={isImporting}>Cancel</button>
+            <button 
+              className="btn" 
+              onClick={() => setIsImportModalOpen(false)}
+              disabled={isImporting}
+            >
+              Cancel
+            </button>
             <button 
               className="btn btn-primary" 
               onClick={handleExecuteImport} 
@@ -2855,7 +3326,7 @@ export default function PMPlan() {
               <div style={{ marginTop: '8px', color: 'var(--text2)' }}>
                 We found the following data inside this file:
                 <ul style={{ paddingLeft: '20px', margin: '4px 0 0 0', listStyleType: 'disc' }}>
-                  <li><strong>{importPreview.plansCount}</strong> Preventive Maintenance Items</li>
+                  <li><strong>{importPreview.plansCount}</strong> Maintenance Schedule Items</li>
                   {importPreview.logsCount > 0 && (
                     <li><strong>{importPreview.logsCount}</strong> Completed Verification Logs</li>
                   )}
@@ -3084,6 +3555,187 @@ export default function PMPlan() {
         </form>
       </Modal>
 
+      {/* MODAL 6: BATCH SET RANK POPUP */}
+      <Modal
+        isOpen={isBatchRankModalOpen}
+        onClose={() => setIsBatchRankModalOpen(false)}
+        title={`Batch Set Rank (${selectedPlanIds.length} items)`}
+        footerActions={
+          <>
+            <button className="btn" onClick={() => setIsBatchRankModalOpen(false)} disabled={isBatchRankSaving}>
+              Cancel
+            </button>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleSaveBatchRank} 
+              disabled={isBatchRankSaving}
+              id="submit-batch-rank-btn"
+            >
+              {isBatchRankSaving ? 'Updating...' : `Set Rank for ${selectedPlanIds.length} Items`}
+            </button>
+          </>
+        }
+      >
+        <form onSubmit={handleSaveBatchRank} className="form-grid">
+          <div className="form-full" style={{ padding: '12px', background: 'var(--surface2)', borderRadius: '6px', fontSize: '12.5px', border: '1px solid var(--border)' }}>
+            <div style={{ fontWeight: 'bold', color: 'var(--text)', marginBottom: '6px' }}>
+              Selected Machines ({selectedPlanIds.length}):
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '100px', overflowY: 'auto', padding: '4px' }}>
+              {items.filter(i => selectedPlanIds.includes(i.id)).map(item => (
+                <span 
+                  key={item.id} 
+                  style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '4px', 
+                    backgroundColor: 'var(--surface)', 
+                    border: '1px solid var(--border)', 
+                    borderRadius: '4px', 
+                    padding: '2px 8px', 
+                    fontSize: '11px' 
+                  }}
+                >
+                  <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`} style={{ fontSize: '9px', padding: '1px 4px' }}>{item.plant || 'RFG'}</span>
+                  <strong style={{ color: 'var(--text)' }}>{item.machineName}</strong>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group form-full">
+            <label className="form-label" style={{ fontWeight: 'bold' }}>Choose New Rank for Selected Items *</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginTop: '6px' }}>
+              {[
+                { r: 'S', label: 'Rank S', sub: 'Critical (CBM)', bg: '#ffe4e6', text: '#be123c' },
+                { r: 'A', label: 'Rank A', sub: 'High (CBM)', bg: '#fef3c7', text: '#b45309' },
+                { r: 'B', label: 'Rank B', sub: 'Medium (Lifetime)', bg: '#e0f2fe', text: '#0369a1' },
+                { r: 'C', label: 'Rank C', sub: 'Low (Breakdown)', bg: '#f1f5f9', text: '#475569' }
+              ].map(opt => {
+                const isSelected = batchRankValue === opt.r;
+                return (
+                  <button
+                    key={opt.r}
+                    type="button"
+                    onClick={() => setBatchRankValue(opt.r)}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      padding: '10px 6px',
+                      borderRadius: '6px',
+                      border: isSelected ? `2px solid ${opt.text}` : '1px solid var(--border)',
+                      backgroundColor: isSelected ? opt.bg : 'var(--surface2)',
+                      color: isSelected ? opt.text : 'var(--text)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <span style={{ fontWeight: '800', fontSize: '14px' }}>{opt.label}</span>
+                    <span style={{ fontSize: '10.5px', opacity: 0.85, marginTop: '2px', textAlign: 'center' }}>{opt.sub}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </form>
+      </Modal>
+
+      {/* MODAL 7: BATCH SET TAG / TYPE POPUP */}
+      <Modal
+        isOpen={isBatchTypeModalOpen}
+        onClose={() => setIsBatchTypeModalOpen(false)}
+        title={`Batch Set Tag (${selectedPlanIds.length} items)`}
+        footerActions={
+          <>
+            <button className="btn" onClick={() => setIsBatchTypeModalOpen(false)} disabled={isBatchTypeSaving}>
+              Cancel
+            </button>
+            <button 
+              className="btn btn-primary" 
+              onClick={handleSaveBatchType} 
+              disabled={isBatchTypeSaving}
+              id="submit-batch-type-btn"
+            >
+              {isBatchTypeSaving ? 'Updating...' : `Set Tag for ${selectedPlanIds.length} Items`}
+            </button>
+          </>
+        }
+      >
+        <form onSubmit={handleSaveBatchType} className="form-grid">
+          <div className="form-full" style={{ padding: '12px', background: 'var(--surface2)', borderRadius: '6px', fontSize: '12.5px', border: '1px solid var(--border)' }}>
+            <div style={{ fontWeight: 'bold', color: 'var(--text)', marginBottom: '6px' }}>
+              Selected Machines ({selectedPlanIds.length}):
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '100px', overflowY: 'auto', padding: '4px' }}>
+              {items.filter(i => selectedPlanIds.includes(i.id)).map(item => (
+                <span 
+                  key={item.id} 
+                  style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '4px', 
+                    backgroundColor: 'var(--surface)', 
+                    border: '1px solid var(--border)', 
+                    borderRadius: '4px', 
+                    padding: '2px 8px', 
+                    fontSize: '11px' 
+                  }}
+                >
+                  <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`} style={{ fontSize: '9px', padding: '1px 4px' }}>{item.plant || 'RFG'}</span>
+                  <strong style={{ color: 'var(--text)' }}>{item.machineName}</strong>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group form-full">
+            <label className="form-label" style={{ fontWeight: 'bold' }}>Choose Activity Tag / Type *</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '6px' }}>
+              <button
+                type="button"
+                onClick={() => setBatchTypeValue('pm')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  border: batchTypeValue === 'pm' ? '2px solid var(--accent)' : '1px solid var(--border)',
+                  backgroundColor: batchTypeValue === 'pm' ? 'var(--accent)' : 'var(--surface2)',
+                  color: batchTypeValue === 'pm' ? '#fff' : 'var(--text)',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '13px'
+                }}
+              >
+                <span>🔧 Preventive Maintenance (PM)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBatchTypeValue('calibrate')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  border: batchTypeValue === 'calibrate' ? '2px solid #7e22ce' : '1px solid var(--border)',
+                  backgroundColor: batchTypeValue === 'calibrate' ? '#7e22ce' : 'var(--surface2)',
+                  color: batchTypeValue === 'calibrate' ? '#fff' : 'var(--text)',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '13px'
+                }}
+              >
+                <span>⚖️ Calibration (Calibrate)</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      </Modal>
+
       {/* MODAL: CONFIRM DELETE PM PLAN ITEM */}
       <Modal
         isOpen={!!planToDelete}
@@ -3117,6 +3769,8 @@ export default function PMPlan() {
         logs={logs}
         selectedYear={selectedYear}
         filterPlant={filterPlant}
+        filterType={filterType}
+        filterRank={filterRank}
         isMonthRequired={isMonthRequired}
         getCellStatus={getCellStatus}
       />
