@@ -1368,12 +1368,6 @@ export default function PMPlan() {
         };
       }
 
-      // Read log info from columns
-      const scheduledYearStr = cols[6]?.replace(/^["']|["']$/g, '').trim();
-      const scheduledMonthStr = cols[7]?.replace(/^["']|["']$/g, '').trim();
-      const actualDoneDate = cols[8]?.replace(/^["']|["']$/g, '').trim();
-      const note = cols[9]?.replace(/^["']|["']$/g, '').trim();
-
       if (actualDoneDate && actualDoneDate !== '' && actualDoneDate !== 'No completions recorded yet') {
         const year = Number(scheduledYearStr) || 2026;
         let month = 1;
