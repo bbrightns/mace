@@ -128,18 +128,19 @@ export async function batchWriteOperations(operations) {
     const batch = writeBatch(db);
 
     for (const op of chunk) {
+      const targetId = op.id || op.docId;
       if (op.type === 'delete') {
-        const docRef = doc(db, op.collectionName, op.id);
+        const docRef = doc(db, op.collectionName, targetId);
         batch.delete(docRef);
       } else if (op.type === 'set') {
-        const docRef = doc(db, op.collectionName, op.id);
+        const docRef = doc(db, op.collectionName, targetId);
         batch.set(docRef, {
           ...op.data,
           updatedAt: new Date().toISOString()
         }, { merge: true });
       } else if (op.type === 'create') {
         const colRef = collection(db, op.collectionName);
-        const newDocRef = doc(colRef);
+        const newDocRef = targetId ? doc(db, op.collectionName, targetId) : doc(colRef);
         batch.set(newDocRef, {
           ...op.data,
           createdAt: new Date().toISOString()
@@ -148,7 +149,7 @@ export async function batchWriteOperations(operations) {
           op.onDocCreated(newDocRef.id);
         }
       } else if (op.type === 'update') {
-        const docRef = doc(db, op.collectionName, op.id);
+        const docRef = doc(db, op.collectionName, targetId);
         batch.update(docRef, {
           ...op.data,
           updatedAt: new Date().toISOString()

@@ -429,13 +429,15 @@ export default function PMPlan() {
       const operations = selectedPlanIds.map(id => ({
         type: 'update',
         collectionName: 'mace_pm_plans',
-        docId: id,
+        id,
         data: { rank: batchRankValue }
       }));
       await batchWriteOperations(operations);
       showToast(`Updated Rank to "${batchRankValue}" for ${selectedPlanIds.length} items.`, 'success');
       setIsBatchRankModalOpen(false);
+      setSelectedPlanIds([]);
     } catch (err) {
+      console.error('Failed to batch save rank:', err);
       showToast('Failed to update rank in batch.', 'error');
     } finally {
       setIsBatchRankSaving(false);
@@ -451,14 +453,16 @@ export default function PMPlan() {
       const operations = selectedPlanIds.map(id => ({
         type: 'update',
         collectionName: 'mace_pm_plans',
-        docId: id,
+        id,
         data: { itemType: batchTypeValue }
       }));
       await batchWriteOperations(operations);
       const label = batchTypeValue === 'calibrate' ? 'Calibrate' : 'PM';
       showToast(`Updated Activity Type to "${label}" for ${selectedPlanIds.length} items.`, 'success');
       setIsBatchTypeModalOpen(false);
+      setSelectedPlanIds([]);
     } catch (err) {
+      console.error('Failed to batch save type:', err);
       showToast('Failed to update type in batch.', 'error');
     } finally {
       setIsBatchTypeSaving(false);
