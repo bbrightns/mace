@@ -19,7 +19,7 @@ import {
 } from '../../firebase/collections';
 import StatusBadge from '../../components/StatusBadge';
 import { useToast } from '../../components/Toast';
-import { formatDate } from '../../utils';
+import { formatDate, toInputDate } from '../../utils';
 import PageHeader from '../../components/PageHeader';
 
 // Helper for Thai/English Date Formatter for header
@@ -524,14 +524,75 @@ export default function TaskManagement() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Daily View Date Selector (persisted in localStorage, default to today)
+  // Daily View Date Selector (persisted in localStorage, default to today if idle > 1 hour)
   const [selectedDate, setSelectedDate] = useState(() => {
-    return localStorage.getItem('mace_task_selected_date') || new Date().toISOString().substring(0, 10);
+    const getTodayStr = () => toInputDate(new Date()) || new Date().toISOString().substring(0, 10);
+    const savedDate = localStorage.getItem('mace_task_selected_date');
+    const lastActiveStr = localStorage.getItem('mace_task_last_active');
+    
+    if (savedDate && lastActiveStr) {
+      const lastActive = parseInt(lastActiveStr, 10);
+      const oneHourMs = 60 * 60 * 1000;
+      if (!isNaN(lastActive) && (Date.now() - lastActive > oneHourMs)) {
+        return getTodayStr();
+      }
+      return savedDate;
+    }
+    return savedDate || getTodayStr();
   });
 
   useEffect(() => {
     localStorage.setItem('mace_task_selected_date', selectedDate);
+    localStorage.setItem('mace_task_last_active', Date.now().toString());
   }, [selectedDate]);
+
+  // Check and auto-reset to today if inactive for more than 1 hour
+  useEffect(() => {
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+
+    const checkAndResetDate = () => {
+      const lastActiveStr = localStorage.getItem('mace_task_last_active');
+      const now = Date.now();
+      const todayStr = toInputDate(new Date()) || new Date().toISOString().substring(0, 10);
+
+      if (lastActiveStr) {
+        const lastActive = parseInt(lastActiveStr, 10);
+        if (!isNaN(lastActive) && (now - lastActive > ONE_HOUR_MS)) {
+          setSelectedDate(todayStr);
+        }
+      }
+      localStorage.setItem('mace_task_last_active', now.toString());
+    };
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        checkAndResetDate();
+      }
+    };
+
+    // Update timestamp on periodic user interactions
+    const updateActiveTime = () => {
+      localStorage.setItem('mace_task_last_active', Date.now().toString());
+    };
+
+    // Check on visibility change, focus, and every minute
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    window.addEventListener('click', updateActiveTime);
+    window.addEventListener('keydown', updateActiveTime);
+
+    const intervalId = setInterval(() => {
+      checkAndResetDate();
+    }, 60 * 1000); // check every 1 minute
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      window.removeEventListener('click', updateActiveTime);
+      window.removeEventListener('keydown', updateActiveTime);
+      clearInterval(intervalId);
+    };
+  }, []);
 
   useEffect(() => {
     if (tasks) {
