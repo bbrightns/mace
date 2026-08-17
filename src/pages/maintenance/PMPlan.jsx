@@ -164,7 +164,7 @@ export default function PMPlan() {
   const [isBatchTypeSaving, setIsBatchTypeSaving] = useState(false);
   
   // Sorting state
-  const [sortField, setSortField] = useState('plant'); // 'plant', 'machineName', 'itemType', 'rank', 'cycle', 'checksheetId', 'responsible', 'lastDone', 'nextDue'
+  const [sortField, setSortField] = useState('checksheetId'); // 'checksheetId', 'plant', 'machineName', 'itemType', 'rank', 'cycle', 'responsible', 'lastDone', 'nextDue'
   const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
 
   const handleSort = (field) => {
@@ -851,8 +851,8 @@ export default function PMPlan() {
         valB = b.cycle || '';
         break;
       case 'checksheetId':
-        valA = a.checksheetId || '';
-        valB = b.checksheetId || '';
+        valA = a.checksheetId != null ? String(a.checksheetId) : '';
+        valB = b.checksheetId != null ? String(b.checksheetId) : '';
         break;
       case 'responsible':
         const displayRespA = a.responsible === 'Own Team' ? 'My team' : (a.responsible || 'My team');
@@ -1994,173 +1994,183 @@ export default function PMPlan() {
       </div>
 
       {/* Global Filter Bar: Search + Dropdown Filters */}
-      <div className="card controls-bar" id="pm-filters-bar" style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px 16px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
-          {/* Search Machine & Checksheet ID */}
-          <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px' }}>
-            <Search size={14} style={{ position: 'absolute', left: '10px', top: '9px', color: 'var(--text3)' }} />
-            <input 
-              type="text" 
-              placeholder="Search machine, checksheet ID, or keyword..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="form-input"
-              style={{ paddingLeft: '30px', paddingRight: search ? '28px' : '10px', height: '32px', fontSize: '13px', width: '100%' }}
-              id="pm-search-input"
-            />
-            {search && (
-              <button 
-                onClick={() => setSearch('')}
-                style={{ position: 'absolute', right: '8px', top: '7px', background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: '2px' }}
-                title="Clear search"
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
-
-          {/* Activity Tag Filter Dropdown */}
-          <div style={{ minWidth: '130px' }}>
-            <select
-              className="form-select"
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              style={{ height: '32px', fontSize: '12px', padding: '4px 8px' }}
-              id="filter-type-select"
-              title="Filter by Activity Tag"
-            >
-              <option value="all">🏷️ All Tags ({typeStats.all})</option>
-              <option value="pm">🔧 PM ({typeStats.pm})</option>
-              <option value="calibrate">⚖️ Calibrate ({typeStats.calibrate})</option>
-            </select>
-          </div>
-
-          {/* Rank Filter Dropdown */}
-          <div style={{ minWidth: '120px' }}>
-            <select
-              className="form-select"
-              value={filterRank}
-              onChange={(e) => setFilterRank(e.target.value)}
-              style={{ height: '32px', fontSize: '12px', padding: '4px 8px' }}
-              id="filter-rank-select"
-              title="Filter by Criticality Rank"
-            >
-              <option value="all">🏅 All Ranks</option>
-              <option value="S">Rank S ({rankStats.S})</option>
-              <option value="A">Rank A ({rankStats.A})</option>
-              <option value="B">Rank B ({rankStats.B})</option>
-              <option value="C">Rank C ({rankStats.C})</option>
-            </select>
-          </div>
-
-          {/* Plant Filter Dropdown */}
-          <div style={{ minWidth: '110px' }}>
-            <select
-              className="form-select"
-              value={filterPlant}
-              onChange={(e) => setFilterPlant(e.target.value)}
-              style={{ height: '32px', fontSize: '12px', padding: '4px 8px' }}
-              id="filter-plant-select"
-              title="Filter by Plant"
-            >
-              <option value="all">🏭 All Plants</option>
-              {plantOptions.map(p => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Team / Responsible Filter Dropdown */}
-          <div style={{ minWidth: '115px' }}>
-            <select
-              className="form-select"
-              value={filterResponsible}
-              onChange={(e) => setFilterResponsible(e.target.value)}
-              style={{ height: '32px', fontSize: '12px', padding: '4px 8px' }}
-              id="filter-responsible-select"
-              title="Filter by Team"
-            >
-              <option value="all">👥 All Teams</option>
-              <option value="My team">My team</option>
-              <option value="Contractor">Contractor</option>
-            </select>
-          </div>
-
-          {/* Cycle Filter Dropdown */}
-          <div style={{ minWidth: '120px' }}>
-            <select
-              className="form-select"
-              value={filterCycle}
-              onChange={(e) => setFilterCycle(e.target.value)}
-              style={{ height: '32px', fontSize: '12px', padding: '4px 8px' }}
-              id="filter-cycle-select"
-              title="Filter by Cycle"
-            >
-              <option value="all">🔄 All Cycles</option>
-              <option value="monthly">Monthly</option>
-              <option value="every 2 months">Every 2 Months</option>
-              <option value="every 6 months">Every 6 Months</option>
-              <option value="yearly">Yearly</option>
-            </select>
-          </div>
-
-          {/* Month Filter Dropdown */}
-          <div style={{ minWidth: '125px' }}>
-            <select
-              className="form-select"
-              value={filterMonth}
-              onChange={(e) => setFilterMonth(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-              style={{ height: '32px', fontSize: '12px', padding: '4px 8px' }}
-              id="filter-month-select"
-              title="Filter by Target Month"
-            >
-              <option value="all">📅 All Months</option>
-              {MONTH_NAMES.map((mName, i) => (
-                <option key={mName} value={i + 1}>{mName} (M{i + 1})</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Year Selector */}
-          {activeTab === 'schedule' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text3)', fontWeight: '600', textTransform: 'uppercase' }}>Year:</span>
-              <div style={{ display: 'flex', gap: '3px' }}>
-                {[2025, 2026, 2027, 2028].map((yr) => (
-                  <button
-                    key={yr}
-                    className={`year-selector-btn ${selectedYear === yr ? 'active' : ''}`}
-                    onClick={() => setSelectedYear(yr)}
-                    style={{ padding: '2px 8px', fontSize: '12px', height: '30px', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
-                  >
-                    {yr}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Reset Filters Button */}
-          {(search || filterPlant !== 'all' || filterResponsible !== 'all' || filterCycle !== 'all' || filterType !== 'all' || filterRank !== 'all' || filterMonth !== 'all') && (
+      <div 
+        className="card controls-bar" 
+        id="pm-filters-bar" 
+        style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: '8px', 
+          alignItems: 'center', 
+          justifyContent: 'flex-start',
+          padding: '10px 14px', 
+          marginBottom: '16px' 
+        }}
+      >
+        {/* Search Machine & Checksheet ID */}
+        <div style={{ position: 'relative', width: '220px', minWidth: '180px', flex: '0 0 auto' }}>
+          <Search size={14} style={{ position: 'absolute', left: '10px', top: '9px', color: 'var(--text3)' }} />
+          <input 
+            type="text" 
+            placeholder="Search machine, checksheet ID..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="form-input"
+            style={{ paddingLeft: '30px', paddingRight: search ? '28px' : '10px', height: '32px', fontSize: '12.5px', width: '100%' }}
+            id="pm-search-input"
+          />
+          {search && (
             <button 
-              className="btn btn-sm"
-              onClick={() => {
-                setSearch('');
-                setFilterPlant('all');
-                setFilterResponsible('all');
-                setFilterCycle('all');
-                setFilterType('all');
-                setFilterRank('all');
-                setFilterMonth('all');
-              }}
-              style={{ fontSize: '11.5px', padding: '4px 10px', height: '30px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text2)' }}
-              title="Reset all filters"
+              onClick={() => setSearch('')}
+              style={{ position: 'absolute', right: '8px', top: '7px', background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: '2px' }}
+              title="Clear search"
             >
-              <X size={12} />
-              <span>Reset</span>
+              <X size={14} />
             </button>
           )}
         </div>
+
+        {/* Activity Tag Filter Dropdown */}
+        <div style={{ flex: '0 0 auto' }}>
+          <select
+            className="form-select"
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            style={{ height: '32px', fontSize: '12px', padding: '4px 8px', width: 'auto' }}
+            id="filter-type-select"
+            title="Filter by Activity Tag"
+          >
+            <option value="all">🏷️ All Tags ({typeStats.all})</option>
+            <option value="pm">🔧 PM ({typeStats.pm})</option>
+            <option value="calibrate">⚖️ Calibrate ({typeStats.calibrate})</option>
+          </select>
+        </div>
+
+        {/* Rank Filter Dropdown */}
+        <div style={{ flex: '0 0 auto' }}>
+          <select
+            className="form-select"
+            value={filterRank}
+            onChange={(e) => setFilterRank(e.target.value)}
+            style={{ height: '32px', fontSize: '12px', padding: '4px 8px', width: 'auto' }}
+            id="filter-rank-select"
+            title="Filter by Criticality Rank"
+          >
+            <option value="all">🏅 All Ranks</option>
+            <option value="S">Rank S ({rankStats.S})</option>
+            <option value="A">Rank A ({rankStats.A})</option>
+            <option value="B">Rank B ({rankStats.B})</option>
+            <option value="C">Rank C ({rankStats.C})</option>
+          </select>
+        </div>
+
+        {/* Plant Filter Dropdown */}
+        <div style={{ flex: '0 0 auto' }}>
+          <select
+            className="form-select"
+            value={filterPlant}
+            onChange={(e) => setFilterPlant(e.target.value)}
+            style={{ height: '32px', fontSize: '12px', padding: '4px 8px', width: 'auto' }}
+            id="filter-plant-select"
+            title="Filter by Plant"
+          >
+            <option value="all">🏭 All Plants</option>
+            {plantOptions.map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Team / Responsible Filter Dropdown */}
+        <div style={{ flex: '0 0 auto' }}>
+          <select
+            className="form-select"
+            value={filterResponsible}
+            onChange={(e) => setFilterResponsible(e.target.value)}
+            style={{ height: '32px', fontSize: '12px', padding: '4px 8px', width: 'auto' }}
+            id="filter-responsible-select"
+            title="Filter by Team"
+          >
+            <option value="all">👥 All Teams</option>
+            <option value="My team">My team</option>
+            <option value="Contractor">Contractor</option>
+          </select>
+        </div>
+
+        {/* Cycle Filter Dropdown */}
+        <div style={{ flex: '0 0 auto' }}>
+          <select
+            className="form-select"
+            value={filterCycle}
+            onChange={(e) => setFilterCycle(e.target.value)}
+            style={{ height: '32px', fontSize: '12px', padding: '4px 8px', width: 'auto' }}
+            id="filter-cycle-select"
+            title="Filter by Cycle"
+          >
+            <option value="all">🔄 All Cycles</option>
+            <option value="monthly">Monthly</option>
+            <option value="every 2 months">Every 2 Months</option>
+            <option value="every 6 months">Every 6 Months</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+
+        {/* Month Filter Dropdown */}
+        <div style={{ flex: '0 0 auto' }}>
+          <select
+            className="form-select"
+            value={filterMonth}
+            onChange={(e) => setFilterMonth(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+            style={{ height: '32px', fontSize: '12px', padding: '4px 8px', width: 'auto' }}
+            id="filter-month-select"
+            title="Filter by Target Month"
+          >
+            <option value="all">📅 All Months</option>
+            {MONTH_NAMES.map((mName, i) => (
+              <option key={mName} value={i + 1}>{mName} (M{i + 1})</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Year Selector */}
+        {activeTab === 'schedule' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: '0 0 auto' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text3)', fontWeight: '600', textTransform: 'uppercase' }}>Year:</span>
+            <div style={{ display: 'flex', gap: '3px' }}>
+              {[2025, 2026, 2027, 2028].map((yr) => (
+                <button
+                  key={yr}
+                  className={`year-selector-btn ${selectedYear === yr ? 'active' : ''}`}
+                  onClick={() => setSelectedYear(yr)}
+                  style={{ padding: '2px 8px', fontSize: '12px', height: '30px', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
+                >
+                  {yr}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Reset Filters Button */}
+        {(search || filterPlant !== 'all' || filterResponsible !== 'all' || filterCycle !== 'all' || filterType !== 'all' || filterRank !== 'all' || filterMonth !== 'all') && (
+          <button 
+            className="btn btn-sm"
+            onClick={() => {
+              setSearch('');
+              setFilterPlant('all');
+              setFilterResponsible('all');
+              setFilterCycle('all');
+              setFilterType('all');
+              setFilterRank('all');
+              setFilterMonth('all');
+            }}
+            style={{ fontSize: '11.5px', padding: '4px 10px', height: '30px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text2)', flex: '0 0 auto' }}
+            title="Reset all filters"
+          >
+            <X size={12} />
+            <span>Reset</span>
+          </button>
+        )}
       </div>
 
       {/* Floating / Sticky Batch Action Bar when items are selected */}
