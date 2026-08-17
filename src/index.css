@@ -400,7 +400,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .sidebar-toggle-btn {
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
   background: var(--surface2);
@@ -421,6 +421,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .sidebar-toggle-btn:active {
   transform: scale(0.95);
+}
+
+/* Header 3-bar button only displays when sidebar is hidden/collapsed */
+.app-content.sidebar-collapsed .sidebar-toggle-btn {
+  display: inline-flex;
 }
 
 .mobile-toggle {
@@ -1343,6 +1348,9 @@ h1, h2, h3, h4, h5, h6 {
   }
   .app-content {
     margin-left: 0 !important;
+  }
+  .sidebar-toggle-btn {
+    display: inline-flex !important;
   }
 }
 
