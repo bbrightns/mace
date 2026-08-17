@@ -28,7 +28,8 @@ export default function PMReportPdfModal({
   filterType = 'all',
   filterRank = 'all',
   isMonthRequired,
-  getCellStatus
+  getCellStatus,
+  getCellDetails
 }) {
   const [engineerName, setEngineerName] = useState('');
   const [engineerTitle, setEngineerTitle] = useState('Maintenance Engineer');
@@ -86,22 +87,14 @@ export default function PMReportPdfModal({
     ? `PREVENTIVE MAINTENANCE ANNUAL PLAN (${selectedYear})`
     : `MAINTENANCE & CALIBRATION ANNUAL PLAN (${selectedYear})`;
 
-  // Calculate KPIs
-  const today = new Date();
-  const currentYearVal = today.getFullYear();
-  const currentMonthVal = today.getMonth() + 1;
-
-  let maxMonth = 12;
-  if (selectedYear === currentYearVal) {
-    maxMonth = currentMonthVal;
-  } else if (selectedYear > currentYearVal) {
-    maxMonth = 0;
-  }
-
+  // Calculate high-level summary KPIs
   const totalAnnualTarget = filteredItems.reduce(
-    (acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => isMonthRequired(item, selectedYear, mIdx + 1)).length,
+    (acc, item) =>
+      acc + MONTH_NAMES.filter((_, mIdx) => isMonthRequired(item, selectedYear, mIdx + 1)).length,
     0
   );
+
+  const maxMonth = selectedYear === 2026 ? 5 : 12;
 
   const totalPlanYTD = filteredItems.reduce(
     (acc, item) =>
@@ -118,7 +111,8 @@ export default function PMReportPdfModal({
       acc +
       MONTH_NAMES.filter((_, mIdx) => {
         const mNum = mIdx + 1;
-        return mNum <= maxMonth && isMonthRequired(item, selectedYear, mNum) && getCellStatus(item, selectedYear, mNum) === 'done';
+        const st = getCellStatus ? getCellStatus(item, selectedYear, mNum) : 'faded';
+        return mNum <= maxMonth && isMonthRequired(item, selectedYear, mNum) && (st === 'done' || st === 'shifted-plan');
       }).length,
     0
   );
@@ -128,7 +122,7 @@ export default function PMReportPdfModal({
   const totalOverdue = filteredItems.reduce(
     (acc, item) =>
       acc +
-      MONTH_NAMES.filter((_, mIdx) => isMonthRequired(item, selectedYear, mIdx + 1) && getCellStatus(item, selectedYear, mIdx + 1) === 'overdue').length,
+      MONTH_NAMES.filter((_, mIdx) => isMonthRequired(item, selectedYear, mIdx + 1) && (getCellStatus ? getCellStatus(item, selectedYear, mIdx + 1) : 'faded') === 'overdue').length,
     0
   );
 
@@ -136,7 +130,10 @@ export default function PMReportPdfModal({
   const monthlyData = MONTH_NAMES.map((name, i) => {
     const monthNum = i + 1;
     const planCount = filteredItems.filter(item => isMonthRequired(item, selectedYear, monthNum)).length;
-    const actualCount = filteredItems.filter(item => isMonthRequired(item, selectedYear, monthNum) && getCellStatus(item, selectedYear, monthNum) === 'done').length;
+    const actualCount = filteredItems.filter(item => {
+      const st = getCellStatus ? getCellStatus(item, selectedYear, monthNum) : 'faded';
+      return isMonthRequired(item, selectedYear, monthNum) && (st === 'done' || st === 'shifted-plan');
+    }).length;
     const pct = planCount > 0 ? Math.round((actualCount / planCount) * 100) : 100;
 
     return {
@@ -423,22 +420,29 @@ export default function PMReportPdfModal({
                                 <td className="font-mono" style={{ fontSize: '9px' }}>{item.checksheetId || '-'}</td>
                                 {Array.from({ length: 12 }).map((_, mIdx) => {
                                   const monthNum = mIdx + 1;
-                                  const cellState = getCellStatus(item, selectedYear, monthNum);
+                                  const details = getCellDetails ? getCellDetails(item, selectedYear, monthNum) : null;
+                                  const cellState = details ? details.status : (getCellStatus ? getCellStatus(item, selectedYear, monthNum) : 'faded');
 
-                                  let cellText = '';
+                                  let cellText = details ? details.text : '';
                                   let cellBgClass = 'pdf-cell-faded';
 
                                   if (cellState === 'done') {
                                     cellBgClass = 'pdf-cell-done';
-                                    const matchingLog = logs.find(
-                                      (log) => log.planId === item.id && Number(log.year) === selectedYear && Number(log.month) === monthNum
-                                    );
-                                    if (matchingLog && matchingLog.doneDate) {
-                                      const parts = matchingLog.doneDate.split('-');
-                                      cellText = parts.length === 3 ? parseInt(parts[2], 10).toString() : '✓';
-                                    } else {
-                                      cellText = '✓';
+                                    if (!details) {
+                                      const matchingLog = logs.find(
+                                        (log) => log.planId === item.id && Number(log.year) === selectedYear && Number(log.month) === monthNum
+                                      );
+                                      if (matchingLog && matchingLog.doneDate) {
+                                        const parts = matchingLog.doneDate.split('-');
+                                        cellText = parts.length === 3 ? parseInt(parts[2], 10).toString() : '✓';
+                                      } else {
+                                        cellText = '✓';
+                                      }
                                     }
+                                  } else if (cellState === 'shifted-plan') {
+                                    cellBgClass = 'pdf-cell-shifted-plan';
+                                  } else if (cellState === 'shifted-actual') {
+                                    cellBgClass = 'pdf-cell-shifted-actual';
                                   } else if (cellState === 'pending') {
                                     cellBgClass = 'pdf-cell-pending';
                                     cellText = '';
@@ -463,8 +467,10 @@ export default function PMReportPdfModal({
 
                   {/* Legend */}
                   <div className="pdf-legend">
-                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-pending"></span> Scheduled / Pending</span>
-                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-done"></span> Completed (e.g. 17)</span>
+                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-pending"></span> Scheduled</span>
+                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-done"></span> On-Time (e.g. 17)</span>
+                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-shifted-plan"></span> Shifted Plan (➔ Feb)</span>
+                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-shifted-actual"></span> Shifted Done (17*)</span>
                     <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-overdue"></span> Overdue (!)</span>
                     <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-faded"></span> N/A</span>
                   </div>

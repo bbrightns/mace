@@ -925,36 +925,115 @@ export default function PMPlan() {
     return sortDirection === 'asc' ? comparison : -comparison;
   });
 
-  // Determine cell color code & state
-  const getCellStatus = (item, year, month) => {
-    // 1. Is the month required? If not, it's definitely a grey box (faded) and blank!
+  // Determine cell execution details and state
+  const getCellDetails = (item, year, month) => {
     const required = isMonthRequired(item, year, month);
-    if (!required) return 'faded';
 
-    // 2. Is there a logged execution inside mace_pm_logs?
-    const hasLog = logs.some(
+    // 1. Check if there is a log planned for THIS specific (year, month)
+    const planLog = logs.find(
       (log) => log.planId === item.id && Number(log.year) === year && Number(log.month) === month
     );
-    if (hasLog) return 'done';
 
-    // 3. Is this the original month and year of the plan's current lastDoneDate?
-    let isOriginalLastDone = false;
-    if (item.lastDoneDate) {
-      const d = new Date(item.lastDoneDate);
-      if (!isNaN(d.getTime())) {
-        isOriginalLastDone = d.getFullYear() === year && (d.getMonth() + 1) === month;
+    // 2. Check if there is ANY log whose actual doneDate happened in THIS (year, month)
+    const actualLog = logs.find((log) => {
+      if (log.planId !== item.id || !log.doneDate) return false;
+      const parts = log.doneDate.split('-');
+      if (parts.length === 3) {
+        return Number(parts[0]) === year && Number(parts[1]) === month;
       }
+      const d = new Date(log.doneDate);
+      return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month;
+    });
+
+    if (required) {
+      if (planLog) {
+        if (planLog.doneDate) {
+          const parts = planLog.doneDate.split('-');
+          let doneYear = year;
+          let doneMonth = month;
+          let doneDay = 15;
+          if (parts.length === 3) {
+            doneYear = Number(parts[0]);
+            doneMonth = Number(parts[1]);
+            doneDay = parseInt(parts[2], 10);
+          } else {
+            const d = new Date(planLog.doneDate);
+            if (!isNaN(d.getTime())) {
+              doneYear = d.getFullYear();
+              doneMonth = d.getMonth() + 1;
+              doneDay = d.getDate();
+            }
+          }
+
+          if (doneYear === year && doneMonth === month) {
+            return {
+              status: 'done',
+              log: planLog,
+              day: doneDay,
+              text: doneDay.toString(),
+              tooltip: `Completed on ${planLog.doneDate} (On-time)`
+            };
+          } else {
+            const targetMName = MONTH_NAMES[doneMonth - 1] || `M${doneMonth}`;
+            return {
+              status: 'shifted-plan',
+              log: planLog,
+              day: doneDay,
+              doneMonth,
+              doneYear,
+              text: `➔ ${targetMName}`,
+              tooltip: `Planned: ${MONTH_NAMES[month - 1]} ${year} | Done: ${planLog.doneDate} (Shifted to ${targetMName})`
+            };
+          }
+        }
+        return { status: 'done', log: planLog, text: '✓', tooltip: 'Completed' };
+      }
+
+      // Check legacy item.lastDoneDate fallback
+      if (item.lastDoneDate) {
+        const d = new Date(item.lastDoneDate);
+        if (!isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month) {
+          return {
+            status: 'done',
+            day: d.getDate(),
+            text: d.getDate().toString(),
+            tooltip: `Completed on ${item.lastDoneDate}`
+          };
+        }
+      }
+
+      const today = new Date();
+      const currentYearVal = today.getFullYear();
+      const currentMonthVal = today.getMonth() + 1;
+      const isPast = year < currentYearVal || (year === currentYearVal && month < currentMonthVal);
+      if (isPast) {
+        return { status: 'overdue', text: '!', tooltip: `Overdue! Planned for ${MONTH_NAMES[month - 1]} ${year}` };
+      }
+
+      return { status: 'pending', text: '', tooltip: `Scheduled for ${MONTH_NAMES[month - 1]} ${year}` };
     }
-    if (isOriginalLastDone) return 'done';
 
-    // 4. Has this slot already elapsed (with respect to current today's date)?
-    const today = new Date();
-    const currentYearVal = today.getFullYear();
-    const currentMonthVal = today.getMonth() + 1;
-    const isPast = year < currentYearVal || (year === currentYearVal && month < currentMonthVal);
-    if (isPast) return 'overdue';
+    // Month is NOT required in regular cycle
+    if (actualLog && !(Number(actualLog.year) === year && Number(actualLog.month) === month)) {
+      const parts = actualLog.doneDate.split('-');
+      let doneDay = 15;
+      if (parts.length === 3) doneDay = parseInt(parts[2], 10);
+      const plannedMName = MONTH_NAMES[Number(actualLog.month) - 1] || `M${actualLog.month}`;
+      return {
+        status: 'shifted-actual',
+        log: actualLog,
+        day: doneDay,
+        plannedMonth: Number(actualLog.month),
+        text: `${doneDay}*`,
+        tooltip: `Actual Done: ${actualLog.doneDate} (Shifted from ${plannedMName} plan)`
+      };
+    }
 
-    return 'pending';
+    return { status: 'faded', text: '', tooltip: 'No inspection required' };
+  };
+
+  const getCellStatus = (item, year, month) => {
+    return getCellDetails(item, year, month).status;
   };
 
   // Helper to get min/max date strings for the selected cell month/year
@@ -972,13 +1051,37 @@ export default function PMPlan() {
 
   // Click handler on grid cell
   const handleCellClick = (item, year, month, status) => {
-    if (status === 'faded') return;
-
     setSelectedCellItem(item);
+
+    if (status === 'shifted-actual') {
+      const actualLog = logs.find((log) => {
+        if (log.planId !== item.id || !log.doneDate) return false;
+        const parts = log.doneDate.split('-');
+        if (parts.length === 3) {
+          return Number(parts[0]) === year && Number(parts[1]) === month;
+        }
+        const d = new Date(log.doneDate);
+        return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month;
+      });
+
+      if (actualLog) {
+        setSelectedCellYear(Number(actualLog.year));
+        setSelectedCellMonth(Number(actualLog.month));
+        setExistingLog(actualLog);
+        setLogDoneDate(actualLog.doneDate || '');
+        const dayPart = actualLog.doneDate ? Number(actualLog.doneDate.split('-')[2]) : 15;
+        setLogDoneDay(isNaN(dayPart) ? 15 : dayPart);
+        setLogNote(actualLog.note || '');
+        setShowDeleteLogConfirm(false);
+        setIsLogModalOpen(true);
+        return;
+      }
+    }
+
     setSelectedCellYear(year);
     setSelectedCellMonth(month);
 
-    // Look for previous logs
+    // Look for previous logs for this planned month
     const existing = logs.find(
       (log) => log.planId === item.id && Number(log.year) === year && Number(log.month) === month
     );
@@ -991,11 +1094,10 @@ export default function PMPlan() {
       setLogNote(existing.note || '');
     } else {
       setExistingLog(null);
-      // Sensible default done date (e.g., today's date if current month/year, else mid-month)
       const formattedMonth = String(month).padStart(2, '0');
-      const standardDate = (year === 2026 && month === 5) ? '2026-05-20' : `${year}-${formattedMonth}-15`;
+      const standardDate = `${year}-${formattedMonth}-15`;
       setLogDoneDate(standardDate);
-      setLogDoneDay((year === 2026 && month === 5) ? 20 : 15);
+      setLogDoneDay(15);
       setLogNote('');
     }
 
@@ -1003,18 +1105,14 @@ export default function PMPlan() {
     setIsLogModalOpen(true);
   };
 
-   const handleSaveLog = async (e) => {
-    e.preventDefault();
-    const dayNum = Number(logDoneDay);
-    const maxDays = new Date(selectedCellYear, selectedCellMonth, 0).getDate();
-    if (!dayNum || dayNum < 1 || dayNum > maxDays) {
-      showToast(`Please enter a valid day between 1 and ${maxDays}.`, 'error');
+  const handleSaveLog = async (e) => {
+    if (e) e.preventDefault();
+    if (!logDoneDate) {
+      showToast('Please select a valid completion date.', 'error');
       return;
     }
 
-    const formattedMonth = String(selectedCellMonth).padStart(2, '0');
-    const formattedDay = String(dayNum).padStart(2, '0');
-    const calculatedDateStr = `${selectedCellYear}-${formattedMonth}-${formattedDay}`;
+    const calculatedDateStr = logDoneDate;
 
     try {
       if (existingLog) {
@@ -1069,6 +1167,7 @@ export default function PMPlan() {
 
       setIsLogModalOpen(false);
     } catch (err) {
+      console.error('Failed to save PM log:', err);
       showToast('Failed to save PM log.', 'error');
     }
   };
@@ -1844,6 +1943,28 @@ export default function PMPlan() {
           background: #dcfce7;
           transform: scale(1.02);
         }
+        .color-shifted-plan {
+          background: #fffbeb;
+          color: #b45309;
+          border-color: #fde68a;
+          cursor: pointer;
+          font-weight: 700;
+        }
+        .color-shifted-plan:hover {
+          background: #fef3c7;
+          transform: scale(1.02);
+        }
+        .color-shifted-actual {
+          background: #fff7ed;
+          color: #c2410c;
+          border-color: #fed7aa;
+          cursor: pointer;
+          font-weight: 700;
+        }
+        .color-shifted-actual:hover {
+          background: #ffedd5;
+          transform: scale(1.02);
+        }
         .color-overdue {
           background: #fef2f2;
           color: #b91c1c;
@@ -1951,6 +2072,8 @@ export default function PMPlan() {
         .legend-block.pfaded { background: #fafafa; border-color: var(--border); opacity: 0.6; }
         .legend-block.ppending { background: #eff6ff; border-color: #bfdbfe; }
         .legend-block.pdone { background: #f0fdf4; border-color: #bbf7d0; }
+        .legend-block.pshifted-plan { background: #fffbeb; border-color: #fde68a; }
+        .legend-block.pshifted-actual { background: #fff7ed; border-color: #fed7aa; }
         .legend-block.poverdue { background: #fef2f2; border-color: #fca5a5; }
 
         .year-selector-btn {
@@ -2453,43 +2576,16 @@ export default function PMPlan() {
                       {Array.from({ length: 12 }).map((_, index) => {
                         const mIndex = index + 1; // 1 to 12
                         if (filterMonth !== 'all' && filterMonth !== mIndex) return null;
-                        const cellState = getCellStatus(item, selectedYear, mIndex);
-                        
-                        let cellContent = '';
-                        if (cellState === 'done') {
-                          const matchingLog = logs.find(
-                            (log) => log.planId === item.id && Number(log.year) === selectedYear && Number(log.month) === mIndex
-                          );
-                          if (matchingLog && matchingLog.doneDate) {
-                            const parts = matchingLog.doneDate.split('-');
-                            if (parts.length === 3) {
-                              cellContent = parseInt(parts[2], 10).toString();
-                            } else {
-                              const d = new Date(matchingLog.doneDate);
-                              if (!isNaN(d.getTime())) {
-                                cellContent = d.getDate().toString();
-                              }
-                            }
-                          } else if (item.lastDoneDate) {
-                            const d = new Date(item.lastDoneDate);
-                            if (!isNaN(d.getTime()) && d.getFullYear() === selectedYear && (d.getMonth() + 1) === mIndex) {
-                              cellContent = d.getDate().toString();
-                            }
-                          }
-                          if (!cellContent) cellContent = '✓';
-                        }
-                        if (cellState === 'overdue') cellContent = '!';
+                        const cellDetails = getCellDetails(item, selectedYear, mIndex);
+                        const cellState = cellDetails.status;
+                        const cellContent = cellDetails.text;
 
                         return (
                           <td 
                             key={mIndex} 
                             className={`month-cell color-${cellState}`} 
                             onClick={() => handleCellClick(item, selectedYear, mIndex, cellState)}
-                            title={
-                              cellState === 'faded' ? 'No inspection required' :
-                              cellState === 'pending' ? 'Scheduled (Click to log completion)' :
-                              cellState === 'done' ? 'Completed (Click to edit log)' : 'Overdue! Click to log completion'
-                            }
+                            title={cellDetails.tooltip}
                             style={{ textAlign: 'center', cursor: cellState !== 'faded' ? 'pointer' : 'default' }}
                           >
                             <span style={{ fontWeight: 'bold' }}>{cellContent}</span>
@@ -2514,11 +2610,19 @@ export default function PMPlan() {
             </div>
             <div className="legend-item">
               <span className="legend-block pdone"></span>
-              <span>Completed / Done (Green with Day Number)</span>
+              <span>On-Time Done (Green with Day)</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-block pshifted-plan"></span>
+              <span>Shifted Plan (Amber e.g. ➔ Feb)</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-block pshifted-actual"></span>
+              <span>Shifted Done (Orange e.g. 15*)</span>
             </div>
             <div className="legend-item">
               <span className="legend-block poverdue"></span>
-              <span>Overdue Past Due (Red with !)</span>
+              <span>Overdue (Red with !)</span>
             </div>
           </div>
         </div>
@@ -2569,7 +2673,7 @@ export default function PMPlan() {
             <div className="card" style={{ padding: '14px 18px', background: 'var(--surface2)', border: '1px solid var(--border)' }}>
               <span style={{ fontSize: '11.5px', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: '600' }}>YTD Completed</span>
               <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981', marginTop: '4px' }}>
-                {trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => (mIdx + 1) <= (selectedYear === 2026 ? 5 : 12) && isMonthRequired(item, selectedYear, mIdx + 1) && getCellStatus(item, selectedYear, mIdx + 1) === 'done').length, 0)}
+                {trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => (mIdx + 1) <= (selectedYear === 2026 ? 5 : 12) && isMonthRequired(item, selectedYear, mIdx + 1) && ['done', 'shifted-plan'].includes(getCellStatus(item, selectedYear, mIdx + 1))).length, 0)}
               </div>
               <span style={{ fontSize: '11px', color: 'var(--text3)' }}>Completed &amp; logged</span>
             </div>
@@ -2580,7 +2684,7 @@ export default function PMPlan() {
                 {(() => {
                   const maxM = selectedYear === 2026 ? 5 : 12;
                   const p = trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => (mIdx + 1) <= maxM && isMonthRequired(item, selectedYear, mIdx + 1)).length, 0);
-                  const c = trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => (mIdx + 1) <= maxM && isMonthRequired(item, selectedYear, mIdx + 1) && getCellStatus(item, selectedYear, mIdx + 1) === 'done').length, 0);
+                  const c = trendItems.reduce((acc, item) => acc + MONTH_NAMES.filter((_, mIdx) => (mIdx + 1) <= maxM && isMonthRequired(item, selectedYear, mIdx + 1) && ['done', 'shifted-plan'].includes(getCellStatus(item, selectedYear, mIdx + 1))).length, 0);
                   return p > 0 ? `${Math.round((c / p) * 100)}%` : '100%';
                 })()}
               </div>
@@ -2594,7 +2698,7 @@ export default function PMPlan() {
               <BarChart
                 data={MONTH_NAMES.map((name, i) => {
                   const planCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1)).length;
-                  const actualCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1) && getCellStatus(item, selectedYear, i + 1) === 'done').length;
+                  const actualCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1) && ['done', 'shifted-plan'].includes(getCellStatus(item, selectedYear, i + 1))).length;
                   const pct = planCount > 0 ? Math.round((actualCount / planCount) * 100) : 100;
                   return {
                     name,
@@ -3177,53 +3281,90 @@ export default function PMPlan() {
 
           <div className="form-group form-full">
             <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Actual Completion Day (1-{new Date(selectedCellYear, selectedCellMonth, 0).getDate()}) *</span>
-              <span style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: '600' }}>
-                Target Month: {MONTH_NAMES[selectedCellMonth - 1]} {selectedCellYear}
+              <span style={{ fontWeight: 'bold' }}>Actual Completion Date (วันที่ทำจริง) *</span>
+              <span style={{ fontSize: '11.5px', color: 'var(--text3)' }}>
+                Target Plan: <strong style={{ color: 'var(--accent)' }}>{MONTH_NAMES[selectedCellMonth - 1]} {selectedCellYear}</strong>
               </span>
             </label>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
               <input
                 ref={logDoneDayInputRef}
-                type="number"
+                type="date"
                 className="form-input font-mono"
                 required
-                min={1}
-                max={new Date(selectedCellYear, selectedCellMonth, 0).getDate()}
-                value={logDoneDay}
-                onChange={(e) => setLogDoneDay(e.target.value)}
-                id="form-logDoneDay"
-                placeholder="Day"
-                style={{ width: '110px', fontSize: '16px', fontWeight: 'bold', textAlign: 'center' }}
+                value={logDoneDate}
+                onChange={(e) => setLogDoneDate(e.target.value)}
+                id="form-logDoneDate"
+                style={{ fontSize: '14px', fontWeight: 'bold', minWidth: '180px' }}
               />
-              <div style={{ 
-                flex: '1', 
-                minWidth: '220px',
-                padding: '10px 14px', 
-                backgroundColor: 'var(--surface)', 
-                border: '1px dashed var(--border)', 
-                borderRadius: '6px',
-                fontSize: '13.5px',
-                fontWeight: '600',
-                color: 'var(--accent)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                <span style={{ fontSize: '16px' }}>📅</span>
-                <span>
-                  Resulting Date: <strong style={{ fontFamily: 'var(--font-mono)' }}>{String(logDoneDay || '').padStart(2, '0')} - {MONTH_NAMES[selectedCellMonth - 1]} - {selectedCellYear}</strong>
-                </span>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => setLogDoneDate(new Date().toISOString().split('T')[0])}
+                  style={{ fontSize: '11.5px', padding: '4px 10px', height: '32px' }}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => {
+                    const mStr = String(selectedCellMonth).padStart(2, '0');
+                    setLogDoneDate(`${selectedCellYear}-${mStr}-15`);
+                  }}
+                  style={{ fontSize: '11.5px', padding: '4px 10px', height: '32px' }}
+                >
+                  Target Month (15th)
+                </button>
               </div>
             </div>
+
+            {/* Smart Reactive Delay/Shift Banner */}
+            {logDoneDate && (() => {
+              const parts = logDoneDate.split('-');
+              if (parts.length === 3) {
+                const actYear = Number(parts[0]);
+                const actMonth = Number(parts[1]);
+                const actDay = Number(parts[2]);
+                
+                const isSameMonth = actYear === selectedCellYear && actMonth === selectedCellMonth;
+                const isShiftedAfter = actYear > selectedCellYear || (actYear === selectedCellYear && actMonth > selectedCellMonth);
+                const isShiftedBefore = actYear < selectedCellYear || (actYear === selectedCellYear && actMonth < selectedCellMonth);
+
+                if (isSameMonth) {
+                  return (
+                    <div style={{ marginTop: '10px', padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', fontSize: '12px', color: '#15803d', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '15px' }}>🟢</span>
+                      <span><strong>On-Time:</strong> Completed within target planned month ({MONTH_NAMES[selectedCellMonth - 1]} {selectedCellYear}).</span>
+                    </div>
+                  );
+                } else if (isShiftedAfter) {
+                  return (
+                    <div style={{ marginTop: '10px', padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px', fontSize: '12px', color: '#b45309', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '15px' }}>🟠</span>
+                      <span><strong>Delayed / Shifted Execution:</strong> Planned for {MONTH_NAMES[selectedCellMonth - 1]} {selectedCellYear}, executed in <strong>{MONTH_NAMES[actMonth - 1]} {actYear}</strong>. Schedule will show <code>➔ {MONTH_NAMES[actMonth - 1]}</code> on target plan and <code>{actDay}*</code> on actual month.</span>
+                    </div>
+                  );
+                } else if (isShiftedBefore) {
+                  return (
+                    <div style={{ marginTop: '10px', padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '6px', fontSize: '12px', color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '15px' }}>🔵</span>
+                      <span><strong>Early Execution:</strong> Planned for {MONTH_NAMES[selectedCellMonth - 1]} {selectedCellYear}, executed early in <strong>{MONTH_NAMES[actMonth - 1]} {actYear}</strong>.</span>
+                    </div>
+                  );
+                }
+              }
+              return null;
+            })()}
           </div>
 
           <div className="form-group form-full">
-            <label className="form-label">Completion Notes / Remarks (Optional)</label>
+            <label className="form-label">Completion Notes / Delay Reason (บันทึก / เหตุผลความล่าช้า)</label>
             <textarea
               className="form-input"
               style={{ minHeight: '70px', fontFamily: 'var(--font-sans)', fontSize: '13px', resize: 'vertical' }}
-              placeholder="e.g. Completed without issues. Cleaned filter and checked belt tension."
+              placeholder="e.g. Awaiting spare parts from vendor / Machine occupied by urgent production order."
               value={logNote}
               onChange={(e) => setLogNote(e.target.value)}
               id="form-logNote"
@@ -3827,6 +3968,7 @@ export default function PMPlan() {
         filterRank={filterRank}
         isMonthRequired={isMonthRequired}
         getCellStatus={getCellStatus}
+        getCellDetails={getCellDetails}
       />
     </div>
   );
