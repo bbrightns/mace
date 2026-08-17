@@ -925,9 +925,34 @@ export default function PMPlan() {
     return sortDirection === 'asc' ? comparison : -comparison;
   });
 
+  // Helper for round ordinal suffixes (1st, 2nd, 3rd, 4th, etc.)
+  const getOrdinalSuffix = (num) => {
+    const j = num % 10;
+    const k = num % 100;
+    if (j === 1 && k !== 11) return `${num}st`;
+    if (j === 2 && k !== 12) return `${num}nd`;
+    if (j === 3 && k !== 13) return `${num}rd`;
+    return `${num}th`;
+  };
+
+  // Get the scheduled round ordinal for a given plan and month (e.g. 1st, 2nd, 3rd)
+  const getRoundOrdinal = (item, year, month) => {
+    if (!item) return '';
+    const scheduled = [];
+    for (let m = 1; m <= 12; m++) {
+      if (isMonthRequired(item, year, m)) {
+        scheduled.push(m);
+      }
+    }
+    const idx = scheduled.indexOf(Number(month));
+    if (idx === -1) return '';
+    return getOrdinalSuffix(idx + 1);
+  };
+
   // Determine cell execution details and state
   const getCellDetails = (item, year, month) => {
     const required = isMonthRequired(item, year, month);
+    const roundOrdinal = getRoundOrdinal(item, year, month);
 
     // 1. Check if there is a log planned for THIS specific (year, month)
     const planLog = logs.find(
@@ -966,12 +991,13 @@ export default function PMPlan() {
           }
 
           if (doneYear === year && doneMonth === month) {
+            const roundPrefix = roundOrdinal ? `${roundOrdinal} ` : '';
             return {
               status: 'done',
               log: planLog,
               day: doneDay,
-              text: doneDay.toString(),
-              tooltip: `Completed on ${planLog.doneDate} (On-time)`
+              text: `${roundPrefix}(${doneDay})`,
+              tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Completed on ${planLog.doneDate} (On-time)`
             };
           } else {
             const targetMName = MONTH_NAMES[doneMonth - 1] || `M${doneMonth}`;
@@ -982,22 +1008,44 @@ export default function PMPlan() {
               doneMonth,
               doneYear,
               text: `➔ ${targetMName}`,
-              tooltip: `Planned: ${MONTH_NAMES[month - 1]} ${year} | Done: ${planLog.doneDate} (Shifted to ${targetMName})`
+              tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Planned ${MONTH_NAMES[month - 1]} ${year} ➔ Done ${planLog.doneDate} in ${targetMName} (Delayed)`
             };
           }
         }
-        return { status: 'done', log: planLog, text: '✓', tooltip: 'Completed' };
+        const roundPrefix = roundOrdinal ? `${roundOrdinal} ` : '';
+        return { status: 'done', log: planLog, text: `${roundPrefix}✓`, tooltip: 'Completed' };
       }
 
-      // Check legacy item.lastDoneDate fallback
-      if (item.lastDoneDate) {
+      // If THIS required month has no planLog of its own, but received a delayed execution from an earlier round
+      if (actualLog && !(Number(actualLog.year) === year && Number(actualLog.month) === month)) {
+        const parts = actualLog.doneDate.split('-');
+        let doneDay = 15;
+        if (parts.length === 3) doneDay = parseInt(parts[2], 10);
+        const plannedMonthNum = Number(actualLog.month);
+        const plannedRound = getRoundOrdinal(item, Number(actualLog.year), plannedMonthNum);
+        const plannedMName = MONTH_NAMES[plannedMonthNum - 1] || `M${plannedMonthNum}`;
+        const roundPrefix = plannedRound ? `${plannedRound} ` : '';
+        return {
+          status: 'shifted-actual',
+          log: actualLog,
+          day: doneDay,
+          plannedMonth: plannedMonthNum,
+          text: `${roundPrefix}(${doneDay}*)`,
+          tooltip: `${plannedRound ? plannedRound + ' Round (Delayed): ' : ''}Executed on ${actualLog.doneDate} (Shifted from ${plannedMName} plan)`
+        };
+      }
+
+      // Check legacy item.lastDoneDate fallback ONLY IF no logs exist for this plan at all
+      const hasAnyLogs = logs.some((l) => l.planId === item.id);
+      if (!hasAnyLogs && item.lastDoneDate) {
         const d = new Date(item.lastDoneDate);
         if (!isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month) {
+          const roundPrefix = roundOrdinal ? `${roundOrdinal} ` : '';
           return {
             status: 'done',
             day: d.getDate(),
-            text: d.getDate().toString(),
-            tooltip: `Completed on ${item.lastDoneDate}`
+            text: `${roundPrefix}(${d.getDate()})`,
+            tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Completed on ${item.lastDoneDate}`
           };
         }
       }
@@ -1007,25 +1055,28 @@ export default function PMPlan() {
       const currentMonthVal = today.getMonth() + 1;
       const isPast = year < currentYearVal || (year === currentYearVal && month < currentMonthVal);
       if (isPast) {
-        return { status: 'overdue', text: '!', tooltip: `Overdue! Planned for ${MONTH_NAMES[month - 1]} ${year}` };
+        return { status: 'overdue', text: '!', tooltip: `Overdue! ${roundOrdinal ? roundOrdinal + ' Round ' : ''}Planned for ${MONTH_NAMES[month - 1]} ${year}` };
       }
 
-      return { status: 'pending', text: '', tooltip: `Scheduled for ${MONTH_NAMES[month - 1]} ${year}` };
+      return { status: 'pending', text: '', tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Scheduled for ${MONTH_NAMES[month - 1]} ${year}` };
     }
 
-    // Month is NOT required in regular cycle
+    // Month is NOT required in regular cycle (faded)
     if (actualLog && !(Number(actualLog.year) === year && Number(actualLog.month) === month)) {
       const parts = actualLog.doneDate.split('-');
       let doneDay = 15;
       if (parts.length === 3) doneDay = parseInt(parts[2], 10);
-      const plannedMName = MONTH_NAMES[Number(actualLog.month) - 1] || `M${actualLog.month}`;
+      const plannedMonthNum = Number(actualLog.month);
+      const plannedRound = getRoundOrdinal(item, Number(actualLog.year), plannedMonthNum);
+      const plannedMName = MONTH_NAMES[plannedMonthNum - 1] || `M${plannedMonthNum}`;
+      const roundPrefix = plannedRound ? `${plannedRound} ` : '';
       return {
         status: 'shifted-actual',
         log: actualLog,
         day: doneDay,
-        plannedMonth: Number(actualLog.month),
-        text: `${doneDay}*`,
-        tooltip: `Actual Done: ${actualLog.doneDate} (Shifted from ${plannedMName} plan)`
+        plannedMonth: plannedMonthNum,
+        text: `${roundPrefix}(${doneDay}*)`,
+        tooltip: `${plannedRound ? plannedRound + ' Round (Delayed): ' : ''}Executed on ${actualLog.doneDate} (Shifted from ${plannedMName} plan)`
       };
     }
 
@@ -1911,9 +1962,11 @@ export default function PMPlan() {
         }
         .month-cell {
           font-family: var(--font-mono);
-          font-size: 11px;
-          font-weight: 500;
+          font-size: 10.5px;
+          font-weight: 700;
           height: 44px;
+          white-space: nowrap;
+          padding: 4px 2px;
           transition: all 0.12s ease;
         }
         /* Color themes for cells */
@@ -2482,7 +2535,7 @@ export default function PMPlan() {
                     const mIndex = i + 1;
                     if (filterMonth !== 'all' && filterMonth !== mIndex) return null;
                     return (
-                      <th key={name} style={{ width: '60px' }}>{name}</th>
+                      <th key={name} style={{ width: '74px', minWidth: '70px' }}>{name}</th>
                     );
                   })}
                 </tr>
@@ -2610,15 +2663,15 @@ export default function PMPlan() {
             </div>
             <div className="legend-item">
               <span className="legend-block pdone"></span>
-              <span>On-Time Done (Green with Day)</span>
+              <span>On-Time Done (Green e.g. 1st (22))</span>
             </div>
             <div className="legend-item">
               <span className="legend-block pshifted-plan"></span>
-              <span>Shifted Plan (Amber e.g. ➔ Feb)</span>
+              <span>Shifted Plan (Amber e.g. ➔ Apr)</span>
             </div>
             <div className="legend-item">
               <span className="legend-block pshifted-actual"></span>
-              <span>Shifted Done (Orange e.g. 15*)</span>
+              <span>Shifted Done (Orange e.g. 1st (22*))</span>
             </div>
             <div className="legend-item">
               <span className="legend-block poverdue"></span>

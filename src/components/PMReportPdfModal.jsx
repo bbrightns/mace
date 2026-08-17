@@ -468,9 +468,9 @@ export default function PMReportPdfModal({
                   {/* Legend */}
                   <div className="pdf-legend">
                     <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-pending"></span> Scheduled</span>
-                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-done"></span> On-Time (e.g. 17)</span>
-                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-shifted-plan"></span> Shifted Plan (➔ Feb)</span>
-                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-shifted-actual"></span> Shifted Done (17*)</span>
+                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-done"></span> On-Time (e.g. 1st (17))</span>
+                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-shifted-plan"></span> Shifted Plan (➔ Apr)</span>
+                    <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-shifted-actual"></span> Shifted Done (1st (17*))</span>
                     <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-overdue"></span> Overdue (!)</span>
                     <span className="pdf-legend-item"><span className="pdf-legend-box pdf-cell-faded"></span> N/A</span>
                   </div>
