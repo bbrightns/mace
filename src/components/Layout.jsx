@@ -14,14 +14,48 @@ import {
   BookOpen, 
   FileCheck2,
   Cpu,
-  HelpCircle
+  HelpCircle,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelLeft
 } from 'lucide-react';
 
 export default function Layout({ children, currentPage, setCurrentPage, syncStatus = 'synced' }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('mace_sidebar_collapsed') === 'true';
+  });
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [currentDateStr, setCurrentDateStr] = useState('');
   const [showHelpModal, setShowHelpModal] = useState(false);
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('mace_sidebar_collapsed', String(next));
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const targetTag = e.target?.tagName?.toLowerCase();
+      if (targetTag === 'input' || targetTag === 'textarea' || targetTag === 'select') {
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        if (window.innerWidth <= 1024) {
+          setMobileOpen(prev => !prev);
+        } else {
+          toggleSidebar();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -106,10 +140,27 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
       )}
 
       {/* Sidebar navigation */}
-      <aside className={`app-sidebar ${mobileOpen ? 'mobile-open' : ''}`} id="app-sidebar">
+      <aside className={`app-sidebar ${mobileOpen ? 'mobile-open' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`} id="app-sidebar">
         <div className="sidebar-logo">
-          <span className="sidebar-logo-text">MACE</span>
-          <span className="sidebar-logo-sub">v1.2</span>
+          <div className="sidebar-logo-brand">
+            <span className="sidebar-logo-text">MACE</span>
+            <span className="sidebar-logo-sub">v1.2</span>
+          </div>
+          <button 
+            type="button" 
+            className="sidebar-collapse-btn"
+            onClick={() => {
+              if (mobileOpen) {
+                setMobileOpen(false);
+              } else {
+                toggleSidebar();
+              }
+            }}
+            aria-label="Hide sidebar (Ctrl+B)"
+            title="Hide sidebar (Ctrl+B)"
+          >
+            <PanelLeftClose size={18} />
+          </button>
         </div>
         
         <nav className="sidebar-nav" aria-label="Main Navigation">
@@ -158,17 +209,25 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
       </aside>
 
       {/* Main workspace section */}
-      <div className="app-content" id="app-content-wrapper">
+      <div className={`app-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`} id="app-content-wrapper">
         {/* Header bar */}
         <header className="app-header" id="app-header">
           <div className="header-left">
             <button 
-              className="mobile-toggle" 
-              onClick={() => setMobileOpen(!mobileOpen)}
-              id="mobile-nav-toggle"
-              aria-label="Toggle navigation menu"
+              type="button"
+              className="sidebar-toggle-btn" 
+              onClick={() => {
+                if (window.innerWidth <= 1024) {
+                  setMobileOpen(!mobileOpen);
+                } else {
+                  toggleSidebar();
+                }
+              }}
+              id="sidebar-toggle-btn"
+              aria-label={sidebarCollapsed ? "Show sidebar (Ctrl+B)" : "Hide sidebar (Ctrl+B)"}
+              title={sidebarCollapsed ? "Show sidebar (Ctrl+B)" : "Hide sidebar (Ctrl+B)"}
             >
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+              {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
             </button>
             
             <div className="sync-status" style={{ fontWeight: 600, color: 'var(--text)' }}>
@@ -255,6 +314,10 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', backgroundColor: 'var(--surface2)', borderRadius: '6px' }}>
+                  <span>Toggle Sidebar (Hide / Show)</span>
+                  <kbd style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>Ctrl + B</kbd>
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px', backgroundColor: 'var(--surface2)', borderRadius: '6px' }}>
                   <span>Focus Search Input</span>
                   <kbd style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>Ctrl + K</kbd>
