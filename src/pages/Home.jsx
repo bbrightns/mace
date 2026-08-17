@@ -51,6 +51,7 @@ export default function Home({
     const diff = (year - 2026) * 12 + (month - startM);
     let interval = 1;
     if (item.cycle === 'every 2 months') interval = 2;
+    else if (item.cycle === 'every 3 months' || item.cycle === 'quarterly') interval = 3;
     else if (item.cycle === 'every 6 months') interval = 6;
     else if (item.cycle === 'yearly') interval = 12;
     return (diff % interval + interval) % interval === 0;

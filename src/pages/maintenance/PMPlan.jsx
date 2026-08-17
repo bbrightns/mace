@@ -321,6 +321,8 @@ export default function PMPlan() {
       date.setMonth(date.getMonth() + 1);
     } else if (cycleValue === 'every 2 months') {
       date.setMonth(date.getMonth() + 2);
+    } else if (cycleValue === 'every 3 months' || cycleValue === 'quarterly') {
+      date.setMonth(date.getMonth() + 3);
     } else if (cycleValue === 'every 6 months') {
       date.setMonth(date.getMonth() + 6);
     } else if (cycleValue === 'yearly') {
@@ -543,6 +545,7 @@ export default function PMPlan() {
     
     let interval = 1;
     if (item.cycle === 'every 2 months') interval = 2;
+    else if (item.cycle === 'every 3 months' || item.cycle === 'quarterly') interval = 3;
     else if (item.cycle === 'every 6 months') interval = 6;
     else if (item.cycle === 'yearly') interval = 12;
     
@@ -621,7 +624,7 @@ export default function PMPlan() {
     const displayResp = item.responsible === 'Own Team' ? 'My team' : (item.responsible || 'My team');
     const matchesResponsible = filterResponsible === 'all' || displayResp === filterResponsible;
 
-    const matchesCycle = filterCycle === 'all' || item.cycle === filterCycle;
+    const matchesCycle = filterCycle === 'all' || item.cycle === filterCycle || (filterCycle === 'every 3 months' && (item.cycle === 'quarterly' || item.cycle === '3 months'));
     const matchesType = isMatchingType(item.itemType || item.type || 'pm', filterType);
     const matchesRank = filterRank === 'all' || (item.rank || 'B') === filterRank;
 
@@ -647,7 +650,7 @@ export default function PMPlan() {
     const displayResp = item.responsible === 'Own Team' ? 'My team' : (item.responsible || 'My team');
     const matchesResponsible = filterResponsible === 'all' || displayResp === filterResponsible;
 
-    const matchesCycle = filterCycle === 'all' || item.cycle === filterCycle;
+    const matchesCycle = filterCycle === 'all' || item.cycle === filterCycle || (filterCycle === 'every 3 months' && (item.cycle === 'quarterly' || item.cycle === '3 months'));
     const matchesType = isMatchingType(item.itemType || item.type || 'pm', filterType);
     const matchesRank = filterRank === 'all' || (item.rank || 'B') === filterRank;
 
@@ -2156,6 +2159,7 @@ export default function PMPlan() {
             <option value="all">🔄 All Cycles</option>
             <option value="monthly">Monthly</option>
             <option value="every 2 months">Every 2 Months</option>
+            <option value="every 3 months">Every 3 Months</option>
             <option value="every 6 months">Every 6 Months</option>
             <option value="yearly">Yearly</option>
           </select>
@@ -3079,6 +3083,7 @@ export default function PMPlan() {
             >
               <option value="monthly">Monthly</option>
               <option value="every 2 months">Every 2 Months</option>
+              <option value="every 3 months">Every 3 Months</option>
               <option value="every 6 months">Every 6 Months</option>
               <option value="yearly">Yearly</option>
             </select>
@@ -3576,6 +3581,7 @@ export default function PMPlan() {
               <option value="keep">-- Keep Original Cycle --</option>
               <option value="monthly">Monthly</option>
               <option value="every 2 months">Every 2 Months</option>
+              <option value="every 3 months">Every 3 Months</option>
               <option value="every 6 months">Every 6 Months</option>
               <option value="yearly">Yearly</option>
             </select>
