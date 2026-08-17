@@ -991,12 +991,13 @@ export default function PMPlan() {
           }
 
           if (doneYear === year && doneMonth === month) {
-            const roundPrefix = roundOrdinal ? `${roundOrdinal} ` : '';
             return {
               status: 'done',
               log: planLog,
               day: doneDay,
-              text: `${roundPrefix}(${doneDay})`,
+              line1: roundOrdinal || '',
+              line2: `(${doneDay})`,
+              text: `${roundOrdinal ? roundOrdinal + ' ' : ''}(${doneDay})`,
               tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Completed on ${planLog.doneDate} (On-time)`
             };
           } else {
@@ -1007,13 +1008,21 @@ export default function PMPlan() {
               day: doneDay,
               doneMonth,
               doneYear,
-              text: `➔ ${targetMName}`,
+              line1: roundOrdinal || 'Plan',
+              line2: `➔ ${targetMName}`,
+              text: `${roundOrdinal ? roundOrdinal + ' ' : ''}➔ ${targetMName}`,
               tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Planned ${MONTH_NAMES[month - 1]} ${year} ➔ Done ${planLog.doneDate} in ${targetMName} (Delayed)`
             };
           }
         }
-        const roundPrefix = roundOrdinal ? `${roundOrdinal} ` : '';
-        return { status: 'done', log: planLog, text: `${roundPrefix}✓`, tooltip: 'Completed' };
+        return {
+          status: 'done',
+          log: planLog,
+          line1: roundOrdinal || '',
+          line2: '✓',
+          text: `${roundOrdinal ? roundOrdinal + ' ' : ''}✓`,
+          tooltip: 'Completed'
+        };
       }
 
       // If THIS required month has no planLog of its own, but received a delayed execution from an earlier round
@@ -1024,13 +1033,14 @@ export default function PMPlan() {
         const plannedMonthNum = Number(actualLog.month);
         const plannedRound = getRoundOrdinal(item, Number(actualLog.year), plannedMonthNum);
         const plannedMName = MONTH_NAMES[plannedMonthNum - 1] || `M${plannedMonthNum}`;
-        const roundPrefix = plannedRound ? `${plannedRound} ` : '';
         return {
           status: 'shifted-actual',
           log: actualLog,
           day: doneDay,
           plannedMonth: plannedMonthNum,
-          text: `${roundPrefix}(${doneDay}*)`,
+          line1: plannedRound || '',
+          line2: `(${doneDay}*)`,
+          text: `${plannedRound ? plannedRound + ' ' : ''}(${doneDay}*)`,
           tooltip: `${plannedRound ? plannedRound + ' Round (Delayed): ' : ''}Executed on ${actualLog.doneDate} (Shifted from ${plannedMName} plan)`
         };
       }
@@ -1040,11 +1050,12 @@ export default function PMPlan() {
       if (!hasAnyLogs && item.lastDoneDate) {
         const d = new Date(item.lastDoneDate);
         if (!isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month) {
-          const roundPrefix = roundOrdinal ? `${roundOrdinal} ` : '';
           return {
             status: 'done',
             day: d.getDate(),
-            text: `${roundPrefix}(${d.getDate()})`,
+            line1: roundOrdinal || '',
+            line2: `(${d.getDate()})`,
+            text: `${roundOrdinal ? roundOrdinal + ' ' : ''}(${d.getDate()})`,
             tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Completed on ${item.lastDoneDate}`
           };
         }
@@ -1055,10 +1066,22 @@ export default function PMPlan() {
       const currentMonthVal = today.getMonth() + 1;
       const isPast = year < currentYearVal || (year === currentYearVal && month < currentMonthVal);
       if (isPast) {
-        return { status: 'overdue', text: '!', tooltip: `Overdue! ${roundOrdinal ? roundOrdinal + ' Round ' : ''}Planned for ${MONTH_NAMES[month - 1]} ${year}` };
+        return {
+          status: 'overdue',
+          line1: roundOrdinal || '',
+          line2: '!',
+          text: '!',
+          tooltip: `Overdue! ${roundOrdinal ? roundOrdinal + ' Round ' : ''}Planned for ${MONTH_NAMES[month - 1]} ${year}`
+        };
       }
 
-      return { status: 'pending', text: '', tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Scheduled for ${MONTH_NAMES[month - 1]} ${year}` };
+      return {
+        status: 'pending',
+        line1: '',
+        line2: '',
+        text: '',
+        tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Scheduled for ${MONTH_NAMES[month - 1]} ${year}`
+      };
     }
 
     // Month is NOT required in regular cycle (faded)
@@ -1069,18 +1092,19 @@ export default function PMPlan() {
       const plannedMonthNum = Number(actualLog.month);
       const plannedRound = getRoundOrdinal(item, Number(actualLog.year), plannedMonthNum);
       const plannedMName = MONTH_NAMES[plannedMonthNum - 1] || `M${plannedMonthNum}`;
-      const roundPrefix = plannedRound ? `${plannedRound} ` : '';
       return {
         status: 'shifted-actual',
         log: actualLog,
         day: doneDay,
         plannedMonth: plannedMonthNum,
-        text: `${roundPrefix}(${doneDay}*)`,
+        line1: plannedRound || '',
+        line2: `(${doneDay}*)`,
+        text: `${plannedRound ? plannedRound + ' ' : ''}(${doneDay}*)`,
         tooltip: `${plannedRound ? plannedRound + ' Round (Delayed): ' : ''}Executed on ${actualLog.doneDate} (Shifted from ${plannedMName} plan)`
       };
     }
 
-    return { status: 'faded', text: '', tooltip: 'No inspection required' };
+    return { status: 'faded', line1: '', line2: '', text: '', tooltip: 'No inspection required' };
   };
 
   const getCellStatus = (item, year, month) => {
@@ -2641,7 +2665,14 @@ export default function PMPlan() {
                             title={cellDetails.tooltip}
                             style={{ textAlign: 'center', cursor: cellState !== 'faded' ? 'pointer' : 'default' }}
                           >
-                            <span style={{ fontWeight: 'bold' }}>{cellContent}</span>
+                            {cellDetails.line1 || cellDetails.line2 ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: '1.2' }}>
+                                {cellDetails.line1 && <span style={{ fontSize: '11px', fontWeight: '700' }}>{cellDetails.line1}</span>}
+                                {cellDetails.line2 && <span style={{ fontSize: '11.5px', fontWeight: '700' }}>{cellDetails.line2}</span>}
+                              </div>
+                            ) : (
+                              <span style={{ fontWeight: 'bold' }}>{cellContent}</span>
+                            )}
                           </td>
                         );
                       })}

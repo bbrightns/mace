@@ -453,7 +453,14 @@ export default function PMReportPdfModal({
 
                                   return (
                                     <td key={monthNum} className={`pdf-month-cell ${cellBgClass}`}>
-                                      {cellText}
+                                      {details?.line1 || details?.line2 ? (
+                                        <div style={{ lineHeight: '1.15', textAlign: 'center' }}>
+                                          {details.line1 && <div style={{ fontSize: '8px', fontWeight: 'bold' }}>{details.line1}</div>}
+                                          {details.line2 && <div style={{ fontSize: '8.5px', fontWeight: 'bold' }}>{details.line2}</div>}
+                                        </div>
+                                      ) : (
+                                        cellText
+                                      )}
                                     </td>
                                   );
                                 })}
