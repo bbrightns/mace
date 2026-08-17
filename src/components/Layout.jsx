@@ -14,10 +14,7 @@ import {
   BookOpen, 
   FileCheck2,
   Cpu,
-  HelpCircle,
-  PanelLeftClose,
-  PanelLeftOpen,
-  PanelLeft
+  HelpCircle
 } from 'lucide-react';
 
 export default function Layout({ children, currentPage, setCurrentPage, syncStatus = 'synced' }) {
@@ -159,7 +156,7 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
             aria-label="Hide sidebar (Ctrl+B)"
             title="Hide sidebar (Ctrl+B)"
           >
-            <PanelLeftClose size={18} />
+            <Menu size={18} />
           </button>
         </div>
         
@@ -227,7 +224,7 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
               aria-label={sidebarCollapsed ? "Show sidebar (Ctrl+B)" : "Hide sidebar (Ctrl+B)"}
               title={sidebarCollapsed ? "Show sidebar (Ctrl+B)" : "Hide sidebar (Ctrl+B)"}
             >
-              {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+              <Menu size={18} />
             </button>
             
             <div className="sync-status" style={{ fontWeight: 600, color: 'var(--text)' }}>
