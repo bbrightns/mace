@@ -132,7 +132,7 @@ export default function PMPlan() {
   const [activeTab, setActiveTab] = useState('schedule'); // 'schedule' or 'list'
   const [selectedYear, setSelectedYear] = useState(2026);
   const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState('all'); // 'all', 'pm', 'calibrate'
+  const [filterType, setFilterType] = useState('all'); // 'all', 'pm', 'calibrate', 'service_contract'
   const [filterRank, setFilterRank] = useState('all'); // 'all', 'S', 'A', 'B', 'C'
   const [filterCycle, setFilterCycle] = useState('all');
   const [filterPlant, setFilterPlant] = useState('all');
@@ -160,7 +160,7 @@ export default function PMPlan() {
   const [isBatchRankSaving, setIsBatchRankSaving] = useState(false);
 
   const [isBatchTypeModalOpen, setIsBatchTypeModalOpen] = useState(false);
-  const [batchTypeValue, setBatchTypeValue] = useState('pm');
+  const [batchTypeValue, setBatchTypeValue] = useState('pm'); // 'pm', 'calibrate', 'service_contract'
   const [isBatchTypeSaving, setIsBatchTypeSaving] = useState(false);
   
   // Sorting state
@@ -204,7 +204,7 @@ export default function PMPlan() {
   
   // Form states (Plans)
   const [machineName, setMachineName] = useState('');
-  const [itemType, setItemType] = useState('pm'); // 'pm' or 'calibrate'
+  const [itemType, setItemType] = useState('pm'); // 'pm', 'calibrate', 'service_contract'
   const [rank, setRank] = useState('B'); // 'S', 'A', 'B', 'C'
   const [suggestedRankInfo, setSuggestedRankInfo] = useState(null);
   const [plant, setPlant] = useState('RFG');
@@ -457,7 +457,11 @@ export default function PMPlan() {
         data: { itemType: batchTypeValue }
       }));
       await batchWriteOperations(operations);
-      const label = batchTypeValue === 'calibrate' ? 'Calibrate' : 'PM';
+      const label = batchTypeValue === 'calibrate' 
+        ? 'Calibrate' 
+        : batchTypeValue === 'service_contract' 
+        ? 'Service Contract' 
+        : 'PM';
       showToast(`Updated Activity Type to "${label}" for ${selectedPlanIds.length} items.`, 'success');
       setIsBatchTypeModalOpen(false);
       setSelectedPlanIds([]);
@@ -557,10 +561,11 @@ export default function PMPlan() {
 
   // Summary counts for filter badges
   const typeStats = useMemo(() => {
-    const stats = { all: items.length, pm: 0, calibrate: 0 };
+    const stats = { all: items.length, pm: 0, calibrate: 0, service_contract: 0 };
     items.forEach(item => {
-      const t = item.itemType || item.type || 'pm';
-      if (t === 'calibrate') stats.calibrate++;
+      const t = (item.itemType || item.type || 'pm').toLowerCase();
+      if (t === 'calibrate' || t.includes('cal')) stats.calibrate++;
+      else if (t === 'service_contract' || t.includes('contract') || t.includes('service')) stats.service_contract++;
       else stats.pm++;
     });
     return stats;
@@ -575,6 +580,28 @@ export default function PMPlan() {
     return stats;
   }, [items]);
 
+  // Helper to match activity type
+  const isMatchingType = (itemTypeVal, filter) => {
+    if (filter === 'all') return true;
+    const t = (itemTypeVal || 'pm').toLowerCase();
+    if (filter === 'calibrate') return t === 'calibrate' || t.includes('cal');
+    if (filter === 'service_contract') return t === 'service_contract' || t.includes('contract') || t.includes('service');
+    if (filter === 'pm') return t === 'pm' || (!t.includes('cal') && !t.includes('contract') && !t.includes('service'));
+    return t === filter;
+  };
+
+  // Helper to render type badge
+  const renderItemTypeBadge = (rawType) => {
+    const t = (rawType || 'pm').toLowerCase();
+    if (t === 'calibrate' || t.includes('cal')) {
+      return <span className="pm-type-badge type-calibrate">⚖️ Cal</span>;
+    }
+    if (t === 'service_contract' || t.includes('contract') || t.includes('service')) {
+      return <span className="pm-type-badge type-service_contract">🤝 Contract</span>;
+    }
+    return <span className="pm-type-badge type-pm">🔧 PM</span>;
+  };
+
   // Filter & Search logic
   const filteredItems = items.filter((item) => {
     const searchLower = search.toLowerCase().trim();
@@ -585,6 +612,8 @@ export default function PMPlan() {
       item.machineName?.toLowerCase().includes(searchLower) || 
       item.checksheetId?.toLowerCase().includes(searchLower) ||
       itemTypeVal.includes(searchLower) ||
+      (searchLower.includes('service') && (itemTypeVal.includes('service') || itemTypeVal.includes('contract'))) ||
+      (searchLower.includes('contract') && (itemTypeVal.includes('service') || itemTypeVal.includes('contract'))) ||
       `rank ${itemRankVal}`.includes(searchLower);
 
     const matchesPlant = filterPlant === 'all' || (item.plant || 'RFG') === filterPlant;
@@ -593,7 +622,7 @@ export default function PMPlan() {
     const matchesResponsible = filterResponsible === 'all' || displayResp === filterResponsible;
 
     const matchesCycle = filterCycle === 'all' || item.cycle === filterCycle;
-    const matchesType = filterType === 'all' || (item.itemType || item.type || 'pm') === filterType;
+    const matchesType = isMatchingType(item.itemType || item.type || 'pm', filterType);
     const matchesRank = filterRank === 'all' || (item.rank || 'B') === filterRank;
 
     const matchesMonth = filterMonth === 'all' || isMonthRequired(item, selectedYear, Number(filterMonth));
@@ -610,6 +639,8 @@ export default function PMPlan() {
       item.machineName?.toLowerCase().includes(searchLower) || 
       item.checksheetId?.toLowerCase().includes(searchLower) ||
       itemTypeVal.includes(searchLower) ||
+      (searchLower.includes('service') && (itemTypeVal.includes('service') || itemTypeVal.includes('contract'))) ||
+      (searchLower.includes('contract') && (itemTypeVal.includes('service') || itemTypeVal.includes('contract'))) ||
       `rank ${itemRankVal}`.includes(searchLower);
 
     const matchesPlant = filterPlant === 'all' || (item.plant || 'RFG') === filterPlant;
@@ -617,7 +648,7 @@ export default function PMPlan() {
     const matchesResponsible = filterResponsible === 'all' || displayResp === filterResponsible;
 
     const matchesCycle = filterCycle === 'all' || item.cycle === filterCycle;
-    const matchesType = filterType === 'all' || (item.itemType || item.type || 'pm') === filterType;
+    const matchesType = isMatchingType(item.itemType || item.type || 'pm', filterType);
     const matchesRank = filterRank === 'all' || (item.rank || 'B') === filterRank;
 
     return matchesSearch && matchesPlant && matchesResponsible && matchesCycle && matchesType && matchesRank;
@@ -1328,7 +1359,13 @@ export default function PMPlan() {
       if (hasTypeCol && hasRankCol) {
         // Modern 12-column format
         const rawType = cols[1]?.replace(/^["']|["']$/g, '').toLowerCase() || 'pm';
-        itemType = rawType.includes('cal') ? 'calibrate' : 'pm';
+        if (rawType.includes('cal')) {
+          itemType = 'calibrate';
+        } else if (rawType.includes('service') || rawType.includes('contract')) {
+          itemType = 'service_contract';
+        } else {
+          itemType = 'pm';
+        }
         const rawRank = cols[2]?.replace(/^["']|["']$/g, '').toUpperCase() || 'B';
         rank = ['S', 'A', 'B', 'C'].includes(rawRank) ? rawRank : 'B';
         plant = cols[3]?.replace(/^["']|["']$/g, '') || 'RFG';
@@ -1842,6 +1879,14 @@ export default function PMPlan() {
           color: #7e22ce;
           border: 1px solid #e9d5ff;
         }
+        .pm-type-badge.type-service_contract,
+        .pm-type-badge.type-service-contract,
+        .pm-type-badge.type-contract,
+        .pm-type-badge.type-service {
+          background-color: #ecfdf5;
+          color: #047857;
+          border: 1px solid #a7f3d0;
+        }
         
         .pm-rank-badge {
           display: inline-flex;
@@ -2043,6 +2088,7 @@ export default function PMPlan() {
             <option value="all">🏷️ All Tags ({typeStats.all})</option>
             <option value="pm">🔧 PM ({typeStats.pm})</option>
             <option value="calibrate">⚖️ Calibrate ({typeStats.calibrate})</option>
+            <option value="service_contract">🤝 Service Contract ({typeStats.service_contract})</option>
           </select>
         </div>
 
@@ -2365,9 +2411,7 @@ export default function PMPlan() {
                       >
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
-                            <span className={`pm-type-badge type-${item.itemType || item.type || 'pm'}`}>
-                              {(item.itemType || item.type || 'pm') === 'calibrate' ? '⚖️ Cal' : '🔧 PM'}
-                            </span>
+                            {renderItemTypeBadge(item.itemType || item.type || 'pm')}
                             <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
                               Rank {item.rank || 'B'}
                             </span>
@@ -2621,7 +2665,7 @@ export default function PMPlan() {
                   </th>
                   <th style={{ width: '45px' }}>No.</th>
                   {renderSortableHeader('plant', 'Plant', { width: '80px' })}
-                  {renderSortableHeader('itemType', 'Tag', { width: '85px', textAlign: 'center' })}
+                  {renderSortableHeader('itemType', 'Tag', { width: '90px', textAlign: 'center' })}
                   {renderSortableHeader('rank', 'Rank', { width: '75px', textAlign: 'center' })}
                   {renderSortableHeader('machineName', 'Machine / Equipment')}
                   {renderSortableHeader('checksheetId', 'Checksheet ID')}
@@ -2668,9 +2712,7 @@ export default function PMPlan() {
                         <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`}>{item.plant || 'RFG'}</span>
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <span className={`pm-type-badge type-${item.itemType || item.type || 'pm'}`}>
-                          {(item.itemType || item.type || 'pm') === 'calibrate' ? '⚖️ Cal' : '🔧 PM'}
-                        </span>
+                        {renderItemTypeBadge(item.itemType || item.type || 'pm')}
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
@@ -2745,9 +2787,7 @@ export default function PMPlan() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                         <span className="font-mono text3 text-xs">#{String(index + 1).padStart(2, '0')}</span>
                         <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`}>{item.plant || 'RFG'}</span>
-                        <span className={`pm-type-badge type-${item.itemType || item.type || 'pm'}`}>
-                          {(item.itemType || item.type || 'pm') === 'calibrate' ? '⚖️ Cal' : '🔧 PM'}
-                        </span>
+                        {renderItemTypeBadge(item.itemType || item.type || 'pm')}
                         <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
                           Rank {item.rank || 'B'}
                         </span>
@@ -2840,17 +2880,17 @@ export default function PMPlan() {
             </div>
           )}
 
-          {/* Activity Tag (PM vs Calibrate) */}
+          {/* Activity Tag (PM vs Calibrate vs Service Contract) */}
           <div className="form-group form-full">
             <label className="form-label" style={{ fontWeight: 'bold' }}>Activity Tag / Type *</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
               <button
                 type="button"
                 className={`btn ${itemType === 'pm' ? 'btn-primary' : ''}`}
                 onClick={() => setItemType('pm')}
                 style={{
                   justifyContent: 'center',
-                  padding: '8px',
+                  padding: '8px 4px',
                   fontSize: '12px',
                   fontWeight: '600',
                   border: itemType === 'pm' ? '2px solid var(--accent)' : '1px solid var(--border)',
@@ -2858,7 +2898,7 @@ export default function PMPlan() {
                   color: itemType === 'pm' ? '#ffffff' : 'var(--text)'
                 }}
               >
-                <span>🔧 Preventive Maintenance (PM)</span>
+                <span>🔧 PM</span>
               </button>
               <button
                 type="button"
@@ -2866,7 +2906,7 @@ export default function PMPlan() {
                 onClick={() => setItemType('calibrate')}
                 style={{
                   justifyContent: 'center',
-                  padding: '8px',
+                  padding: '8px 4px',
                   fontSize: '12px',
                   fontWeight: '600',
                   border: itemType === 'calibrate' ? '2px solid #7e22ce' : '1px solid var(--border)',
@@ -2874,7 +2914,23 @@ export default function PMPlan() {
                   color: itemType === 'calibrate' ? '#ffffff' : 'var(--text)'
                 }}
               >
-                <span>⚖️ Calibration (Calibrate)</span>
+                <span>⚖️ Calibrate</span>
+              </button>
+              <button
+                type="button"
+                className={`btn ${itemType === 'service_contract' ? 'btn-primary' : ''}`}
+                onClick={() => setItemType('service_contract')}
+                style={{
+                  justifyContent: 'center',
+                  padding: '8px 4px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  border: itemType === 'service_contract' ? '2px solid #059669' : '1px solid var(--border)',
+                  backgroundColor: itemType === 'service_contract' ? '#059669' : 'var(--surface2)',
+                  color: itemType === 'service_contract' ? '#ffffff' : 'var(--text)'
+                }}
+              >
+                <span>🤝 Service Contract</span>
               </button>
             </div>
           </div>
@@ -3662,7 +3718,7 @@ export default function PMPlan() {
 
           <div className="form-group form-full">
             <label className="form-label" style={{ fontWeight: 'bold' }}>Choose Activity Tag / Type *</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '6px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '6px' }}>
               <button
                 type="button"
                 onClick={() => setBatchTypeValue('pm')}
@@ -3670,18 +3726,18 @@ export default function PMPlan() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '8px',
-                  padding: '12px',
+                  gap: '6px',
+                  padding: '12px 6px',
                   borderRadius: '6px',
                   border: batchTypeValue === 'pm' ? '2px solid var(--accent)' : '1px solid var(--border)',
                   backgroundColor: batchTypeValue === 'pm' ? 'var(--accent)' : 'var(--surface2)',
                   color: batchTypeValue === 'pm' ? '#fff' : 'var(--text)',
                   cursor: 'pointer',
                   fontWeight: '600',
-                  fontSize: '13px'
+                  fontSize: '12.5px'
                 }}
               >
-                <span>🔧 Preventive Maintenance (PM)</span>
+                <span>🔧 PM</span>
               </button>
               <button
                 type="button"
@@ -3690,18 +3746,38 @@ export default function PMPlan() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '8px',
-                  padding: '12px',
+                  gap: '6px',
+                  padding: '12px 6px',
                   borderRadius: '6px',
                   border: batchTypeValue === 'calibrate' ? '2px solid #7e22ce' : '1px solid var(--border)',
                   backgroundColor: batchTypeValue === 'calibrate' ? '#7e22ce' : 'var(--surface2)',
                   color: batchTypeValue === 'calibrate' ? '#fff' : 'var(--text)',
                   cursor: 'pointer',
                   fontWeight: '600',
-                  fontSize: '13px'
+                  fontSize: '12.5px'
                 }}
               >
-                <span>⚖️ Calibration (Calibrate)</span>
+                <span>⚖️ Calibrate</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setBatchTypeValue('service_contract')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '12px 6px',
+                  borderRadius: '6px',
+                  border: batchTypeValue === 'service_contract' ? '2px solid #059669' : '1px solid var(--border)',
+                  backgroundColor: batchTypeValue === 'service_contract' ? '#059669' : 'var(--surface2)',
+                  color: batchTypeValue === 'service_contract' ? '#fff' : 'var(--text)',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '12.5px'
+                }}
+              >
+                <span>🤝 Service Contract</span>
               </button>
             </div>
           </div>

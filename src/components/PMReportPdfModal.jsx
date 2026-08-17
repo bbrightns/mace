@@ -45,9 +45,17 @@ export default function PMReportPdfModal({
     if (filterPlant !== 'all' && (item.plant || 'RFG').toLowerCase() !== filterPlant.toLowerCase()) {
       return false;
     }
-    const t = item.itemType || item.type || 'pm';
-    if (filterType !== 'all' && t !== filterType) {
-      return false;
+    const t = (item.itemType || item.type || 'pm').toLowerCase();
+    if (filterType !== 'all') {
+      if (filterType === 'calibrate') {
+        if (t !== 'calibrate' && !t.includes('cal')) return false;
+      } else if (filterType === 'service_contract') {
+        if (t !== 'service_contract' && !t.includes('contract') && !t.includes('service')) return false;
+      } else if (filterType === 'pm') {
+        if (t.includes('cal') || t.includes('contract') || t.includes('service')) return false;
+      } else if (t !== filterType) {
+        return false;
+      }
     }
     const r = item.rank || 'B';
     if (filterRank !== 'all' && r !== filterRank) {
@@ -72,6 +80,8 @@ export default function PMReportPdfModal({
   // Calculate dynamic report title
   const reportMainTitle = filterType === 'calibrate' 
     ? `CALIBRATION ANNUAL PLAN (${selectedYear})`
+    : filterType === 'service_contract'
+    ? `SERVICE CONTRACT ANNUAL PLAN (${selectedYear})`
     : filterType === 'pm'
     ? `PREVENTIVE MAINTENANCE ANNUAL PLAN (${selectedYear})`
     : `MAINTENANCE & CALIBRATION ANNUAL PLAN (${selectedYear})`;
@@ -384,8 +394,21 @@ export default function PMReportPdfModal({
                               <tr key={item.id || globalIdx}>
                                 <td style={{ textAlign: 'center', fontSize: '9px', fontWeight: '500' }}>{globalIdx}</td>
                                 <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{item.plant || 'RFG'}</td>
-                                <td style={{ textAlign: 'center', fontSize: '8.5px', fontWeight: 'bold', color: itemTypeVal === 'calibrate' ? '#7e22ce' : '#0369a1' }}>
-                                  {itemTypeVal === 'calibrate' ? 'Cal' : 'PM'}
+                                <td style={{ 
+                                  textAlign: 'center', 
+                                  fontSize: '8.5px', 
+                                  fontWeight: 'bold', 
+                                  color: (itemTypeVal === 'calibrate' || String(itemTypeVal).toLowerCase().includes('cal')) 
+                                    ? '#7e22ce' 
+                                    : (itemTypeVal === 'service_contract' || String(itemTypeVal).toLowerCase().includes('contract') || String(itemTypeVal).toLowerCase().includes('service')) 
+                                    ? '#047857' 
+                                    : '#0369a1' 
+                                }}>
+                                  {(itemTypeVal === 'calibrate' || String(itemTypeVal).toLowerCase().includes('cal')) 
+                                    ? 'Cal' 
+                                    : (itemTypeVal === 'service_contract' || String(itemTypeVal).toLowerCase().includes('contract') || String(itemTypeVal).toLowerCase().includes('service')) 
+                                    ? 'Contract' 
+                                    : 'PM'}
                                 </td>
                                 <td style={{ textAlign: 'center', fontSize: '9px', fontWeight: 'bold' }}>
                                   {itemRankVal}
