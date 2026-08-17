@@ -954,12 +954,47 @@ export default function PMPlan() {
     const required = isMonthRequired(item, year, month);
     const roundOrdinal = getRoundOrdinal(item, year, month);
 
-    // 1. Check if there is a log planned for THIS specific (year, month)
+    // 1. Check if there is an earlier round's log that was delayed and executed in THIS (year, month)
+    const earlierShiftedLog = logs.find((log) => {
+      if (log.planId !== item.id || !log.doneDate) return false;
+      const plannedM = Number(log.month);
+      const plannedY = Number(log.year);
+      if (plannedY < year || (plannedY === year && plannedM < month)) {
+        const parts = log.doneDate.split('-');
+        if (parts.length === 3) {
+          return Number(parts[0]) === year && Number(parts[1]) === month;
+        }
+        const d = new Date(log.doneDate);
+        return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month;
+      }
+      return false;
+    });
+
+    if (earlierShiftedLog) {
+      const parts = earlierShiftedLog.doneDate.split('-');
+      let doneDay = 15;
+      if (parts.length === 3) doneDay = parseInt(parts[2], 10);
+      const plannedMonthNum = Number(earlierShiftedLog.month);
+      const plannedRound = getRoundOrdinal(item, Number(earlierShiftedLog.year), plannedMonthNum);
+      const plannedMName = MONTH_NAMES[plannedMonthNum - 1] || `M${plannedMonthNum}`;
+      return {
+        status: 'shifted-actual',
+        log: earlierShiftedLog,
+        day: doneDay,
+        plannedMonth: plannedMonthNum,
+        line1: plannedRound || '',
+        line2: `(${doneDay}*)`,
+        text: `${plannedRound ? plannedRound + ' ' : ''}(${doneDay}*)`,
+        tooltip: `${plannedRound ? plannedRound + ' Round (Delayed): ' : ''}Executed on ${earlierShiftedLog.doneDate} (Shifted from ${plannedMName} plan)`
+      };
+    }
+
+    // 2. Check if there is a log planned for THIS specific (year, month)
     const planLog = logs.find(
       (log) => log.planId === item.id && Number(log.year) === year && Number(log.month) === month
     );
 
-    // 2. Check if there is ANY log whose actual doneDate happened in THIS (year, month)
+    // 3. Check if there is ANY other log whose actual doneDate happened in THIS (year, month)
     const actualLog = logs.find((log) => {
       if (log.planId !== item.id || !log.doneDate) return false;
       const parts = log.doneDate.split('-');
@@ -1022,26 +1057,6 @@ export default function PMPlan() {
           line2: '✓',
           text: `${roundOrdinal ? roundOrdinal + ' ' : ''}✓`,
           tooltip: 'Completed'
-        };
-      }
-
-      // If THIS required month has no planLog of its own, but received a delayed execution from an earlier round
-      if (actualLog && !(Number(actualLog.year) === year && Number(actualLog.month) === month)) {
-        const parts = actualLog.doneDate.split('-');
-        let doneDay = 15;
-        if (parts.length === 3) doneDay = parseInt(parts[2], 10);
-        const plannedMonthNum = Number(actualLog.month);
-        const plannedRound = getRoundOrdinal(item, Number(actualLog.year), plannedMonthNum);
-        const plannedMName = MONTH_NAMES[plannedMonthNum - 1] || `M${plannedMonthNum}`;
-        return {
-          status: 'shifted-actual',
-          log: actualLog,
-          day: doneDay,
-          plannedMonth: plannedMonthNum,
-          line1: plannedRound || '',
-          line2: `(${doneDay}*)`,
-          text: `${plannedRound ? plannedRound + ' ' : ''}(${doneDay}*)`,
-          tooltip: `${plannedRound ? plannedRound + ' Round (Delayed): ' : ''}Executed on ${actualLog.doneDate} (Shifted from ${plannedMName} plan)`
         };
       }
 
@@ -1129,6 +1144,7 @@ export default function PMPlan() {
     setSelectedCellItem(item);
 
     if (status === 'shifted-actual') {
+      // Find earlier shifted log that executed in this month
       const actualLog = logs.find((log) => {
         if (log.planId !== item.id || !log.doneDate) return false;
         const parts = log.doneDate.split('-');
@@ -1212,14 +1228,14 @@ export default function PMPlan() {
       // Check if logged date is latest. If so, update lastDoneDate in main schedule
       const existingLastDone = selectedCellItem.lastDoneDate;
       if (!existingLastDone || calculatedDateStr >= existingLastDone) {
-        // Archive the old lastDoneDate to mace_pm_logs if no log exists for it yet
-        if (existingLastDone) {
+        // Archive old lastDoneDate only if it's a completely different date and not logged yet
+        if (existingLastDone && existingLastDone !== calculatedDateStr) {
           const oldDate = new Date(existingLastDone);
           if (!isNaN(oldDate.getTime())) {
             const oldYear = oldDate.getFullYear();
             const oldMonth = oldDate.getMonth() + 1;
             const hasOldLog = logs.some(
-              (log) => log.planId === selectedCellItem.id && Number(log.year) === oldYear && Number(log.month) === oldMonth
+              (log) => log.planId === selectedCellItem.id && log.doneDate === existingLastDone
             );
             if (!hasOldLog) {
               await createDocument('mace_pm_logs', {
