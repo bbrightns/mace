@@ -1,19 +1,31 @@
 @echo off
 setlocal
-set "LOCAL_NODE=%~dp0.node\node-v22.11.0-win-x64\node.exe"
-set "LOCAL_NPM=%~dp0.node\node-v22.11.0-win-x64\node_modules\npm\bin\npm-cli.js"
+set "NODE_DIR="
 
-if exist "%LOCAL_NODE%" (
-    set "PATH=%~dp0.node\node-v22.11.0-win-x64;%PATH%"
-    "%LOCAL_NODE%" "%LOCAL_NPM%" run dev
+if exist "%~dp0.node\node-v22.11.0-win-x64\node.exe" (
+    set "NODE_DIR=%~dp0.node\node-v22.11.0-win-x64"
+) else if exist "%LOCALAPPDATA%\Programs\nodejs\node-v22.11.0-win-x64\node.exe" (
+    set "NODE_DIR=%LOCALAPPDATA%\Programs\nodejs\node-v22.11.0-win-x64"
+) else if exist "%LOCALAPPDATA%\Programs\nodejs\node.exe" (
+    set "NODE_DIR=%LOCALAPPDATA%\Programs\nodejs"
 ) else (
-    for /f "delims=" %%i in ('where node.exe') do (
-        set "SYSTEM_NODE_DIR=%%~dpi"
-        goto :found_system
+    for /f "delims=" %%i in ('where node.exe 2^>nul') do (
+        set "NODE_DIR=%%~dpi"
+        set "NODE_DIR=%NODE_DIR:~0,-1%"
+        goto :run_dev
     )
-    echo Error: node.exe not found in PATH.
-    exit /b 1
-
-    :found_system
-    "%SYSTEM_NODE_DIR%node.exe" "%SYSTEM_NODE_DIR%node_modules\npm\bin\npm-cli.js" run dev
 )
+
+:run_dev
+if "%NODE_DIR%"=="" (
+    echo Error: node.exe not found in PATH or AppData.
+    exit /b 1
+)
+
+set "PATH=%NODE_DIR%;%PATH%"
+if exist "%NODE_DIR%\node_modules\npm\bin\npm-cli.js" (
+    "%NODE_DIR%\node.exe" "%NODE_DIR%\node_modules\npm\bin\npm-cli.js" run dev
+) else (
+    npm.cmd run dev
+)
+
