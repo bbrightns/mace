@@ -17,7 +17,12 @@ import {
   Upload,
   TrendingUp,
   Clock,
-  Printer
+  Printer,
+  Paperclip,
+  FileCheck,
+  ExternalLink,
+  Eye,
+  FileSpreadsheet
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -37,7 +42,8 @@ import {
   deleteDocument,
   setDocument,
   batchWriteOperations,
-  batchDeleteDocuments
+  batchDeleteDocuments,
+  uploadAttachment
 } from '../../firebase/collections';
 import Modal from '../../components/Modal';
 import PMReportPdfModal from '../../components/PMReportPdfModal';
@@ -212,6 +218,9 @@ export default function PMPlan() {
   const [cycle, setCycle] = useState('monthly');
   const [startMonth, setStartMonth] = useState(1);
   const [checksheetId, setChecksheetId] = useState('');
+  const [planNote, setPlanNote] = useState(''); // Technical note / Model / Specs
+  const [planAttachment, setPlanAttachment] = useState(null); // Manual / Spec PDF
+  const [isPlanUploading, setIsPlanUploading] = useState(false);
   const [lastDoneDate, setLastDoneDate] = useState('');
   const [nextDueDate, setNextDueDate] = useState('');
   const [status, setStatus] = useState('Open');
@@ -225,6 +234,8 @@ export default function PMPlan() {
   const [logDoneDate, setLogDoneDate] = useState('2026-05-20');
   const [logDoneDay, setLogDoneDay] = useState(15);
   const [logNote, setLogNote] = useState('');
+  const [logAttachment, setLogAttachment] = useState(null); // Service report / Checksheet PDF
+  const [isLogUploading, setIsLogUploading] = useState(false);
   const [existingLog, setExistingLog] = useState(null);
   const [showDeleteLogConfirm, setShowDeleteLogConfirm] = useState(false);
   const [deletingPlanId, setDeletingPlanId] = useState(null);
@@ -361,6 +372,9 @@ export default function PMPlan() {
     setCycle('monthly');
     setStartMonth(1);
     setChecksheetId('');
+    setPlanNote('');
+    setPlanAttachment(null);
+    setIsPlanUploading(false);
     setLastDoneDate('');
     setNextDueDate('');
     setStatus('Open');
@@ -381,11 +395,38 @@ export default function PMPlan() {
       (item.lastDoneDate ? (new Date(item.lastDoneDate).getMonth() + 1) : 1);
     setStartMonth(initialStartMonth);
     setChecksheetId(item.checksheetId || '');
+    setPlanNote(item.note || item.itemNote || item.specification || '');
+    setPlanAttachment(item.attachment || null);
+    setIsPlanUploading(false);
     setLastDoneDate(toInputDate(item.lastDoneDate));
     setNextDueDate(toInputDate(item.nextDueDate));
     setStatus(item.status || 'Open');
     setFormError('');
     setIsOpen(true);
+  };
+
+  const handlePlanAttachmentUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check max file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('File is too large. Please select a PDF smaller than 10MB.', 'error');
+      return;
+    }
+
+    setIsPlanUploading(true);
+    try {
+      const uploaded = await uploadAttachment(file, 'pm_manuals');
+      setPlanAttachment(uploaded);
+      showToast(`Attached ${file.name} successfully.`);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to attach PDF file.', 'error');
+    } finally {
+      setIsPlanUploading(false);
+      e.target.value = '';
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -405,7 +446,9 @@ export default function PMPlan() {
       responsible,
       cycle,
       startMonth: Number(startMonth),
-      checksheetId: checksheetId.trim()
+      checksheetId: checksheetId.trim(),
+      note: planNote.trim(),
+      attachment: planAttachment || null
     };
 
     try {
@@ -1163,6 +1206,8 @@ export default function PMPlan() {
         const dayPart = actualLog.doneDate ? Number(actualLog.doneDate.split('-')[2]) : 15;
         setLogDoneDay(isNaN(dayPart) ? 15 : dayPart);
         setLogNote(actualLog.note || '');
+        setLogAttachment(actualLog.attachment || null);
+        setIsLogUploading(false);
         setShowDeleteLogConfirm(false);
         setIsLogModalOpen(true);
         return;
@@ -1183,6 +1228,8 @@ export default function PMPlan() {
       const dayPart = existing.doneDate ? Number(existing.doneDate.split('-')[2]) : 15;
       setLogDoneDay(isNaN(dayPart) ? 15 : dayPart);
       setLogNote(existing.note || '');
+      setLogAttachment(existing.attachment || null);
+      setIsLogUploading(false);
     } else {
       setExistingLog(null);
       const formattedMonth = String(month).padStart(2, '0');
@@ -1190,10 +1237,35 @@ export default function PMPlan() {
       setLogDoneDate(standardDate);
       setLogDoneDay(15);
       setLogNote('');
+      setLogAttachment(null);
+      setIsLogUploading(false);
     }
 
     setShowDeleteLogConfirm(false);
     setIsLogModalOpen(true);
+  };
+
+  const handleLogAttachmentUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('File is too large. Please select a PDF smaller than 10MB.', 'error');
+      return;
+    }
+
+    setIsLogUploading(true);
+    try {
+      const uploaded = await uploadAttachment(file, 'pm_service_reports');
+      setLogAttachment(uploaded);
+      showToast(`Attached ${file.name} successfully.`);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to attach PDF file.', 'error');
+    } finally {
+      setIsLogUploading(false);
+      e.target.value = '';
+    }
   };
 
   const handleSaveLog = async (e) => {
@@ -1210,7 +1282,8 @@ export default function PMPlan() {
         // Update log
         await updateDocument('mace_pm_logs', existingLog.id, {
           doneDate: calculatedDateStr,
-          note: logNote
+          note: logNote,
+          attachment: logAttachment || null
         });
         showToast('Updated PM Log.');
       } else {
@@ -1220,7 +1293,8 @@ export default function PMPlan() {
           year: Number(selectedCellYear),
           month: Number(selectedCellMonth),
           doneDate: calculatedDateStr,
-          note: logNote
+          note: logNote,
+          attachment: logAttachment || null
         });
         showToast('PM check successfully logged.');
       }
@@ -1347,10 +1421,11 @@ export default function PMPlan() {
         'Cycle',
         'Start Month',
         'Checksheet ID',
+        'Item Note/Specs',
         'Scheduled Year',
         'Scheduled Month',
         'Actual Done Date',
-        'Engineer Notes'
+        'Log Notes'
       ];
       
       const rows = [];
@@ -1366,6 +1441,7 @@ export default function PMPlan() {
         const cycleEscaped = `"${(item.cycle || 'monthly').replace(/"/g, '""')}"`;
         const startMonthEscaped = startM !== '' ? `"${startM}"` : '""';
         const checksheetEscaped = `"${(item.checksheetId || '').replace(/"/g, '""')}"`;
+        const itemNoteEscaped = `"${(item.note || item.itemNote || '').replace(/"/g, '""')}"`;
 
         if (itemLogs.length > 0) {
           // Sort logs chronologically by year and month
@@ -1385,10 +1461,11 @@ export default function PMPlan() {
               cycleEscaped,
               startMonthEscaped,
               checksheetEscaped,
+              itemNoteEscaped,
               `"${log.year}"`,
               `"${MONTH_NAMES[Number(log.month) - 1] || log.month}"`,
               `"${formatDateToDDMMYY(log.doneDate)}"`,
-              `"${(log.notes || '').replace(/"/g, '""')}"`
+              `"${(log.note || log.notes || '').replace(/"/g, '""')}"`
             ]);
           }
         } else {
@@ -1401,6 +1478,7 @@ export default function PMPlan() {
             cycleEscaped,
             startMonthEscaped,
             checksheetEscaped,
+            itemNoteEscaped,
             '""',
             '""',
             '""',
@@ -1740,11 +1818,15 @@ export default function PMPlan() {
       for (const plan of importPreview.plans) {
         const payload = {
           machineName: plan.machineName || 'Unnamed Machine',
+          itemType: plan.itemType || plan.type || 'pm',
+          rank: plan.rank || 'B',
           plant: plan.plant || 'RFG',
           responsible: plan.responsible === 'Own Team' ? 'My team' : (plan.responsible || 'My team'),
           cycle: plan.cycle || 'monthly',
           startMonth: plan.startMonth ? Number(plan.startMonth) : (plan.lastDoneDate ? (new Date(plan.lastDoneDate).getMonth() + 1) : 1),
-          checksheetId: plan.checksheetId || ''
+          checksheetId: plan.checksheetId || '',
+          note: plan.note || plan.itemNote || '',
+          attachment: plan.attachment || null
         };
 
         if (importPreview.type === 'JSON' && plan.id) {
@@ -1785,7 +1867,8 @@ export default function PMPlan() {
           year: Number(log.year),
           month: Number(log.month),
           doneDate: log.doneDate,
-          note: log.note || ''
+          note: log.note || '',
+          attachment: log.attachment || null
         };
 
         if (log.id && importPreview.type === 'JSON') {
@@ -2635,6 +2718,32 @@ export default function PMPlan() {
                             <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
                               Rank {item.rank || 'B'}
                             </span>
+                            {item.attachment && (
+                              <a
+                                href={item.attachment.cloudUrl || item.attachment.dataUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download={item.attachment.name}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '2px',
+                                  padding: '1px 5px',
+                                  borderRadius: '4px',
+                                  backgroundColor: '#fee2e2',
+                                  color: '#dc2626',
+                                  fontSize: '9.5px',
+                                  fontWeight: '600',
+                                  textDecoration: 'none',
+                                  border: '1px solid #fca5a5'
+                                }}
+                                title={`Download PDF: ${item.attachment.name}`}
+                              >
+                                <Paperclip size={10} />
+                                <span>PDF</span>
+                              </a>
+                            )}
                             <span style={{ fontSize: '9.5px', color: 'var(--text3)', fontWeight: '600', textTransform: 'uppercase', marginLeft: 'auto' }}>
                               {displayResponsible}
                             </span>
@@ -2654,6 +2763,23 @@ export default function PMPlan() {
                           }}>
                             {item.machineName}
                           </span>
+                          {(item.note || item.itemNote) && (
+                            <div 
+                              style={{ 
+                                fontSize: '10.5px', 
+                                color: 'var(--text3)', 
+                                fontStyle: 'italic', 
+                                whiteSpace: 'normal', 
+                                lineHeight: '1.25',
+                                backgroundColor: 'rgba(0,0,0,0.03)',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                borderLeft: '2px solid var(--accent)'
+                              }}
+                            >
+                              {item.note || item.itemNote}
+                            </div>
+                          )}
                         </div>
                       </td>
 
@@ -2932,7 +3058,42 @@ export default function PMPlan() {
                         onClick={() => handleOpenEdit(item)}
                         title="Click to edit schedule"
                       >
-                        {item.machineName}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>{item.machineName}</span>
+                            {item.attachment && (
+                              <a
+                                href={item.attachment.cloudUrl || item.attachment.dataUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download={item.attachment.name}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '2px',
+                                  padding: '1px 5px',
+                                  borderRadius: '4px',
+                                  backgroundColor: '#fee2e2',
+                                  color: '#dc2626',
+                                  fontSize: '9.5px',
+                                  fontWeight: '600',
+                                  textDecoration: 'none',
+                                  border: '1px solid #fca5a5'
+                                }}
+                                title={`Download PDF: ${item.attachment.name}`}
+                              >
+                                <Paperclip size={10} />
+                                <span>PDF</span>
+                              </a>
+                            )}
+                          </div>
+                          {(item.note || item.itemNote) && (
+                            <span style={{ fontSize: '11px', color: 'var(--text3)', fontStyle: 'italic', fontWeight: 'normal' }}>
+                              {item.note || item.itemNote}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="font-mono text-xs">
                         {item.checksheetId || '-'}
@@ -3000,12 +3161,45 @@ export default function PMPlan() {
                           Rank {item.rank || 'B'}
                         </span>
                       </div>
-                      <h4 
-                        style={{ fontSize: '14px', fontWeight: '600', marginTop: '4px', color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}
-                        onClick={() => handleOpenEdit(item)}
-                      >
-                        {item.machineName}
-                      </h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                        <h4 
+                          style={{ fontSize: '14px', fontWeight: '600', color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline', margin: 0 }}
+                          onClick={() => handleOpenEdit(item)}
+                        >
+                          {item.machineName}
+                        </h4>
+                        {item.attachment && (
+                          <a
+                            href={item.attachment.cloudUrl || item.attachment.dataUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={item.attachment.name}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '2px',
+                              padding: '1px 5px',
+                              borderRadius: '4px',
+                              backgroundColor: '#fee2e2',
+                              color: '#dc2626',
+                              fontSize: '9.5px',
+                              fontWeight: '600',
+                              textDecoration: 'none',
+                              border: '1px solid #fca5a5'
+                            }}
+                            title={`Download PDF: ${item.attachment.name}`}
+                          >
+                            <Paperclip size={10} />
+                            <span>PDF</span>
+                          </a>
+                        )}
+                      </div>
+                      {(item.note || item.itemNote) && (
+                        <div style={{ fontSize: '11px', color: 'var(--text3)', fontStyle: 'italic', marginTop: '3px' }}>
+                          {item.note || item.itemNote}
+                        </div>
+                      )}
                       {item.checksheetId && (
                         <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>
                           Checksheet ID: <strong className="font-mono">{item.checksheetId}</strong>
@@ -3321,6 +3515,117 @@ export default function PMPlan() {
               id="form-checksheetId"
             />
           </div>
+
+          {/* ITEM NOTE / TECHNICAL SPECIFICATIONS */}
+          <div className="form-group form-full">
+            <label className="form-label" style={{ fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Item Note / Technical Specifications (บันทึกสเปก / รุ่นของ Motor / อะไหล่)</span>
+              <span style={{ fontSize: '11px', color: 'var(--text3)', fontWeight: 'normal' }}>
+                Optional technical details
+              </span>
+            </label>
+            <textarea
+              className="form-input"
+              style={{ minHeight: '68px', fontSize: '12.5px', resize: 'vertical' }}
+              placeholder="e.g. Motor Model: M2BAX 132MA4 7.5kW 1450RPM, V-Belt: A-24 (4 pcs), Bearing: 6208-2Z"
+              value={planNote}
+              onChange={(e) => setPlanNote(e.target.value)}
+              id="form-planNote"
+            />
+          </div>
+
+          {/* PDF ATTACHMENT FOR PM ITEM / MACHINE MANUAL */}
+          <div className="form-group form-full">
+            <label className="form-label" style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Paperclip size={14} style={{ color: 'var(--accent)' }} />
+              <span>Machine Manual / Standard Checksheet PDF (แนบไฟล์คู่มือหรือเช็คชีท PDF)</span>
+            </label>
+
+            {planAttachment ? (
+              <div 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.06)',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                  borderRadius: '6px',
+                  gap: '12px'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+                  <div style={{ padding: '6px', backgroundColor: 'var(--surface)', borderRadius: '6px', border: '1px solid var(--border)' }}>
+                    <FileText size={20} style={{ color: '#ef4444' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {planAttachment.name}
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
+                      {planAttachment.formattedSize || ''} {planAttachment.uploadedAt ? `• Attached ${planAttachment.uploadedAt.split('T')[0]}` : ''}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                  <a
+                    href={planAttachment.cloudUrl || planAttachment.dataUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download={planAttachment.name}
+                    className="btn btn-sm"
+                    style={{ fontSize: '11px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    title="View or Download PDF"
+                  >
+                    <Eye size={12} />
+                    <span>View</span>
+                  </a>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-danger"
+                    onClick={() => setPlanAttachment(null)}
+                    style={{ fontSize: '11px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    title="Remove attachment"
+                  >
+                    <Trash2 size={12} />
+                    <span>Remove</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label 
+                  htmlFor="plan-pdf-upload"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '12px 16px',
+                    border: '1.5px dashed var(--border2)',
+                    borderRadius: '6px',
+                    backgroundColor: 'var(--surface2)',
+                    cursor: isPlanUploading ? 'wait' : 'pointer',
+                    fontSize: '12.5px',
+                    color: 'var(--text2)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Paperclip size={15} style={{ color: 'var(--accent)' }} />
+                  <span>{isPlanUploading ? 'Uploading & compressing PDF...' : 'Choose PDF file to attach (Max 10MB)'}</span>
+                </label>
+                <input
+                  id="plan-pdf-upload"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handlePlanAttachmentUpload}
+                  style={{ display: 'none' }}
+                  disabled={isPlanUploading}
+                />
+              </div>
+            )}
+          </div>
         </form>
       </Modal>
 
@@ -3469,6 +3774,99 @@ export default function PMPlan() {
               onChange={(e) => setLogNote(e.target.value)}
               id="form-logNote"
             />
+          </div>
+
+          {/* PDF ATTACHMENT FOR LOG (SERVICE REPORT / CHECKSHEET) */}
+          <div className="form-group form-full">
+            <label className="form-label" style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Paperclip size={14} style={{ color: 'var(--accent)' }} />
+              <span>Attach Service Report / Completed Checksheet PDF (แนบไฟล์รายงานผลตรวจเช็ค PDF)</span>
+            </label>
+
+            {logAttachment ? (
+              <div 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  backgroundColor: 'rgba(59, 130, 246, 0.06)',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                  borderRadius: '6px',
+                  gap: '12px'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+                  <div style={{ padding: '6px', backgroundColor: 'var(--surface)', borderRadius: '6px', border: '1px solid var(--border)' }}>
+                    <FileText size={20} style={{ color: '#ef4444' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {logAttachment.name}
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
+                      {logAttachment.formattedSize || ''} {logAttachment.uploadedAt ? `• Attached ${logAttachment.uploadedAt.split('T')[0]}` : ''}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                  <a
+                    href={logAttachment.cloudUrl || logAttachment.dataUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download={logAttachment.name}
+                    className="btn btn-sm"
+                    style={{ fontSize: '11px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    title="View or Download PDF"
+                  >
+                    <Eye size={12} />
+                    <span>View</span>
+                  </a>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-danger"
+                    onClick={() => setLogAttachment(null)}
+                    style={{ fontSize: '11px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    title="Remove attachment"
+                  >
+                    <Trash2 size={12} />
+                    <span>Remove</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label 
+                  htmlFor="log-pdf-upload"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '12px 16px',
+                    border: '1.5px dashed var(--border2)',
+                    borderRadius: '6px',
+                    backgroundColor: 'var(--surface2)',
+                    cursor: isLogUploading ? 'wait' : 'pointer',
+                    fontSize: '12.5px',
+                    color: 'var(--text2)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Paperclip size={15} style={{ color: 'var(--accent)' }} />
+                  <span>{isLogUploading ? 'Uploading & compressing PDF...' : 'Choose PDF report to attach (Max 10MB)'}</span>
+                </label>
+                <input
+                  id="log-pdf-upload"
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleLogAttachmentUpload}
+                  style={{ display: 'none' }}
+                  disabled={isLogUploading}
+                />
+              </div>
+            )}
           </div>
         </form>
       </Modal>

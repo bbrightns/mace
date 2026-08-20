@@ -9,7 +9,8 @@ import {
   getDocFromServer,
   writeBatch
 } from 'firebase/firestore';
-import { db, auth } from './config';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, auth, storage } from './config';
 
 export const OperationType = {
   CREATE: 'create',
@@ -19,6 +20,60 @@ export const OperationType = {
   GET: 'get',
   WRITE: 'write',
 };
+
+// Helper to convert File to Base64
+export function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+}
+
+// Format file size nicely
+export function formatBytes(bytes, decimals = 1) {
+  if (!bytes || bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+/**
+ * Upload file to Firebase Storage with Cloud URL & Base64 fallback
+ */
+export async function uploadAttachment(file, folder = 'pm_attachments') {
+  if (!file) return null;
+
+  const timestamp = Date.now();
+  const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const storagePath = `${folder}/${timestamp}_${sanitizedName}`;
+  const base64Data = await fileToBase64(file);
+
+  let cloudUrl = '';
+  try {
+    if (storage) {
+      const storageRef = ref(storage, storagePath);
+      const snapshot = await uploadBytes(storageRef, file);
+      cloudUrl = await getDownloadURL(snapshot.ref);
+    }
+  } catch (error) {
+    console.warn('Firebase Storage upload failed or not configured, using direct payload fallback:', error);
+  }
+
+  return {
+    name: file.name,
+    size: file.size,
+    formattedSize: formatBytes(file.size),
+    type: file.type || 'application/pdf',
+    uploadedAt: new Date().toISOString(),
+    cloudUrl: cloudUrl || '',
+    dataUrl: (!cloudUrl || file.size <= 2 * 1024 * 1024) ? base64Data : ''
+  };
+}
+
 
 // Error wrapper according to standard rules
 export function handleFirestoreError(error, operationType, path) {

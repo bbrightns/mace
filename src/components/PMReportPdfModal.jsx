@@ -412,6 +412,11 @@ export default function PMReportPdfModal({
                                 </td>
                                 <td style={{ textAlign: 'left', fontWeight: '600' }}>
                                   <div>{item.machineName}</div>
+                                  {(item.note || item.itemNote) && (
+                                    <div style={{ fontSize: '8px', color: '#475569', fontStyle: 'italic', fontWeight: 'normal' }}>
+                                      {item.note || item.itemNote}
+                                    </div>
+                                  )}
                                   <div style={{ fontSize: '8.5px', color: '#64748b', fontWeight: 'normal' }}>
                                     {item.responsible === 'Own Team' ? 'My Team' : (item.responsible || 'My Team')}
                                   </div>
