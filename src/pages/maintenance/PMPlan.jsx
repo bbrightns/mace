@@ -2916,15 +2916,49 @@ export default function PMPlan() {
                         const cellDetails = getCellDetails(item, selectedYear, mIndex);
                         const cellState = cellDetails.status;
                         const cellContent = cellDetails.text;
+                        const hasAttachment = Boolean(
+                          cellDetails.log && (
+                            cellDetails.log.attachment || 
+                            (Array.isArray(cellDetails.log.attachments) && cellDetails.log.attachments.length > 0)
+                          )
+                        );
+                        const attCount = cellDetails.log
+                          ? (Array.isArray(cellDetails.log.attachments) ? cellDetails.log.attachments.length : (cellDetails.log.attachment ? 1 : 0))
+                          : 0;
 
                         return (
                           <td 
                             key={mIndex} 
                             className={`month-cell color-${cellState}`} 
                             onClick={() => handleCellClick(item, selectedYear, mIndex, cellState)}
-                            title={cellDetails.tooltip}
-                            style={{ textAlign: 'center', cursor: cellState !== 'faded' ? 'pointer' : 'default' }}
+                            title={hasAttachment ? `${cellDetails.tooltip} 📎 [${attCount} PDF attached]` : cellDetails.tooltip}
+                            style={{ textAlign: 'center', cursor: cellState !== 'faded' ? 'pointer' : 'default', position: 'relative' }}
                           >
+                            {/* Small attachment indicator dot / badge */}
+                            {hasAttachment && (
+                              <div 
+                                style={{ 
+                                  position: 'absolute', 
+                                  top: '2px', 
+                                  right: '3px', 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: '1px',
+                                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                  color: '#dc2626',
+                                  padding: '1px 3px',
+                                  borderRadius: '3px',
+                                  fontSize: '8.5px',
+                                  fontWeight: 'bold',
+                                  lineHeight: 1
+                                }}
+                                title={`${attCount} PDF File(s) Attached`}
+                              >
+                                <Paperclip size={9} />
+                                {attCount > 1 && <span>{attCount}</span>}
+                              </div>
+                            )}
+
                             {cellDetails.line1 || cellDetails.line2 ? (
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', lineHeight: '1.2' }}>
                                 {cellDetails.line1 && <span style={{ fontSize: '11px', fontWeight: '700' }}>{cellDetails.line1}</span>}
@@ -2955,6 +2989,22 @@ export default function PMPlan() {
             <div className="legend-item">
               <span className="legend-block pdone"></span>
               <span>On-Time Done (Green e.g. 1st (22))</span>
+            </div>
+            <div className="legend-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '2px', 
+                padding: '2px 5px', 
+                backgroundColor: 'rgba(239, 68, 68, 0.15)', 
+                color: '#dc2626', 
+                borderRadius: '4px', 
+                fontSize: '10.5px', 
+                fontWeight: 'bold' 
+              }}>
+                <Paperclip size={10} /> PDF
+              </span>
+              <span>Has PDF Attachment</span>
             </div>
             <div className="legend-item">
               <span className="legend-block pshifted-plan"></span>
