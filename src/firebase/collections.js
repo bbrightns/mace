@@ -9,7 +9,7 @@ import {
   getDocFromServer,
   writeBatch
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, auth, storage } from './config';
 
 export const OperationType = {
@@ -42,26 +42,67 @@ export function formatBytes(bytes, decimals = 1) {
 }
 
 /**
- * Upload file to Firebase Storage with Cloud URL & Base64 fallback
+ * Upload file with real-time percentage progress and instant fallback
  */
-export async function uploadAttachment(file, folder = 'pm_attachments') {
+export async function uploadAttachment(file, folder = 'pm_attachments', onProgress = null) {
   if (!file) return null;
 
   const timestamp = Date.now();
   const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
   const storagePath = `${folder}/${timestamp}_${sanitizedName}`;
-  const base64Data = await fileToBase64(file);
+
+  if (onProgress) onProgress(10);
 
   let cloudUrl = '';
+  
+  // Try uploading via Firebase Storage with upload task & progress tracking
   try {
     if (storage) {
       const storageRef = ref(storage, storagePath);
-      const snapshot = await uploadBytes(storageRef, file);
-      cloudUrl = await getDownloadURL(snapshot.ref);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      cloudUrl = await new Promise((resolve, reject) => {
+        // Set a 12-second timeout in case Storage CORS/Rules or network hangs
+        const timer = setTimeout(() => {
+          uploadTask.cancel();
+          reject(new Error('Upload timeout'));
+        }, 12000);
+
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            if (snapshot.totalBytes > 0) {
+              const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+              if (onProgress) onProgress(Math.min(progress, 95));
+            }
+          },
+          (error) => {
+            clearTimeout(timer);
+            reject(error);
+          },
+          async () => {
+            clearTimeout(timer);
+            try {
+              const url = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(url);
+            } catch (e) {
+              reject(e);
+            }
+          }
+        );
+      });
     }
   } catch (error) {
-    console.warn('Firebase Storage upload failed or not configured, using direct payload fallback:', error);
+    console.warn('Firebase Storage upload bypassed/timed out, using local document fallback:', error);
   }
+
+  // Base64 encoding for immediate offline/fallback usage
+  if (onProgress) onProgress(98);
+  let base64Data = '';
+  if (!cloudUrl || file.size <= 3 * 1024 * 1024) {
+    base64Data = await fileToBase64(file);
+  }
+  if (onProgress) onProgress(100);
 
   return {
     name: file.name,
@@ -70,7 +111,7 @@ export async function uploadAttachment(file, folder = 'pm_attachments') {
     type: file.type || 'application/pdf',
     uploadedAt: new Date().toISOString(),
     cloudUrl: cloudUrl || '',
-    dataUrl: (!cloudUrl || file.size <= 2 * 1024 * 1024) ? base64Data : ''
+    dataUrl: base64Data || ''
   };
 }
 

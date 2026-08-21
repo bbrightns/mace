@@ -221,6 +221,7 @@ export default function PMPlan() {
   const [planNote, setPlanNote] = useState(''); // Technical note / Model / Specs
   const [planAttachment, setPlanAttachment] = useState(null); // Manual / Spec PDF
   const [isPlanUploading, setIsPlanUploading] = useState(false);
+  const [planUploadProgress, setPlanUploadProgress] = useState(0);
   const [lastDoneDate, setLastDoneDate] = useState('');
   const [nextDueDate, setNextDueDate] = useState('');
   const [status, setStatus] = useState('Open');
@@ -236,6 +237,7 @@ export default function PMPlan() {
   const [logNote, setLogNote] = useState('');
   const [logAttachment, setLogAttachment] = useState(null); // Service report / Checksheet PDF
   const [isLogUploading, setIsLogUploading] = useState(false);
+  const [logUploadProgress, setLogUploadProgress] = useState(0);
   const [existingLog, setExistingLog] = useState(null);
   const [showDeleteLogConfirm, setShowDeleteLogConfirm] = useState(false);
   const [deletingPlanId, setDeletingPlanId] = useState(null);
@@ -416,8 +418,11 @@ export default function PMPlan() {
     }
 
     setIsPlanUploading(true);
+    setPlanUploadProgress(15);
     try {
-      const uploaded = await uploadAttachment(file, 'pm_manuals');
+      const uploaded = await uploadAttachment(file, 'pm_manuals', (percent) => {
+        setPlanUploadProgress(percent);
+      });
       setPlanAttachment(uploaded);
       showToast(`Attached ${file.name} successfully.`);
     } catch (err) {
@@ -425,6 +430,7 @@ export default function PMPlan() {
       showToast('Failed to attach PDF file.', 'error');
     } finally {
       setIsPlanUploading(false);
+      setPlanUploadProgress(0);
       e.target.value = '';
     }
   };
@@ -1255,8 +1261,11 @@ export default function PMPlan() {
     }
 
     setIsLogUploading(true);
+    setLogUploadProgress(15);
     try {
-      const uploaded = await uploadAttachment(file, 'pm_service_reports');
+      const uploaded = await uploadAttachment(file, 'pm_service_reports', (percent) => {
+        setLogUploadProgress(percent);
+      });
       setLogAttachment(uploaded);
       showToast(`Attached ${file.name} successfully.`);
     } catch (err) {
@@ -1264,6 +1273,7 @@ export default function PMPlan() {
       showToast('Failed to attach PDF file.', 'error');
     } finally {
       setIsLogUploading(false);
+      setLogUploadProgress(0);
       e.target.value = '';
     }
   };
@@ -3599,21 +3609,39 @@ export default function PMPlan() {
                   htmlFor="plan-pdf-upload"
                   style={{
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '8px',
-                    padding: '12px 16px',
+                    gap: '6px',
+                    padding: isPlanUploading ? '10px 16px' : '14px 16px',
                     border: '1.5px dashed var(--border2)',
                     borderRadius: '6px',
-                    backgroundColor: 'var(--surface2)',
+                    backgroundColor: isPlanUploading ? 'rgba(59, 130, 246, 0.05)' : 'var(--surface2)',
                     cursor: isPlanUploading ? 'wait' : 'pointer',
                     fontSize: '12.5px',
                     color: 'var(--text2)',
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <Paperclip size={15} style={{ color: 'var(--accent)' }} />
-                  <span>{isPlanUploading ? 'Uploading & compressing PDF...' : 'Choose PDF file to attach (Max 10MB)'}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Paperclip size={15} style={{ color: 'var(--accent)' }} />
+                    <span style={{ fontWeight: isPlanUploading ? '600' : 'normal' }}>
+                      {isPlanUploading ? `Uploading PDF: ${planUploadProgress}%` : 'Choose PDF file to attach (Max 10MB)'}
+                    </span>
+                  </div>
+                  {isPlanUploading && (
+                    <div style={{ width: '100%', maxWidth: '240px', height: '6px', backgroundColor: 'var(--border)', borderRadius: '3px', overflow: 'hidden', marginTop: '4px' }}>
+                      <div 
+                        style={{ 
+                          width: `${planUploadProgress}%`, 
+                          height: '100%', 
+                          backgroundColor: 'var(--accent)', 
+                          borderRadius: '3px',
+                          transition: 'width 0.2s ease-in-out' 
+                        }} 
+                      />
+                    </div>
+                  )}
                 </label>
                 <input
                   id="plan-pdf-upload"
@@ -3841,21 +3869,39 @@ export default function PMPlan() {
                   htmlFor="log-pdf-upload"
                   style={{
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '8px',
-                    padding: '12px 16px',
+                    gap: '6px',
+                    padding: isLogUploading ? '10px 16px' : '14px 16px',
                     border: '1.5px dashed var(--border2)',
                     borderRadius: '6px',
-                    backgroundColor: 'var(--surface2)',
+                    backgroundColor: isLogUploading ? 'rgba(59, 130, 246, 0.05)' : 'var(--surface2)',
                     cursor: isLogUploading ? 'wait' : 'pointer',
                     fontSize: '12.5px',
                     color: 'var(--text2)',
                     transition: 'all 0.15s ease'
                   }}
                 >
-                  <Paperclip size={15} style={{ color: 'var(--accent)' }} />
-                  <span>{isLogUploading ? 'Uploading & compressing PDF...' : 'Choose PDF report to attach (Max 10MB)'}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Paperclip size={15} style={{ color: 'var(--accent)' }} />
+                    <span style={{ fontWeight: isLogUploading ? '600' : 'normal' }}>
+                      {isLogUploading ? `Uploading PDF: ${logUploadProgress}%` : 'Choose PDF report to attach (Max 10MB)'}
+                    </span>
+                  </div>
+                  {isLogUploading && (
+                    <div style={{ width: '100%', maxWidth: '240px', height: '6px', backgroundColor: 'var(--border)', borderRadius: '3px', overflow: 'hidden', marginTop: '4px' }}>
+                      <div 
+                        style={{ 
+                          width: `${logUploadProgress}%`, 
+                          height: '100%', 
+                          backgroundColor: 'var(--accent)', 
+                          borderRadius: '3px',
+                          transition: 'width 0.2s ease-in-out' 
+                        }} 
+                      />
+                    </div>
+                  )}
                 </label>
                 <input
                   id="log-pdf-upload"
