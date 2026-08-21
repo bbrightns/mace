@@ -44,7 +44,8 @@ import {
   batchWriteOperations,
   batchDeleteDocuments,
   uploadAttachment,
-  getAttachmentFromLocalDB
+  getAttachmentFromLocalDB,
+  getAttachmentFromCloudChunks
 } from '../../firebase/collections';
 import Modal from '../../components/Modal';
 import PMReportPdfModal from '../../components/PMReportPdfModal';
@@ -466,7 +467,7 @@ export default function PMPlan() {
       return;
     }
 
-    // 2. If dataUrl exists, open/download
+    // 2. If dataUrl exists directly on the document (small files)
     if (att.dataUrl) {
       const win = window.open();
       if (win) {
@@ -480,7 +481,7 @@ export default function PMPlan() {
       return;
     }
 
-    // 3. Fallback: try retrieving binary from local IndexedDB
+    // 3. Try retrieving binary from local IndexedDB (instant if on the same device)
     if (att.id) {
       const cached = await getAttachmentFromLocalDB(att.id);
       if (cached) {
@@ -490,6 +491,22 @@ export default function PMPlan() {
         } else {
           const link = document.createElement('a');
           link.href = cached;
+          link.download = att.name || 'document.pdf';
+          link.click();
+        }
+        return;
+      }
+
+      // 4. If not found locally (e.g. opened on another computer or mobile), fetch chunks from Firebase Cloud Database
+      showToast('Downloading file from Cloud...', 'info');
+      const cloudBinary = await getAttachmentFromCloudChunks(att.id);
+      if (cloudBinary) {
+        const win = window.open();
+        if (win) {
+          win.document.write(`<iframe src="${cloudBinary}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+        } else {
+          const link = document.createElement('a');
+          link.href = cloudBinary;
           link.download = att.name || 'document.pdf';
           link.click();
         }

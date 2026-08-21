@@ -90,8 +90,76 @@ export async function getAttachmentFromLocalDB(id) {
   }
 }
 
+import { 
+  getDoc,
+  getDocs,
+  query,
+  orderBy
+} from 'firebase/firestore';
+
+// Chunk size: 500KB per document (safely below Firestore's 1MB limit)
+const CHUNK_SIZE = 500 * 1024;
+
 /**
- * Upload file with real-time percentage progress and instant fallback
+ * Save file binary chunks to Firestore subcollection / collection so any device/browser can download it
+ */
+export async function saveAttachmentToCloudChunks(fileId, dataUrl) {
+  if (!fileId || !dataUrl) return;
+  try {
+    const totalChunks = Math.ceil(dataUrl.length / CHUNK_SIZE);
+    const batch = writeBatch(db);
+
+    for (let i = 0; i < totalChunks; i++) {
+      const chunkData = dataUrl.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+      const chunkDocRef = doc(db, 'mace_attachment_chunks', `${fileId}_chunk_${i}`);
+      batch.set(chunkDocRef, {
+        fileId,
+        index: i,
+        totalChunks,
+        data: chunkData,
+        createdAt: new Date().toISOString()
+      });
+    }
+    await batch.commit();
+    console.log(`Saved ${totalChunks} chunks to Cloud for ${fileId}`);
+  } catch (error) {
+    console.warn('Failed to save file chunks to Cloud:', error);
+  }
+}
+
+/**
+ * Fetch and reassemble file binary chunks from Cloud (Firestore) on any computer / mobile browser
+ */
+export async function getAttachmentFromCloudChunks(fileId) {
+  if (!fileId) return null;
+  try {
+    const chunks = [];
+    let i = 0;
+    while (true) {
+      const chunkDocRef = doc(db, 'mace_attachment_chunks', `${fileId}_chunk_${i}`);
+      const snap = await getDoc(chunkDocRef);
+      if (!snap.exists()) break;
+      const data = snap.data();
+      chunks.push(data.data);
+      if (chunks.length >= (data.totalChunks || 1)) break;
+      i++;
+    }
+
+    if (chunks.length > 0) {
+      const reassembledDataUrl = chunks.join('');
+      // Cache locally to IndexedDB so subsequent opens on this device are instantaneous
+      await saveAttachmentToLocalDB(fileId, reassembledDataUrl);
+      return reassembledDataUrl;
+    }
+    return null;
+  } catch (error) {
+    console.warn('Failed to retrieve file chunks from Cloud:', error);
+    return null;
+  }
+}
+
+/**
+ * Upload file with real-time percentage progress and seamless multi-device cloud persistence
  */
 export async function uploadAttachment(file, folder = 'pm_attachments', onProgress = null) {
   if (!file) return null;
@@ -105,17 +173,16 @@ export async function uploadAttachment(file, folder = 'pm_attachments', onProgre
 
   let cloudUrl = '';
   
-  // Try uploading via Firebase Storage with upload task & progress tracking
+  // 1. Try uploading via Firebase Storage
   try {
     if (storage) {
       const storageRef = ref(storage, storagePath);
       const uploadTask = uploadBytesResumable(storageRef, file);
 
       cloudUrl = await new Promise((resolve, reject) => {
-        // 8-second timeout so it never blocks or fails user workflow
         const timer = setTimeout(() => {
           uploadTask.cancel();
-          reject(new Error('Storage upload timeout - using local storage'));
+          reject(new Error('Storage upload timeout - using Firestore cloud chunks'));
         }, 8000);
 
         uploadTask.on(
@@ -123,7 +190,7 @@ export async function uploadAttachment(file, folder = 'pm_attachments', onProgre
           (snapshot) => {
             if (snapshot.totalBytes > 0) {
               const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-              if (onProgress) onProgress(Math.min(progress, 95));
+              if (onProgress) onProgress(Math.min(progress, 90));
             }
           },
           (error) => {
@@ -143,15 +210,21 @@ export async function uploadAttachment(file, folder = 'pm_attachments', onProgre
       });
     }
   } catch (error) {
-    console.warn('Firebase Storage upload bypassed/timed out, saving to local database:', error);
+    console.warn('Firebase Storage upload bypassed, synchronizing to Cloud Database chunks:', error);
   }
 
-  // Base64 encoding for local IndexedDB cache & small files
-  if (onProgress) onProgress(98);
+  // 2. Read File as Base64 DataURL
+  if (onProgress) onProgress(92);
   const base64Data = await fileToBase64(file);
   
-  // Cache to IndexedDB so it's always viewable/downloadable even offline without 1MB document limit
+  // 3. Cache to local IndexedDB for instant offline access on this machine
   await saveAttachmentToLocalDB(fileId, base64Data);
+
+  // 4. If Firebase Storage did not return a cloud URL, persist chunked binary in Firestore cloud database so other computers/mobiles can access it
+  if (!cloudUrl) {
+    if (onProgress) onProgress(95);
+    await saveAttachmentToCloudChunks(fileId, base64Data);
+  }
 
   if (onProgress) onProgress(100);
 
@@ -163,7 +236,6 @@ export async function uploadAttachment(file, folder = 'pm_attachments', onProgre
     type: file.type || 'application/pdf',
     uploadedAt: new Date().toISOString(),
     cloudUrl: cloudUrl || '',
-    // Only store dataUrl in Firestore if file is <= 250KB to guarantee Firestore 1MB document limit is never exceeded
     dataUrl: (file.size <= 250 * 1024) ? base64Data : ''
   };
 }
