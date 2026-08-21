@@ -219,7 +219,7 @@ export default function PMPlan() {
   const [startMonth, setStartMonth] = useState(1);
   const [checksheetId, setChecksheetId] = useState('');
   const [planNote, setPlanNote] = useState(''); // Technical note / Model / Specs
-  const [planAttachment, setPlanAttachment] = useState(null); // Manual / Spec PDF
+  const [planAttachments, setPlanAttachments] = useState([]); // Array of attached PDFs
   const [isPlanUploading, setIsPlanUploading] = useState(false);
   const [planUploadProgress, setPlanUploadProgress] = useState(0);
   const [lastDoneDate, setLastDoneDate] = useState('');
@@ -235,7 +235,7 @@ export default function PMPlan() {
   const [logDoneDate, setLogDoneDate] = useState('2026-05-20');
   const [logDoneDay, setLogDoneDay] = useState(15);
   const [logNote, setLogNote] = useState('');
-  const [logAttachment, setLogAttachment] = useState(null); // Service report / Checksheet PDF
+  const [logAttachments, setLogAttachments] = useState([]); // Array of attached PDFs
   const [isLogUploading, setIsLogUploading] = useState(false);
   const [logUploadProgress, setLogUploadProgress] = useState(0);
   const [existingLog, setExistingLog] = useState(null);
@@ -375,8 +375,9 @@ export default function PMPlan() {
     setStartMonth(1);
     setChecksheetId('');
     setPlanNote('');
-    setPlanAttachment(null);
+    setPlanAttachments([]);
     setIsPlanUploading(false);
+    setPlanUploadProgress(0);
     setLastDoneDate('');
     setNextDueDate('');
     setStatus('Open');
@@ -398,8 +399,15 @@ export default function PMPlan() {
     setStartMonth(initialStartMonth);
     setChecksheetId(item.checksheetId || '');
     setPlanNote(item.note || item.itemNote || item.specification || '');
-    setPlanAttachment(item.attachment || null);
+    
+    // Normalise existing attachments (support both single object and array)
+    const existingAtts = Array.isArray(item.attachments) 
+      ? item.attachments 
+      : (item.attachment ? [item.attachment] : []);
+    setPlanAttachments(existingAtts);
+
     setIsPlanUploading(false);
+    setPlanUploadProgress(0);
     setLastDoneDate(toInputDate(item.lastDoneDate));
     setNextDueDate(toInputDate(item.nextDueDate));
     setStatus(item.status || 'Open');
@@ -411,6 +419,11 @@ export default function PMPlan() {
     const file = e.target.files?.[0];
     if (!file) return;
     
+    if (planAttachments.length >= 3) {
+      showToast('Maximum 3 files allowed per item. Please remove one first.', 'warning');
+      return;
+    }
+
     // Check max file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
       showToast('File is too large. Please select a PDF smaller than 10MB.', 'error');
@@ -423,7 +436,7 @@ export default function PMPlan() {
       const uploaded = await uploadAttachment(file, 'pm_manuals', (percent) => {
         setPlanUploadProgress(percent);
       });
-      setPlanAttachment(uploaded);
+      setPlanAttachments(prev => [...prev, uploaded]);
       showToast(`Attached ${file.name} successfully.`);
     } catch (err) {
       console.error(err);
@@ -433,6 +446,10 @@ export default function PMPlan() {
       setPlanUploadProgress(0);
       e.target.value = '';
     }
+  };
+
+  const handleRemovePlanAttachment = (indexToRemove) => {
+    setPlanAttachments(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleSubmit = async (e) => {
@@ -454,7 +471,8 @@ export default function PMPlan() {
       startMonth: Number(startMonth),
       checksheetId: checksheetId.trim(),
       note: planNote.trim(),
-      attachment: planAttachment || null
+      attachments: planAttachments,
+      attachment: planAttachments[0] || null // For backwards compatibility
     };
 
     try {
@@ -1212,8 +1230,12 @@ export default function PMPlan() {
         const dayPart = actualLog.doneDate ? Number(actualLog.doneDate.split('-')[2]) : 15;
         setLogDoneDay(isNaN(dayPart) ? 15 : dayPart);
         setLogNote(actualLog.note || '');
-        setLogAttachment(actualLog.attachment || null);
+        const existingLogAtts = Array.isArray(actualLog.attachments)
+          ? actualLog.attachments
+          : (actualLog.attachment ? [actualLog.attachment] : []);
+        setLogAttachments(existingLogAtts);
         setIsLogUploading(false);
+        setLogUploadProgress(0);
         setShowDeleteLogConfirm(false);
         setIsLogModalOpen(true);
         return;
@@ -1234,8 +1256,12 @@ export default function PMPlan() {
       const dayPart = existing.doneDate ? Number(existing.doneDate.split('-')[2]) : 15;
       setLogDoneDay(isNaN(dayPart) ? 15 : dayPart);
       setLogNote(existing.note || '');
-      setLogAttachment(existing.attachment || null);
+      const existingLogAtts = Array.isArray(existing.attachments)
+        ? existing.attachments
+        : (existing.attachment ? [existing.attachment] : []);
+      setLogAttachments(existingLogAtts);
       setIsLogUploading(false);
+      setLogUploadProgress(0);
     } else {
       setExistingLog(null);
       const formattedMonth = String(month).padStart(2, '0');
@@ -1243,8 +1269,9 @@ export default function PMPlan() {
       setLogDoneDate(standardDate);
       setLogDoneDay(15);
       setLogNote('');
-      setLogAttachment(null);
+      setLogAttachments([]);
       setIsLogUploading(false);
+      setLogUploadProgress(0);
     }
 
     setShowDeleteLogConfirm(false);
@@ -1254,6 +1281,11 @@ export default function PMPlan() {
   const handleLogAttachmentUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (logAttachments.length >= 3) {
+      showToast('Maximum 3 files allowed per completion log. Please remove one first.', 'warning');
+      return;
+    }
 
     if (file.size > 10 * 1024 * 1024) {
       showToast('File is too large. Please select a PDF smaller than 10MB.', 'error');
@@ -1266,7 +1298,7 @@ export default function PMPlan() {
       const uploaded = await uploadAttachment(file, 'pm_service_reports', (percent) => {
         setLogUploadProgress(percent);
       });
-      setLogAttachment(uploaded);
+      setLogAttachments(prev => [...prev, uploaded]);
       showToast(`Attached ${file.name} successfully.`);
     } catch (err) {
       console.error(err);
@@ -1276,6 +1308,10 @@ export default function PMPlan() {
       setLogUploadProgress(0);
       e.target.value = '';
     }
+  };
+
+  const handleRemoveLogAttachment = (indexToRemove) => {
+    setLogAttachments(prev => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleSaveLog = async (e) => {
@@ -1293,7 +1329,8 @@ export default function PMPlan() {
         await updateDocument('mace_pm_logs', existingLog.id, {
           doneDate: calculatedDateStr,
           note: logNote,
-          attachment: logAttachment || null
+          attachments: logAttachments,
+          attachment: logAttachments[0] || null
         });
         showToast('Updated PM Log.');
       } else {
@@ -1304,7 +1341,8 @@ export default function PMPlan() {
           month: Number(selectedCellMonth),
           doneDate: calculatedDateStr,
           note: logNote,
-          attachment: logAttachment || null
+          attachments: logAttachments,
+          attachment: logAttachments[0] || null
         });
         showToast('PM check successfully logged.');
       }
@@ -2728,32 +2766,40 @@ export default function PMPlan() {
                             <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
                               Rank {item.rank || 'B'}
                             </span>
-                            {item.attachment && (
-                              <a
-                                href={item.attachment.cloudUrl || item.attachment.dataUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download={item.attachment.name}
-                                onClick={(e) => e.stopPropagation()}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '2px',
-                                  padding: '1px 5px',
-                                  borderRadius: '4px',
-                                  backgroundColor: '#fee2e2',
-                                  color: '#dc2626',
-                                  fontSize: '9.5px',
-                                  fontWeight: '600',
-                                  textDecoration: 'none',
-                                  border: '1px solid #fca5a5'
-                                }}
-                                title={`Download PDF: ${item.attachment.name}`}
-                              >
-                                <Paperclip size={10} />
-                                <span>PDF</span>
-                              </a>
-                            )}
+                            {/* PDF Attachment Badges (Single or Multi) */}
+                            {(() => {
+                              const atts = Array.isArray(item.attachments) 
+                                ? item.attachments 
+                                : (item.attachment ? [item.attachment] : []);
+                              if (atts.length === 0) return null;
+                              return atts.map((att, aIdx) => (
+                                <a
+                                  key={att.name + aIdx}
+                                  href={att.cloudUrl || att.dataUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download={att.name}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '2px',
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    backgroundColor: '#fee2e2',
+                                    color: '#dc2626',
+                                    fontSize: '9.5px',
+                                    fontWeight: '600',
+                                    textDecoration: 'none',
+                                    border: '1px solid #fca5a5'
+                                  }}
+                                  title={`Download PDF (${aIdx + 1}/${atts.length}): ${att.name}`}
+                                >
+                                  <Paperclip size={10} />
+                                  <span>PDF{atts.length > 1 ? ` ${aIdx + 1}` : ''}</span>
+                                </a>
+                              ));
+                            })()}
                             <span style={{ fontSize: '9.5px', color: 'var(--text3)', fontWeight: '600', textTransform: 'uppercase', marginLeft: 'auto' }}>
                               {displayResponsible}
                             </span>
@@ -3069,34 +3115,41 @@ export default function PMPlan() {
                         title="Click to edit schedule"
                       >
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                             <span>{item.machineName}</span>
-                            {item.attachment && (
-                              <a
-                                href={item.attachment.cloudUrl || item.attachment.dataUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download={item.attachment.name}
-                                onClick={(e) => e.stopPropagation()}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '2px',
-                                  padding: '1px 5px',
-                                  borderRadius: '4px',
-                                  backgroundColor: '#fee2e2',
-                                  color: '#dc2626',
-                                  fontSize: '9.5px',
-                                  fontWeight: '600',
-                                  textDecoration: 'none',
-                                  border: '1px solid #fca5a5'
-                                }}
-                                title={`Download PDF: ${item.attachment.name}`}
-                              >
-                                <Paperclip size={10} />
-                                <span>PDF</span>
-                              </a>
-                            )}
+                            {(() => {
+                              const atts = Array.isArray(item.attachments) 
+                                ? item.attachments 
+                                : (item.attachment ? [item.attachment] : []);
+                              if (atts.length === 0) return null;
+                              return atts.map((att, aIdx) => (
+                                <a
+                                  key={att.name + aIdx}
+                                  href={att.cloudUrl || att.dataUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download={att.name}
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '2px',
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    backgroundColor: '#fee2e2',
+                                    color: '#dc2626',
+                                    fontSize: '9.5px',
+                                    fontWeight: '600',
+                                    textDecoration: 'none',
+                                    border: '1px solid #fca5a5'
+                                  }}
+                                  title={`Download PDF (${aIdx + 1}/${atts.length}): ${att.name}`}
+                                >
+                                  <Paperclip size={10} />
+                                  <span>PDF{atts.length > 1 ? ` ${aIdx + 1}` : ''}</span>
+                                </a>
+                              ));
+                            })()}
                           </div>
                           {(item.note || item.itemNote) && (
                             <span style={{ fontSize: '11px', color: 'var(--text3)', fontStyle: 'italic', fontWeight: 'normal' }}>
@@ -3178,32 +3231,39 @@ export default function PMPlan() {
                         >
                           {item.machineName}
                         </h4>
-                        {item.attachment && (
-                          <a
-                            href={item.attachment.cloudUrl || item.attachment.dataUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download={item.attachment.name}
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '2px',
-                              padding: '1px 5px',
-                              borderRadius: '4px',
-                              backgroundColor: '#fee2e2',
-                              color: '#dc2626',
-                              fontSize: '9.5px',
-                              fontWeight: '600',
-                              textDecoration: 'none',
-                              border: '1px solid #fca5a5'
-                            }}
-                            title={`Download PDF: ${item.attachment.name}`}
-                          >
-                            <Paperclip size={10} />
-                            <span>PDF</span>
-                          </a>
-                        )}
+                        {(() => {
+                          const atts = Array.isArray(item.attachments) 
+                            ? item.attachments 
+                            : (item.attachment ? [item.attachment] : []);
+                          if (atts.length === 0) return null;
+                          return atts.map((att, aIdx) => (
+                            <a
+                              key={att.name + aIdx}
+                              href={att.cloudUrl || att.dataUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download={att.name}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '2px',
+                                padding: '1px 5px',
+                                borderRadius: '4px',
+                                backgroundColor: '#fee2e2',
+                                color: '#dc2626',
+                                fontSize: '9.5px',
+                                fontWeight: '600',
+                                textDecoration: 'none',
+                                border: '1px solid #fca5a5'
+                              }}
+                              title={`Download PDF (${aIdx + 1}/${atts.length}): ${att.name}`}
+                            >
+                              <Paperclip size={10} />
+                              <span>PDF{atts.length > 1 ? ` ${aIdx + 1}` : ''}</span>
+                            </a>
+                          ));
+                        })()}
                       </div>
                       {(item.note || item.itemNote) && (
                         <div style={{ fontSize: '11px', color: 'var(--text3)', fontStyle: 'italic', marginTop: '3px' }}>
@@ -3546,64 +3606,76 @@ export default function PMPlan() {
 
           {/* PDF ATTACHMENT FOR PM ITEM / MACHINE MANUAL */}
           <div className="form-group form-full">
-            <label className="form-label" style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Paperclip size={14} style={{ color: 'var(--accent)' }} />
-              <span>Machine Manual / Standard Checksheet PDF (แนบไฟล์คู่มือหรือเช็คชีท PDF)</span>
+            <label className="form-label" style={{ fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Paperclip size={14} style={{ color: 'var(--accent)' }} />
+                <span>Machine Manual / Checksheet PDFs (แนบไฟล์คู่มือ/เช็คชีท PDF)</span>
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text3)', fontWeight: 'normal' }}>
+                {planAttachments.length}/3 files attached
+              </span>
             </label>
 
-            {planAttachment ? (
-              <div 
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  backgroundColor: 'rgba(59, 130, 246, 0.06)',
-                  border: '1px solid rgba(59, 130, 246, 0.25)',
-                  borderRadius: '6px',
-                  gap: '12px'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
-                  <div style={{ padding: '6px', backgroundColor: 'var(--surface)', borderRadius: '6px', border: '1px solid var(--border)' }}>
-                    <FileText size={20} style={{ color: '#ef4444' }} />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {planAttachment.name}
-                    </span>
-                    <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
-                      {planAttachment.formattedSize || ''} {planAttachment.uploadedAt ? `• Attached ${planAttachment.uploadedAt.split('T')[0]}` : ''}
-                    </span>
-                  </div>
-                </div>
+            {planAttachments.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                {planAttachments.map((att, attIdx) => (
+                  <div 
+                    key={att.name + attIdx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      backgroundColor: 'rgba(59, 130, 246, 0.06)',
+                      border: '1px solid rgba(59, 130, 246, 0.25)',
+                      borderRadius: '6px',
+                      gap: '10px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+                      <div style={{ padding: '4px', backgroundColor: 'var(--surface)', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                        <FileText size={18} style={{ color: '#ef4444' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span style={{ fontSize: '12.5px', fontWeight: '600', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {att.name}
+                        </span>
+                        <span style={{ fontSize: '10.5px', color: 'var(--text3)' }}>
+                          {att.formattedSize || ''} {att.uploadedAt ? `• ${att.uploadedAt.split('T')[0]}` : ''}
+                        </span>
+                      </div>
+                    </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                  <a
-                    href={planAttachment.cloudUrl || planAttachment.dataUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download={planAttachment.name}
-                    className="btn btn-sm"
-                    style={{ fontSize: '11px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    title="View or Download PDF"
-                  >
-                    <Eye size={12} />
-                    <span>View</span>
-                  </a>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-danger"
-                    onClick={() => setPlanAttachment(null)}
-                    style={{ fontSize: '11px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    title="Remove attachment"
-                  >
-                    <Trash2 size={12} />
-                    <span>Remove</span>
-                  </button>
-                </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      <a
+                        href={att.cloudUrl || att.dataUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download={att.name}
+                        className="btn btn-sm"
+                        style={{ fontSize: '11px', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        title="View or Download PDF"
+                      >
+                        <Eye size={12} />
+                        <span>View</span>
+                      </a>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleRemovePlanAttachment(attIdx)}
+                        style={{ fontSize: '11px', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        title="Remove this file"
+                      >
+                        <Trash2 size={12} />
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ) : (
+            )}
+
+            {planAttachments.length < 3 && (
               <div>
                 <label 
                   htmlFor="plan-pdf-upload"
@@ -3613,7 +3685,7 @@ export default function PMPlan() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '6px',
-                    padding: isPlanUploading ? '10px 16px' : '14px 16px',
+                    padding: isPlanUploading ? '10px 16px' : '12px 16px',
                     border: '1.5px dashed var(--border2)',
                     borderRadius: '6px',
                     backgroundColor: isPlanUploading ? 'rgba(59, 130, 246, 0.05)' : 'var(--surface2)',
@@ -3626,7 +3698,11 @@ export default function PMPlan() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Paperclip size={15} style={{ color: 'var(--accent)' }} />
                     <span style={{ fontWeight: isPlanUploading ? '600' : 'normal' }}>
-                      {isPlanUploading ? `Uploading PDF: ${planUploadProgress}%` : 'Choose PDF file to attach (Max 10MB)'}
+                      {isPlanUploading 
+                        ? `Uploading PDF: ${planUploadProgress}%` 
+                        : planAttachments.length === 0 
+                        ? 'Choose PDF file to attach (Max 10MB each, up to 3 files)' 
+                        : '+ Add another PDF file (up to 3 files)'}
                     </span>
                   </div>
                   {isPlanUploading && (
@@ -3806,64 +3882,76 @@ export default function PMPlan() {
 
           {/* PDF ATTACHMENT FOR LOG (SERVICE REPORT / CHECKSHEET) */}
           <div className="form-group form-full">
-            <label className="form-label" style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Paperclip size={14} style={{ color: 'var(--accent)' }} />
-              <span>Attach Service Report / Completed Checksheet PDF (แนบไฟล์รายงานผลตรวจเช็ค PDF)</span>
+            <label className="form-label" style={{ fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Paperclip size={14} style={{ color: 'var(--accent)' }} />
+                <span>Service Report / Checksheet PDFs (แนบไฟล์รายงานผลตรวจเช็ค PDF)</span>
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--text3)', fontWeight: 'normal' }}>
+                {logAttachments.length}/3 files attached
+              </span>
             </label>
 
-            {logAttachment ? (
-              <div 
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  backgroundColor: 'rgba(59, 130, 246, 0.06)',
-                  border: '1px solid rgba(59, 130, 246, 0.25)',
-                  borderRadius: '6px',
-                  gap: '12px'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
-                  <div style={{ padding: '6px', backgroundColor: 'var(--surface)', borderRadius: '6px', border: '1px solid var(--border)' }}>
-                    <FileText size={20} style={{ color: '#ef4444' }} />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {logAttachment.name}
-                    </span>
-                    <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
-                      {logAttachment.formattedSize || ''} {logAttachment.uploadedAt ? `• Attached ${logAttachment.uploadedAt.split('T')[0]}` : ''}
-                    </span>
-                  </div>
-                </div>
+            {logAttachments.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                {logAttachments.map((att, attIdx) => (
+                  <div 
+                    key={att.name + attIdx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      backgroundColor: 'rgba(59, 130, 246, 0.06)',
+                      border: '1px solid rgba(59, 130, 246, 0.25)',
+                      borderRadius: '6px',
+                      gap: '10px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+                      <div style={{ padding: '4px', backgroundColor: 'var(--surface)', borderRadius: '4px', border: '1px solid var(--border)' }}>
+                        <FileText size={18} style={{ color: '#ef4444' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span style={{ fontSize: '12.5px', fontWeight: '600', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {att.name}
+                        </span>
+                        <span style={{ fontSize: '10.5px', color: 'var(--text3)' }}>
+                          {att.formattedSize || ''} {att.uploadedAt ? `• ${att.uploadedAt.split('T')[0]}` : ''}
+                        </span>
+                      </div>
+                    </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                  <a
-                    href={logAttachment.cloudUrl || logAttachment.dataUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download={logAttachment.name}
-                    className="btn btn-sm"
-                    style={{ fontSize: '11px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    title="View or Download PDF"
-                  >
-                    <Eye size={12} />
-                    <span>View</span>
-                  </a>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-danger"
-                    onClick={() => setLogAttachment(null)}
-                    style={{ fontSize: '11px', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    title="Remove attachment"
-                  >
-                    <Trash2 size={12} />
-                    <span>Remove</span>
-                  </button>
-                </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      <a
+                        href={att.cloudUrl || att.dataUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download={att.name}
+                        className="btn btn-sm"
+                        style={{ fontSize: '11px', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        title="View or Download PDF"
+                      >
+                        <Eye size={12} />
+                        <span>View</span>
+                      </a>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleRemoveLogAttachment(attIdx)}
+                        style={{ fontSize: '11px', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        title="Remove this file"
+                      >
+                        <Trash2 size={12} />
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ) : (
+            )}
+
+            {logAttachments.length < 3 && (
               <div>
                 <label 
                   htmlFor="log-pdf-upload"
@@ -3873,7 +3961,7 @@ export default function PMPlan() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '6px',
-                    padding: isLogUploading ? '10px 16px' : '14px 16px',
+                    padding: isLogUploading ? '10px 16px' : '12px 16px',
                     border: '1.5px dashed var(--border2)',
                     borderRadius: '6px',
                     backgroundColor: isLogUploading ? 'rgba(59, 130, 246, 0.05)' : 'var(--surface2)',
@@ -3886,7 +3974,11 @@ export default function PMPlan() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Paperclip size={15} style={{ color: 'var(--accent)' }} />
                     <span style={{ fontWeight: isLogUploading ? '600' : 'normal' }}>
-                      {isLogUploading ? `Uploading PDF: ${logUploadProgress}%` : 'Choose PDF report to attach (Max 10MB)'}
+                      {isLogUploading 
+                        ? `Uploading PDF: ${logUploadProgress}%` 
+                        : logAttachments.length === 0 
+                        ? 'Choose PDF report to attach (Max 10MB each, up to 3 files)' 
+                        : '+ Add another PDF report (up to 3 files)'}
                     </span>
                   </div>
                   {isLogUploading && (
