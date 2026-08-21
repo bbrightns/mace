@@ -7,6 +7,8 @@ import {
   deleteDocument 
 } from '../../firebase/collections';
 import Modal from '../../components/Modal';
+import ConfirmModal from '../../components/ConfirmModal';
+import { TableSkeleton } from '../../components/SkeletonLoader';
 import { useToast } from '../../components/Toast';
 import { formatDate, toInputDate } from '../../utils';
 
@@ -18,6 +20,8 @@ export default function LongTermPlan() {
   // Modal states
   const [isOpen, setIsOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null, loading: false });
+
   
   // Form states
   const [item, setItemName] = useState('');
@@ -97,14 +101,20 @@ export default function LongTermPlan() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to delete this long term planning item?')) {
-      try {
-        await deleteDocument('mace_longterm_plans', id);
-        showToast('Long Term Plan item deleted.');
-      } catch (error) {
-        showToast('Failed to delete long term item.', 'error');
-      }
+  const handleOpenDelete = (item) => {
+    setDeleteModal({ isOpen: true, item, loading: false });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.item) return;
+    setDeleteModal(prev => ({ ...prev, loading: true }));
+    try {
+      await deleteDocument('mace_longterm_plans', deleteModal.item.id);
+      showToast(`Long Term Plan item "${deleteModal.item.item || ''}" deleted.`);
+      setDeleteModal({ isOpen: false, item: null, loading: false });
+    } catch (error) {
+      showToast('Failed to delete long term item.', 'error');
+      setDeleteModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -145,9 +155,8 @@ export default function LongTermPlan() {
       </div>
 
       {loading ? (
-        <div id="ltp-loading-skeleton">
-          <div className="skeleton-row"></div>
-          <div className="skeleton-row"></div>
+        <div className="card" style={{ padding: '16px' }}>
+          <TableSkeleton rows={5} cols={6} />
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="empty-state" id="ltp-empty-state">
@@ -192,7 +201,7 @@ export default function LongTermPlan() {
                         <button className="btn btn-sm" onClick={() => handleOpenEdit(target)} aria-label="Edit long-term plan">
                           <Edit2 size={12} />
                         </button>
-                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(target.id)} aria-label="Delete long-term plan">
+                        <button className="btn btn-sm btn-danger" onClick={() => handleOpenDelete(target)} aria-label="Delete long-term plan">
                           <Trash2 size={12} />
                         </button>
                       </div>
@@ -226,12 +235,13 @@ export default function LongTermPlan() {
                     <span className="font-mono" style={{ color: '#b45309' }}>{formatDate(target.nextDue)}</span>
                   </div>
                 </div>
+
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', borderTop: '1px solid var(--border)', paddingTop: '8px', marginTop: '4px' }}>
                   <button className="btn btn-sm" onClick={() => handleOpenEdit(target)}>
                     <Edit2 size={12} />
                     <span>Edit</span>
                   </button>
-                  <button className="btn btn-sm btn-danger" onClick={() => handleDelete(target.id)}>
+                  <button className="btn btn-sm btn-danger" onClick={() => handleOpenDelete(target)}>
                     <Trash2 size={12} />
                   </button>
                 </div>
@@ -313,7 +323,7 @@ export default function LongTermPlan() {
           </div>
 
           <div className="form-group form-full">
-            <label className="form-label">Action Notes / Details</label>
+            <label className="form-label" htmlFor="form-notes">Action Notes / Details</label>
             <textarea 
               className="form-textarea" 
               placeholder="Record manufacturer compliance codes, transformer IDs, sensor replacement requirements..." 
@@ -324,6 +334,18 @@ export default function LongTermPlan() {
           </div>
         </form>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title={`Delete Item ${deleteModal.item?.item || ''}`}
+        message={`Are you sure you want to delete long term lifecycle item "${deleteModal.item?.item || ''}"?`}
+        confirmText="Delete Item"
+        variant="danger"
+        loading={deleteModal.loading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal({ isOpen: false, item: null, loading: false })}
+      />
     </div>
   );
 }

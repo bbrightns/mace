@@ -25,6 +25,7 @@ import {
   Filter
 } from 'lucide-react';
 import Modal from '../../components/Modal';
+import ConfirmModal from '../../components/ConfirmModal';
 import { useToast } from '../../components/Toast';
 import PageHeader from '../../components/PageHeader';
 
@@ -63,6 +64,7 @@ export default function Audit() {
   // Modals state
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [scheduleEditingId, setScheduleEditingId] = useState(null); // null means adding a new one
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: 'schedule', id: null, title: '', message: '' });
   const [scheduleForm, setScheduleForm] = useState({
     name: '',
     date: '',
@@ -202,15 +204,32 @@ export default function Audit() {
 
   const handleDeleteSchedule = (id, event) => {
     if (event) event.stopPropagation();
-    if (window.confirm('Are you sure you want to remove this compliance audit schedule block?')) {
-      const updated = schedules.filter(s => s.id !== id);
+    const sch = schedules.find(s => s.id === id);
+    setDeleteModal({
+      isOpen: true,
+      type: 'schedule',
+      id,
+      title: 'Remove Audit Schedule',
+      message: `Are you sure you want to remove compliance audit schedule "${sch?.name || 'Untitled'}"?`
+    });
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteModal.type === 'schedule') {
+      const updated = schedules.filter(s => s.id !== deleteModal.id);
       setSchedules(updated);
       showToast('Audit schedule log removed.', 'success');
-      if (selectedAuditId === id && updated.length > 0) {
+      if (selectedAuditId === deleteModal.id && updated.length > 0) {
         setSelectedAuditId(updated[0].id);
       }
+    } else if (deleteModal.type === 'asset') {
+      const updated = linkedAssets.filter(item => item.id !== deleteModal.id);
+      setLinkedAssets(updated);
+      showToast('Mapped asset unlinked successfully.', 'success');
     }
+    setDeleteModal({ isOpen: false, type: 'schedule', id: null, title: '', message: '' });
   };
+
 
   // Preparation Checklist
   const activeTasks = checklistItems.filter(item => item.auditId === selectedAuditId);
@@ -324,12 +343,16 @@ export default function Audit() {
   };
 
   const handleUnlinkAsset = (id) => {
-    if (window.confirm('Unlink this asset mapping from the target audit envelope?')) {
-      const updated = linkedAssets.filter(item => item.id !== id);
-      setLinkedAssets(updated);
-      showToast('Mapped asset unlinked successfully.', 'success');
-    }
+    const asset = linkedAssets.find(a => a.id === id);
+    setDeleteModal({
+      isOpen: true,
+      type: 'asset',
+      id,
+      title: 'Unlink Mapped Asset',
+      message: `Are you sure you want to unlink asset "${asset?.assetTag || ''} ${asset?.description || ''}" from this compliance audit envelope?`
+    });
   };
+
 
   return (
     <div className="workspace-container animate-fade-in" id="audit-system-workspace" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -1087,6 +1110,16 @@ export default function Audit() {
         </form>
       </Modal>
 
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title={deleteModal.title}
+        message={deleteModal.message}
+        confirmText={deleteModal.type === 'schedule' ? 'Remove Schedule' : 'Unlink Asset'}
+        variant="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal({ isOpen: false, type: 'schedule', id: null, title: '', message: '' })}
+      />
     </div>
   );
 }

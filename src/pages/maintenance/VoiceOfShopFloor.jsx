@@ -8,6 +8,8 @@ import {
 } from '../../firebase/collections';
 import StatusBadge from '../../components/StatusBadge';
 import Modal from '../../components/Modal';
+import ConfirmModal from '../../components/ConfirmModal';
+import { TableSkeleton } from '../../components/SkeletonLoader';
 import { useToast } from '../../components/Toast';
 import { formatDate, toInputDate } from '../../utils';
 import PageHeader from '../../components/PageHeader';
@@ -22,6 +24,7 @@ export default function VoiceOfShopFloor() {
   // Modal State
   const [isOpen, setIsOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null, loading: false });
 
   // Form State
   const [problemDetail, setProblemDetail] = useState('');
@@ -30,7 +33,7 @@ export default function VoiceOfShopFloor() {
   const [pic, setPic] = useState('');
   const [update, setUpdate] = useState('');
   const [lastUpdateDate, setLastUpdateDate] = useState('');
-  const [status, setStatus] = useState('Open');
+  const [status, setStatus] = useState('Pending');
   const [formError, setFormError] = useState('');
 
   const { showToast } = useToast();
@@ -60,7 +63,7 @@ export default function VoiceOfShopFloor() {
     setPic('');
     setUpdate('');
     setLastUpdateDate('');
-    setStatus('Open');
+    setStatus('Pending');
     setFormError('');
     setIsOpen(true);
   };
@@ -73,7 +76,10 @@ export default function VoiceOfShopFloor() {
     setPic(target.pic || '');
     setUpdate(target.update || '');
     setLastUpdateDate(toInputDate(target.lastUpdateDate));
-    setStatus(target.status || 'Open');
+    let st = target.status || 'Pending';
+    if (st === 'Open') st = 'Pending';
+    if (st === 'Closed') st = 'Finished';
+    setStatus(st);
     setFormError('');
     setIsOpen(true);
   };
@@ -131,14 +137,20 @@ export default function VoiceOfShopFloor() {
     return new Date().toISOString().substring(0, 10);
   };
 
-  const handleDelete = async (id, codeNo) => {
-    if (confirm(`Delete shop floor report ${codeNo}?`)) {
-      try {
-        await deleteDocument('mace_vosf', id);
-        showToast(`Report ${codeNo} deleted.`);
-      } catch (err) {
-        showToast('Error deleting item.', 'error');
-      }
+  const handleOpenDelete = (item) => {
+    setDeleteModal({ isOpen: true, item, loading: false });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.item) return;
+    setDeleteModal(prev => ({ ...prev, loading: true }));
+    try {
+      await deleteDocument('mace_vosf', deleteModal.item.id);
+      showToast(`Report ${deleteModal.item.no || ''} deleted.`);
+      setDeleteModal({ isOpen: false, item: null, loading: false });
+    } catch (err) {
+      showToast('Error deleting item.', 'error');
+      setDeleteModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -147,7 +159,10 @@ export default function VoiceOfShopFloor() {
                           x.problemDetail?.toLowerCase().includes(search.toLowerCase()) ||
                           x.reporter?.toLowerCase().includes(search.toLowerCase()) ||
                           x.pic?.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || x.status === filterStatus;
+    const matchesStatus = filterStatus === 'all' || 
+                          x.status === filterStatus ||
+                          (filterStatus === 'Finished' && x.status === 'Closed') ||
+                          (filterStatus === 'Pending' && x.status === 'Open');
     return matchesSearch && matchesStatus;
   });
 
@@ -187,9 +202,9 @@ export default function VoiceOfShopFloor() {
             id="vosf-status-filter"
           >
             <option value="all">All Statuses</option>
-            <option value="Open">Open</option>
+            <option value="Pending">Pending</option>
+            <option value="Finished">Finished</option>
             <option value="In Process">In Process</option>
-            <option value="Closed">Closed</option>
             <option value="On Hold">On Hold</option>
           </select>
         </div>
@@ -200,9 +215,8 @@ export default function VoiceOfShopFloor() {
       </div>
 
       {loading ? (
-        <div id="vosf-loading-skeleton">
-          <div className="skeleton-row"></div>
-          <div className="skeleton-row"></div>
+        <div className="card" style={{ padding: '16px' }}>
+          <TableSkeleton rows={5} cols={6} />
         </div>
       ) : filteredItems.length === 0 ? (
         <EmptyState 
@@ -274,7 +288,7 @@ export default function VoiceOfShopFloor() {
                         <button className="btn btn-sm" onClick={() => handleOpenEdit(target)} aria-label="Edit floor report">
                           <Edit2 size={12} />
                         </button>
-                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(target.id, target.no)} aria-label="Delete floor report">
+                        <button className="btn btn-sm btn-danger" onClick={() => handleOpenDelete(target)} aria-label="Delete floor report">
                           <Trash2 size={12} />
                         </button>
                       </div>
@@ -312,7 +326,7 @@ export default function VoiceOfShopFloor() {
                     <Edit2 size={12} />
                     <span>Edit</span>
                   </button>
-                  <button className="btn btn-sm btn-danger" onClick={() => handleDelete(target.id, target.no)}>
+                  <button className="btn btn-sm btn-danger" onClick={() => handleOpenDelete(target)}>
                     <Trash2 size={12} />
                   </button>
                 </div>
@@ -345,7 +359,7 @@ export default function VoiceOfShopFloor() {
           )}
 
           <div className="form-group form-full">
-            <label className="form-label">Problem Details *</label>
+            <label className="form-label" htmlFor="form-problemDetail">Problem Details *</label>
             <textarea 
               className="form-textarea" 
               placeholder="e.g. Line 2 MIR cutter sensor misses glass edge periodically due to loose wire connection." 
@@ -357,7 +371,7 @@ export default function VoiceOfShopFloor() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Reported By Whom *</label>
+            <label className="form-label" htmlFor="form-reporter">Reported By Whom *</label>
             <input 
               type="text" 
               className="form-input" 
@@ -370,7 +384,7 @@ export default function VoiceOfShopFloor() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Reported Date *</label>
+            <label className="form-label" htmlFor="form-reportedDate">Reported Date *</label>
             <input 
               type="date" 
               className="form-input font-mono" 
@@ -382,7 +396,7 @@ export default function VoiceOfShopFloor() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">PIC Engineer Assignment</label>
+            <label className="form-label" htmlFor="form-pic">PIC Engineer Assignment</label>
             <input 
               type="text" 
               className="form-input" 
@@ -394,22 +408,22 @@ export default function VoiceOfShopFloor() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Working Status</label>
+            <label className="form-label" htmlFor="form-status">Working Status</label>
             <select 
               className="form-select" 
               value={status} 
               onChange={(e) => setStatus(e.target.value)}
               id="form-status"
             >
-              <option value="Open">Open</option>
+              <option value="Pending">Pending</option>
+              <option value="Finished">Finished</option>
               <option value="In Process">In Process</option>
-              <option value="Closed">Closed</option>
               <option value="On Hold">On Hold</option>
             </select>
           </div>
 
           <div className="form-group form-full">
-            <label className="form-label">Action Log / Engineering Update</label>
+            <label className="form-label" htmlFor="form-update">Action Log / Engineering Update</label>
             <textarea 
               className="form-textarea" 
               placeholder="Record technical adjustments completed, parts checked, or calibration values..." 
@@ -421,7 +435,7 @@ export default function VoiceOfShopFloor() {
 
           {editingItem && (
             <div className="form-group">
-              <label className="form-label">Last Log Update Date</label>
+              <label className="form-label" htmlFor="form-lastUpdateDate">Last Log Update Date</label>
               <input 
                 type="date" 
                 className="form-input font-mono" 
@@ -433,6 +447,18 @@ export default function VoiceOfShopFloor() {
           )}
         </form>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title={`Delete Report ${deleteModal.item?.no || ''}`}
+        message={`Are you sure you want to delete problem report "${deleteModal.item?.no || ''}" (${deleteModal.item?.problemDetail || ''})?`}
+        confirmText="Delete Report"
+        variant="danger"
+        loading={deleteModal.loading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal({ isOpen: false, item: null, loading: false })}
+      />
     </div>
   );
 }

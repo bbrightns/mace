@@ -11,6 +11,8 @@ import {
   batchDeleteDocuments
 } from '../../firebase/collections';
 import Modal from '../../components/Modal';
+import ConfirmModal from '../../components/ConfirmModal';
+import { TableSkeleton } from '../../components/SkeletonLoader';
 import { useToast } from '../../components/Toast';
 import { parseCSV } from '../../utils';
 
@@ -73,6 +75,7 @@ export default function MachineClassify() {
   const [isOpen, setIsOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [pendingImportOps, setPendingImportOps] = useState(null);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null, loading: false });
 
   // Form State
   const [department, setDepartment] = useState('RFG');
@@ -280,17 +283,24 @@ export default function MachineClassify() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this machine item?")) return;
+  const handleOpenDelete = (item) => {
+    setDeleteModal({ isOpen: true, item, loading: false });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.item) return;
+    const targetId = deleteModal.item.id;
+    setDeleteModal(prev => ({ ...prev, loading: true }));
     try {
-      await deleteDocument('mace_machine_classify', id);
-      setItems(prev => prev.filter(i => i.id !== id));
+      await deleteDocument('mace_machine_classify', targetId);
+      setItems(prev => prev.filter(i => i.id !== targetId));
       showToast("Machine item deleted", "success");
+      setDeleteModal({ isOpen: false, item: null, loading: false });
     } catch (err) {
       console.error("Machine Classify delete error:", err);
-      // Resilient local state fallback
-      setItems(prev => prev.filter(i => i.id !== id));
+      setItems(prev => prev.filter(i => i.id !== targetId));
       showToast("Machine item deleted", "success");
+      setDeleteModal({ isOpen: false, item: null, loading: false });
     }
   };
 
@@ -665,8 +675,8 @@ export default function MachineClassify() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={11} style={{ textAlign: 'center', padding: '40px', color: 'var(--text2)' }}>
-                      Loading machine classification records...
+                    <td colSpan={11} style={{ padding: '20px' }}>
+                      <TableSkeleton rows={8} cols={11} />
                     </td>
                   </tr>
                 ) : filteredItems.length === 0 ? (
@@ -743,7 +753,7 @@ export default function MachineClassify() {
                               <Edit2 size={14} style={{ color: 'var(--accent)' }} />
                             </button>
                             <button 
-                              onClick={() => handleDelete(row.id)}
+                              onClick={() => handleOpenDelete(row)}
                               title="Delete machine item"
                               aria-label="Delete machine item"
                               className="btn btn-secondary"
@@ -1200,6 +1210,18 @@ export default function MachineClassify() {
           </div>
         </div>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title={`Delete Machine Item #${deleteModal.item?.item || ''}`}
+        message={`Are you sure you want to delete "${deleteModal.item?.machine || ''}" (${deleteModal.item?.department || ''} - ${deleteModal.item?.section || ''})?`}
+        confirmText="Delete Machine"
+        variant="danger"
+        loading={deleteModal.loading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal({ isOpen: false, item: null, loading: false })}
+      />
     </div>
   );
 }

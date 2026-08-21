@@ -7,6 +7,8 @@ import {
   deleteDocument 
 } from '../../firebase/collections';
 import Modal from '../../components/Modal';
+import ConfirmModal from '../../components/ConfirmModal';
+import { TableSkeleton } from '../../components/SkeletonLoader';
 import { useToast } from '../../components/Toast';
 import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
@@ -20,6 +22,8 @@ export default function Drawings() {
   // Modal State
   const [isOpen, setIsOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null, loading: false });
+
 
   // Form State
   const [drawingNo, setDrawingNo] = useState('');
@@ -117,14 +121,20 @@ export default function Drawings() {
     }
   };
 
-  const handleDelete = async (id, codeNum) => {
-    if (confirm(`Are you sure you want to delete drawing reference ${codeNum}?`)) {
-      try {
-        await deleteDocument('mace_drawings', id);
-        showToast(`Deleted drawing reference ${codeNum}.`);
-      } catch (err) {
-        showToast('Error deleting drawing.', 'error');
-      }
+  const handleOpenDelete = (item) => {
+    setDeleteModal({ isOpen: true, item, loading: false });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.item) return;
+    setDeleteModal(prev => ({ ...prev, loading: true }));
+    try {
+      await deleteDocument('mace_drawings', deleteModal.item.id);
+      showToast(`Deleted drawing reference ${deleteModal.item.drawingNo || ''}.`);
+      setDeleteModal({ isOpen: false, item: null, loading: false });
+    } catch (err) {
+      showToast('Error deleting drawing.', 'error');
+      setDeleteModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -138,28 +148,29 @@ export default function Drawings() {
     const matchesArea = filterArea === 'all' || x.systemArea === filterArea;
     return matchesSearch && matchesArea;
   });
+
   return (
     <div className="workspace-container">
       <PageHeader 
-        title="Electrical Blueprint Cabinet & Readings Registry"
-        subtitle="Track industrial glass lines schematics, panel diagrams, revisions, and location keys without file clutter."
+        title="Engineering Technical Drawings Directory"
+        subtitle="Master cabinet schematics, physical cabinet indexes, and revisions ledger."
         actions={
           <button className="btn btn-primary" onClick={handleOpenAdd} id="add-dwg-btn">
             <Plus size={16} />
-            <span>New Drawing Index</span>
+            <span>Register Drawing</span>
           </button>
         }
         id="dwg-page-header"
       />
 
-      {/* Control filters */}
+      {/* Filter toolbar */}
       <div className="card controls-bar" id="dwg-controls-bar">
         <div className="filters-group">
-          <div style={{ position: 'relative', width: '220px' }}>
+          <div style={{ position: 'relative', width: '240px' }}>
             <Search size={14} style={{ position: 'absolute', left: '10px', top: '11px', color: 'var(--text3)' }} />
             <input 
               type="text" 
-              placeholder="Search code, title, cabinet..." 
+              placeholder="Search drawing code, title, cabinet..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="form-input"
@@ -168,63 +179,67 @@ export default function Drawings() {
             />
           </div>
 
-          <select value={filterArea} onChange={(e) => setFilterArea(e.target.value)} className="form-select" id="dwg-area-filter">
-            <option value="all">All Systems/Areas</option>
-            {uniqueAreas.map((area, idx) => (
-              <option key={idx} value={area}>{area}</option>
+          <select 
+            value={filterArea} 
+            onChange={(e) => setFilterArea(e.target.value)}
+            className="form-select"
+            id="dwg-area-filter"
+          >
+            <option value="all">All Plant Functional Areas</option>
+            {uniqueAreas.map((area) => (
+              <option key={area} value={area}>{area}</option>
             ))}
           </select>
         </div>
 
         <div className="font-mono text3">
-          {filteredItems.length} drawing schematics found
+          Showing {filteredItems.length} drawing sheets
         </div>
       </div>
 
       {loading ? (
-        <div id="dwg-loading-skeleton">
-          <div className="skeleton-row"></div>
-          <div className="skeleton-row"></div>
+        <div className="card" style={{ padding: '16px' }}>
+          <TableSkeleton rows={5} cols={7} />
         </div>
       ) : filteredItems.length === 0 ? (
         <EmptyState 
           icon={Library}
-          title="Cabinet Vault Empty"
-          description="No drawing indexes configured. Catalog schematics with cabinet drawers coordinates here."
+          title="Drawing Archive Empty"
+          description="No electrical or mechanical schematic references match criteria."
           action={
-            <button className="btn btn-sm" onClick={handleOpenAdd}>Catalog Schematic</button>
+            <button className="btn btn-sm" onClick={handleOpenAdd}>Add Drawing Code</button>
           }
           id="dwg-empty-state"
         />
       ) : (
         <>
-          {/* Desktop Table */}
+          {/* Desktop Table view */}
           <div className="table-container hide-on-mobile" id="dwg-table-view">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th style={{ width: '120px' }}>Drawing No.</th>
-                  <th>Blueprint Title name</th>
-                  <th>System / Line Area</th>
+                  <th style={{ width: '150px' }}>Drawing Code</th>
+                  <th>Title & Description</th>
+                  <th style={{ width: '160px' }}>System Area</th>
                   <th style={{ width: '80px' }}>Revision</th>
-                  <th style={{ width: '80px' }}>Format</th>
-                  <th>Location Cabinet / Drawer</th>
+                  <th style={{ width: '70px' }}>Format</th>
+                  <th style={{ width: '120px' }}>Physical Cabinet</th>
                   <th>Remarks</th>
-                  <th style={{ width: '100px', textAlign: 'right' }}>Actions</th>
+                  <th style={{ width: '80px', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredItems.map(target => (
+                {filteredItems.map((target) => (
                   <tr key={target.id} id={`dwg-row-${target.id}`}>
-                    <td className="font-mono" style={{ fontWeight: '600', color: 'var(--accent)' }}>
-                      {target.drawingNo}
-                    </td>
-                    <td style={{ fontWeight: '500', color: 'var(--text)' }}>
-                      {target.title}
-                    </td>
-                    <td>{target.systemArea}</td>
                     <td>
-                      <span className="font-mono" style={{ fontWeight: '600' }}>{target.revision}</span>
+                      <span className="font-mono" style={{ fontWeight: '700', color: 'var(--accent)' }}>{target.drawingNo}</span>
+                    </td>
+                    <td style={{ fontWeight: '500' }}>{target.title}</td>
+                    <td>
+                      <span className="badge" style={{ backgroundColor: 'var(--surface2)', color: 'var(--text)' }}>{target.systemArea}</span>
+                    </td>
+                    <td>
+                      <span className="font-mono badge" style={{ background: '#fef3c7', color: '#b45309', fontWeight: '700' }}>{target.revision}</span>
                     </td>
                     <td>
                       <span className="font-mono" style={{ padding: '2px 4px', background: 'var(--surface2)', borderRadius: '4px', fontSize: '11px' }}>{target.format}</span>
@@ -240,7 +255,7 @@ export default function Drawings() {
                         <button className="btn btn-sm" onClick={() => handleOpenEdit(target)} aria-label="Edit drawing code">
                           <Edit2 size={12} />
                         </button>
-                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(target.id, target.drawingNo)} aria-label="Delete drawing code">
+                        <button className="btn btn-sm btn-danger" onClick={() => handleOpenDelete(target)} aria-label="Delete drawing code">
                           <Trash2 size={12} />
                         </button>
                       </div>
@@ -388,7 +403,7 @@ export default function Drawings() {
           </div>
 
           <div className="form-group form-full">
-            <label className="form-label">Remarks / Cabinet coordinates notes</label>
+            <label className="form-label" htmlFor="form-remarks">Remarks / Cabinet coordinates notes</label>
             <textarea 
               className="form-textarea" 
               placeholder="e.g. Bound in main leather cabinet binder. Replaces original DWG-E-MIR-0021." 
@@ -399,6 +414,18 @@ export default function Drawings() {
           </div>
         </form>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title={`Delete Drawing ${deleteModal.item?.drawingNo || ''}`}
+        message={`Are you sure you want to delete drawing reference "${deleteModal.item?.drawingNo || ''}" (${deleteModal.item?.title || ''})?`}
+        confirmText="Delete Drawing"
+        variant="danger"
+        loading={deleteModal.loading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal({ isOpen: false, item: null, loading: false })}
+      />
     </div>
   );
 }

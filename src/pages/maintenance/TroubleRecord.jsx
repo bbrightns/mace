@@ -13,7 +13,22 @@ import {
 } from '../../firebase/collections';
 import StatusBadge from '../../components/StatusBadge';
 import Modal from '../../components/Modal';
+import ConfirmModal from '../../components/ConfirmModal';
+import { TableSkeleton } from '../../components/SkeletonLoader';
 import { useToast } from '../../components/Toast';
+import { 
+  ResponsiveContainer, 
+  ComposedChart, 
+  BarChart, 
+  Bar, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  CartesianGrid, 
+  Legend, 
+  Cell 
+} from 'recharts';
 import { formatDate, toInputDate, parseCSV, parseDateStrToISO, formatTime24, calculateShiftFromTime } from '../../utils';
 
 export default function TroubleRecord() {
@@ -28,10 +43,12 @@ export default function TroubleRecord() {
   const [filterShift, setFilterShift] = useState('all');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
-  // Modal State
+  // Modal States
   const [isOpen, setIsOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [pendingImportOps, setPendingImportOps] = useState(null);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null, isAll: false, loading: false });
+
 
   // Form State
   const [plant, setPlant] = useState('MIR');
@@ -155,38 +172,46 @@ export default function TroubleRecord() {
     }
   };
 
-  const handleDelete = async (id, trNo) => {
-    if (confirm(`Are you sure you want to delete Log ${trNo}?`)) {
-      try {
-        await deleteDocument('mace_trouble_records', id);
-        showToast(`Log ${trNo} deleted.`);
-      } catch (err) {
-        showToast('Error deleting log.', 'error');
-      }
-    }
+  const handleOpenDelete = (item) => {
+    setDeleteModal({
+      isOpen: true,
+      item,
+      isAll: false,
+      loading: false
+    });
   };
 
-  // Delete All Records with explicit user confirmation
-  const handleDeleteAll = async () => {
+  const handleOpenDeleteAll = () => {
     if (items.length === 0) {
       showToast('There are no records to delete.', 'error');
       return;
     }
+    setDeleteModal({
+      isOpen: true,
+      item: null,
+      isAll: true,
+      loading: false
+    });
+  };
 
-    const userInput = prompt(`⚠️ WARNING: You are about to PERMANENTLY DELETE ALL ${items.length} trouble records!\n\nTo confirm deletion, please type "DELETE ALL" below:`);
-    
-    if (userInput === "DELETE ALL") {
-      try {
-        const itemIds = items.map(item => item.id);
+  const handleConfirmDelete = async () => {
+    setDeleteModal(prev => ({ ...prev, loading: true }));
+    try {
+      if (deleteModal.isAll) {
+        const itemIds = items.map(i => i.id);
         await batchDeleteDocuments('mace_trouble_records', itemIds);
         showToast(`All ${itemIds.length} records have been deleted.`);
-      } catch (err) {
-        showToast('Failed to delete records.', 'error');
+      } else if (deleteModal.item) {
+        await deleteDocument('mace_trouble_records', deleteModal.item.id);
+        showToast(`Log ${deleteModal.item.no || ''} deleted successfully.`);
       }
-    } else if (userInput !== null) {
-      showToast('Deletion canceled. Confirmation code did not match "DELETE ALL".', 'error');
+      setDeleteModal({ isOpen: false, item: null, isAll: false, loading: false });
+    } catch (err) {
+      showToast('Failed to delete record(s).', 'error');
+      setDeleteModal(prev => ({ ...prev, loading: false }));
     }
   };
+
 
   // Export trouble records to CSV file
   const handleExportCSV = () => {
@@ -330,6 +355,29 @@ export default function TroubleRecord() {
     const highDowntimeList = Object.values(equipmentMap)
       .sort((a, b) => b.totalDowntime - a.totalDowntime);
 
+    // Pareto 80/20 Chart Data Calculation
+    const totalDtSum = highDowntimeList.reduce((acc, curr) => acc + curr.totalDowntime, 0);
+    let runningDowntimeSum = 0;
+    const paretoData = highDowntimeList.slice(0, 10).map((item) => {
+      runningDowntimeSum += item.totalDowntime;
+      const cumulativePercent = totalDtSum > 0 
+        ? Math.round((runningDowntimeSum / totalDtSum) * 100) 
+        : 0;
+      return {
+        name: item.key.length > 20 ? item.key.substring(0, 18) + '…' : item.key,
+        fullName: item.key,
+        downtime: parseFloat(item.totalDowntime.toFixed(2)),
+        frequency: item.count,
+        cumulativePercent
+      };
+    });
+
+    // MTTR (Mean Time to Repair in hours)
+    const validDowntimeRecords = filteredItems.filter(i => (parseFloat(i.downtimeHrs) || 0) > 0);
+    const mttr = validDowntimeRecords.length > 0 
+      ? (totalDtSum / validDowntimeRecords.length).toFixed(2) 
+      : (filteredItems.length > 0 ? (totalDtSum / filteredItems.length).toFixed(2) : '0.00');
+
     // Shift list
     const shiftList = Object.values(shiftMap).sort((a, b) => b.count - a.count);
 
@@ -339,6 +387,8 @@ export default function TroubleRecord() {
     return {
       recurringList,
       highDowntimeList,
+      paretoData,
+      mttr,
       shiftList,
       topLocations,
       plantMap
@@ -491,7 +541,7 @@ export default function TroubleRecord() {
       </div>
 
       {/* KPI Stats Bar */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
         <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div className="form-label" style={{ color: 'var(--text3)' }}>Total Trouble Logs</div>
@@ -510,6 +560,16 @@ export default function TroubleRecord() {
             </div>
           </div>
           <ShieldAlert size={28} style={{ color: 'rgba(220, 38, 38, 0.2)' }} />
+        </div>
+
+        <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div className="form-label" style={{ color: 'var(--text3)' }}>Mean Time to Repair (MTTR)</div>
+            <div className="font-mono" style={{ fontSize: '24px', fontWeight: '700', color: 'var(--accent)', marginTop: '4px' }}>
+              {analytics.mttr} <span style={{ fontSize: '13px', fontWeight: '400' }}>Hrs/Log</span>
+            </div>
+          </div>
+          <Clock size={28} style={{ color: 'rgba(0, 102, 255, 0.2)' }} />
         </div>
 
         <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -644,87 +704,87 @@ export default function TroubleRecord() {
       {/* VIEW 1: RAW CSV TABLE VIEW */}
       {activeTab === 'table' && (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '60px' }}>Plant</th>
-                  <th style={{ width: '110px' }}>Date</th>
-                  <th style={{ width: '60px' }}>Time</th>
-                  <th style={{ width: '50px' }}>Shift</th>
-                  <th style={{ width: '120px' }}>Shift2 (PIC)</th>
-                  <th style={{ width: '110px' }}>Location</th>
-                  <th style={{ width: '110px' }}>Equipment</th>
-                  <th style={{ width: '90px' }}>Name</th>
-                  <th>Detail (Problem)</th>
-                  <th>Detail 2 (Action / Cause)</th>
-                  <th style={{ width: '70px', textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
+          {loading ? (
+            <div style={{ padding: '16px' }}>
+              <TableSkeleton rows={8} cols={10} />
+            </div>
+          ) : (
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
                   <tr>
-                    <td colSpan="11" style={{ textAlign: 'center', padding: '30px' }}>
-                      Loading trouble records...
-                    </td>
+                    <th style={{ width: '60px' }}>Plant</th>
+                    <th style={{ width: '110px' }}>Date</th>
+                    <th style={{ width: '60px' }}>Time</th>
+                    <th style={{ width: '50px' }}>Shift</th>
+                    <th style={{ width: '120px' }}>Shift2 (PIC)</th>
+                    <th style={{ width: '110px' }}>Location</th>
+                    <th style={{ width: '110px' }}>Equipment</th>
+                    <th style={{ width: '90px' }}>Name</th>
+                    <th>Detail (Problem)</th>
+                    <th>Detail 2 (Action / Cause)</th>
+                    <th style={{ width: '70px', textAlign: 'right' }}>Actions</th>
                   </tr>
-                ) : filteredItems.length === 0 ? (
-                  <tr>
-                    <td colSpan="11" style={{ textAlign: 'center', padding: '30px' }} className="text3">
-                      No trouble records match your filters.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredItems.map((r) => (
-                    <tr key={r.id}>
-                      <td>
-                        <span className="font-mono" style={{ fontSize: '11px', background: 'var(--surface2)', padding: '2px 6px', borderRadius: '4px', fontWeight: '600' }}>
-                          {r.plant || 'MIR'}
-                        </span>
-                      </td>
-                      <td className="font-mono" style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}>
-                        {r.dateRaw || r.dateTime?.substring(0, 10) || '—'}
-                      </td>
-                      <td className="font-mono" style={{ fontSize: '11.5px', color: 'var(--text)' }}>
-                        {formatTime24(r.timeDowntime || r.downtimeHrs)}
-                      </td>
-                      <td className="font-mono" style={{ fontWeight: '700', color: r.shift ? 'var(--primary)' : 'var(--text3)' }}>
-                        {r.shift || '—'}
-                      </td>
-                      <td style={{ fontSize: '11.5px', color: 'var(--text2)' }}>
-                        {r.shift2 || r.pic || '—'}
-                      </td>
-                      <td style={{ fontWeight: '500', color: 'var(--text)' }}>
-                        {r.location || '—'}
-                      </td>
-                      <td style={{ fontSize: '12px' }}>
-                        {r.equipment || '—'}
-                      </td>
-                      <td style={{ fontSize: '12px' }}>
-                        {r.name || '—'}
-                      </td>
-                      <td style={{ fontSize: '12px', color: 'var(--text)' }}>
-                        {r.detail || r.problemDescription || '—'}
-                      </td>
-                      <td style={{ fontSize: '11.5px', color: 'var(--text2)' }}>
-                        {r.detail2 || r.rootCause || r.actionTaken || '—'}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
-                          <button className="btn btn-sm" onClick={() => handleOpenEdit(r)} title="Edit Record">
-                            <Edit2 size={12} />
-                          </button>
-                          <button className="btn btn-sm btn-danger" onClick={() => handleDelete(r.id, r.no)} title="Delete Record">
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
+                </thead>
+                <tbody>
+                  {filteredItems.length === 0 ? (
+                    <tr>
+                      <td colSpan="11" style={{ textAlign: 'center', padding: '30px' }} className="text3">
+                        No trouble records match your filters.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : (
+                    filteredItems.map((r) => (
+                      <tr key={r.id}>
+                        <td>
+                          <span className="font-mono" style={{ fontSize: '11px', background: 'var(--surface2)', padding: '2px 6px', borderRadius: '4px', fontWeight: '600' }}>
+                            {r.plant || 'MIR'}
+                          </span>
+                        </td>
+                        <td className="font-mono" style={{ fontSize: '11.5px', whiteSpace: 'nowrap' }}>
+                          {r.dateRaw || r.dateTime?.substring(0, 10) || '—'}
+                        </td>
+                        <td className="font-mono" style={{ fontSize: '11.5px', color: 'var(--text)' }}>
+                          {formatTime24(r.timeDowntime || r.downtimeHrs)}
+                        </td>
+                        <td className="font-mono" style={{ fontWeight: '700', color: r.shift ? 'var(--primary)' : 'var(--text3)' }}>
+                          {r.shift || '—'}
+                        </td>
+                        <td style={{ fontSize: '11.5px', color: 'var(--text2)' }}>
+                          {r.shift2 || r.pic || '—'}
+                        </td>
+                        <td style={{ fontWeight: '500', color: 'var(--text)' }}>
+                          {r.location || '—'}
+                        </td>
+                        <td style={{ fontSize: '12px' }}>
+                          {r.equipment || '—'}
+                        </td>
+                        <td style={{ fontSize: '12px' }}>
+                          {r.name || '—'}
+                        </td>
+                        <td style={{ fontSize: '12px', color: 'var(--text)' }}>
+                          {r.detail || r.problemDescription || '—'}
+                        </td>
+                        <td style={{ fontSize: '11.5px', color: 'var(--text2)' }}>
+                          {r.detail2 || r.rootCause || r.actionTaken || '—'}
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
+                            <button className="btn btn-sm" onClick={() => handleOpenEdit(r)} title="Edit Record">
+                              <Edit2 size={12} />
+                            </button>
+                            <button className="btn btn-sm btn-danger" onClick={() => handleOpenDelete(r)} title="Delete Record">
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -745,6 +805,68 @@ export default function TroubleRecord() {
                 <> Shifts with explicit shift codes show the highest concentration in <strong>Shift {analytics.shiftList[0]?.shift}</strong> ({analytics.shiftList[0]?.count} failures logged).</>
               )}
             </p>
+          </div>
+
+          {/* Section 0: Pareto 80/20 Downtime Chart */}
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <TrendingUp size={16} style={{ color: 'var(--accent)' }} />
+                  <span>Pareto 80/20 Downtime Analysis (Top Breakdown Areas)</span>
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--text3)' }}>
+                  Blue bars represent total downtime hours. Red curve shows cumulative percentage (focus on the vital few that cause 80% of downtime).
+                </p>
+              </div>
+              <span className="font-mono text3" style={{ fontSize: '12px' }}>
+                MTTR: <strong>{analytics.mttr} hrs</strong>
+              </span>
+            </div>
+
+            {analytics.paretoData.length === 0 ? (
+              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text3)' }}>
+                No breakdown data available to calculate Pareto distribution.
+              </div>
+            ) : (
+              <div style={{ width: '100%', height: 320 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={analytics.paretoData} margin={{ top: 10, right: 20, left: 10, bottom: 40 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border, #e2e8f0)" />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 11, fill: 'var(--text2, #45464d)' }}
+                      interval={0}
+                      angle={-20}
+                      textAnchor="end"
+                    />
+                    <YAxis 
+                      yAxisId="left" 
+                      tick={{ fontSize: 11, fill: 'var(--text2, #45464d)' }}
+                      label={{ value: 'Downtime (Hrs)', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: 'var(--text3)' } }}
+                    />
+                    <YAxis 
+                      yAxisId="right" 
+                      orientation="right" 
+                      domain={[0, 100]}
+                      tick={{ fontSize: 11, fill: 'var(--text2, #45464d)' }}
+                      unit="%"
+                    />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '8px', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      formatter={(val, name, item) => {
+                        if (name === 'Cumulative %') return [`${val}%`, name];
+                        return [`${val} hrs (${item.payload.frequency} incidents)`, name];
+                      }}
+                      labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName || ''}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                    <Bar yAxisId="left" dataKey="downtime" name="Downtime (Hrs)" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Line yAxisId="right" type="monotone" dataKey="cumulativePercent" name="Cumulative %" stroke="#ef4444" strokeWidth={2.5} dot={{ r: 4, fill: '#ef4444' }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
 
           {/* Section 1: Recurring Trouble Component Leaderboard */}
@@ -1112,6 +1234,22 @@ export default function TroubleRecord() {
           )}
         </div>
       </Modal>
+
+      {/* Standard Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title={deleteModal.isAll ? 'Delete All Trouble Records' : `Delete Log ${deleteModal.item?.no || ''}`}
+        message={
+          deleteModal.isAll
+            ? `Are you sure you want to permanently delete all ${items.length} trouble records? This action cannot be undone.`
+            : `Are you sure you want to delete breakdown log "${deleteModal.item?.no || ''}" (${deleteModal.item?.equipment || 'Unknown equipment'} - ${deleteModal.item?.location || ''})?`
+        }
+        confirmText={deleteModal.isAll ? 'Delete Everything' : 'Delete Record'}
+        variant="danger"
+        loading={deleteModal.loading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal({ isOpen: false, item: null, isAll: false, loading: false })}
+      />
     </div>
   );
 }

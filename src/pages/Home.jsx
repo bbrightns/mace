@@ -98,25 +98,37 @@ export default function Home({
 
   // Dynamic status-based counters
   const openPMs = pmTasksDueThisMonth.length;
-  const openVOSF = useMemo(() => vosfItems.filter(p => p.status?.toLowerCase() === 'open' || p.status?.toLowerCase() === 'in process').length, [vosfItems]);
-  const activeTroubles = useMemo(() => troubleRecords.filter(p => p.status?.toLowerCase() === 'open' || p.status?.toLowerCase() === 'in process').length, [troubleRecords]);
+  const openVOSF = useMemo(() => vosfItems.filter(p => {
+    const s = p.status?.toLowerCase();
+    return s === 'pending' || s === 'open' || s === 'in process' || s === 'need advice';
+  }).length, [vosfItems]);
+
+  const activeTroubles = useMemo(() => troubleRecords.filter(p => {
+    const s = p.status?.toLowerCase();
+    return s === 'pending' || s === 'open' || s === 'in process' || s === 'need advice';
+  }).length, [troubleRecords]);
+
   const pendingPurchasing = useMemo(() => purchasingItems.filter(p => {
     const s = p.status?.toLowerCase();
-    return s && s !== 'received' && s !== 'declined' && s !== 'cancel';
+    return s && s !== 'received' && s !== 'declined' && s !== 'cancel' && s !== 'finished';
   }).length, [purchasingItems]);
-  const openProjReqs = useMemo(() => projectRequests.filter(p => p.status?.toLowerCase() === 'open' || p.status?.toLowerCase() === 'in process').length, [projectRequests]);
+
+  const openProjReqs = useMemo(() => projectRequests.filter(p => {
+    const s = p.status?.toLowerCase();
+    return s === 'pending' || s === 'open' || s === 'in process' || s === 'need advice';
+  }).length, [projectRequests]);
 
   // Dynamic stats calculation for bottom bar
   const recentTrouble = useMemo(() => {
     const sortedTroubles = [...troubleRecords]
       .filter(t => t.machineEquipment)
       .sort((a, b) => new Date(b.dateTime || 0) - new Date(a.dateTime || 0));
-    return sortedTroubles[sortedTroubles.length - 1];
+    return sortedTroubles[0];
   }, [troubleRecords]);
 
   const nextPm = useMemo(() => {
     const sortedFuturePMs = [...pmPlans]
-      .filter(p => p.nextDueDate && p.status?.toLowerCase() !== 'closed')
+      .filter(p => p.nextDueDate && p.status?.toLowerCase() !== 'closed' && p.status?.toLowerCase() !== 'finished')
       .sort((a, b) => new Date(a.nextDueDate) - new Date(b.nextDueDate));
     return sortedFuturePMs[0];
   }, [pmPlans]);
@@ -129,8 +141,8 @@ export default function Home({
       items: [
         { id: 'pm-plan', label: 'PM Plan', desc: 'Recurring cycle machine PM schedule', icon: Calendar, count: openPMs, countLabel: 'Remaining' },
         { id: 'long-term-plan', label: 'Long Term Plan', desc: 'Horizon > 1 year replacement plan', icon: Clock, count: longTermPlans.length, countLabel: 'Items' },
-        { id: 'task-management', label: 'Task Management', desc: 'Daily shop floor task & planning matrix', icon: MessageSquare, count: openVOSF, countLabel: 'Open' },
-        { id: 'trouble-record', label: 'Trouble Record', desc: 'Equipment breakdown & downtime log', icon: AlertTriangle, count: activeTroubles, countLabel: 'Active' },
+        { id: 'task-management', label: 'Task Management', desc: 'Daily shop floor task & planning matrix', icon: MessageSquare, count: openVOSF, countLabel: 'Pending' },
+        { id: 'trouble-record', label: 'Trouble Record', desc: 'Equipment breakdown & downtime log', icon: AlertTriangle, count: activeTroubles, countLabel: 'Pending' },
         { id: 'purchasing', label: 'Purchasing', desc: 'List of pending machine spare parts', icon: ShoppingBag, count: pendingPurchasing, countLabel: 'Pending' }
       ]
     },
@@ -139,7 +151,7 @@ export default function Home({
       description: 'Supplier contract scopes, specifications, budgeting, and 5-year glass plant lifecycle planning.',
       color: 'var(--yellow)',
       items: [
-        { id: 'project-requests', label: 'Project Requests', desc: 'Supplier contract scope registry & status', icon: Layers, count: openProjReqs, countLabel: 'Active' },
+        { id: 'project-requests', label: 'Project Requests', desc: 'Supplier contract scope registry & status', icon: Layers, count: openProjReqs, countLabel: 'Pending' },
         { id: 'project-planning', label: 'Project Planning', desc: '5-year aging & improvement timeline', icon: FileText, count: projectPlanning.length, countLabel: 'Plans' }
       ]
     },

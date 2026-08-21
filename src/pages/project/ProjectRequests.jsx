@@ -8,6 +8,8 @@ import {
 } from '../../firebase/collections';
 import StatusBadge from '../../components/StatusBadge';
 import Modal from '../../components/Modal';
+import ConfirmModal from '../../components/ConfirmModal';
+import { TableSkeleton } from '../../components/SkeletonLoader';
 import { useToast } from '../../components/Toast';
 import { formatDate, toInputDate, formatBaht } from '../../utils';
 
@@ -21,6 +23,7 @@ export default function ProjectRequests() {
   // Modal State
   const [isOpen, setIsOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null, loading: false });
 
   // Form State
   const [plant, setPlant] = useState('RFG');
@@ -31,7 +34,7 @@ export default function ProjectRequests() {
   const [supplier, setSupplier] = useState('');
   const [planOn, setPlanOn] = useState('');
   const [price, setPrice] = useState('');
-  const [status, setStatus] = useState('Open');
+  const [status, setStatus] = useState('Pending');
   const [remark, setRemark] = useState('');
   const [formError, setFormError] = useState('');
 
@@ -58,7 +61,7 @@ export default function ProjectRequests() {
     setSupplier('');
     setPlanOn('');
     setPrice('');
-    setStatus('Open');
+    setStatus('Pending');
     setRemark('');
     setFormError('');
     setIsOpen(true);
@@ -74,7 +77,10 @@ export default function ProjectRequests() {
     setSupplier(target.supplier || '');
     setPlanOn(toInputDate(target.planOn));
     setPrice(target.price || '');
-    setStatus(target.status || 'Open');
+    let st = target.status || 'Pending';
+    if (st === 'Open') st = 'Pending';
+    if (st === 'Closed') st = 'Finished';
+    setStatus(st);
     setRemark(target.remark || '');
     setFormError('');
     setIsOpen(true);
@@ -126,14 +132,20 @@ export default function ProjectRequests() {
     }
   };
 
-  const handleDelete = async (id, prjNo) => {
-    if (confirm(`Are you sure you want to delete Project ${prjNo}?`)) {
-      try {
-        await deleteDocument('mace_project_requests', id);
-        showToast('Project deleted successfully.');
-      } catch (err) {
-        showToast('Failed to delete project.', 'error');
-      }
+  const handleOpenDelete = (item) => {
+    setDeleteModal({ isOpen: true, item, loading: false });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModal.item) return;
+    setDeleteModal(prev => ({ ...prev, loading: true }));
+    try {
+      await deleteDocument('mace_project_requests', deleteModal.item.id);
+      showToast('Project deleted successfully.');
+      setDeleteModal({ isOpen: false, item: null, loading: false });
+    } catch (err) {
+      showToast('Failed to delete project.', 'error');
+      setDeleteModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -142,7 +154,10 @@ export default function ProjectRequests() {
                           x.item?.toLowerCase().includes(search.toLowerCase()) ||
                           x.supplier?.toLowerCase().includes(search.toLowerCase());
     const matchesPlant = filterPlant === 'all' || x.plant === filterPlant;
-    const matchesStatus = filterStatus === 'all' || x.status === filterStatus;
+    const matchesStatus = filterStatus === 'all' || 
+                          x.status === filterStatus ||
+                          (filterStatus === 'Finished' && x.status === 'Closed') ||
+                          (filterStatus === 'Pending' && x.status === 'Open');
     return matchesSearch && matchesPlant && matchesStatus;
   });
 
@@ -196,9 +211,9 @@ export default function ProjectRequests() {
 
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="form-select" id="prj-status-filter">
             <option value="all">All Statuses</option>
-            <option value="Open">Open</option>
+            <option value="Pending">Pending</option>
+            <option value="Finished">Finished</option>
             <option value="In Process">In Process</option>
-            <option value="Closed">Closed</option>
             <option value="On Hold">On Hold</option>
           </select>
         </div>
@@ -209,9 +224,8 @@ export default function ProjectRequests() {
       </div>
 
       {loading ? (
-        <div id="prj-loading-skeleton">
-          <div className="skeleton-row"></div>
-          <div className="skeleton-row"></div>
+        <div className="card" style={{ padding: '16px' }}>
+          <TableSkeleton rows={5} cols={9} />
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="empty-state" id="prj-empty-state">
@@ -272,7 +286,7 @@ export default function ProjectRequests() {
                         <button className="btn btn-sm" onClick={() => handleOpenEdit(target)} aria-label="Edit project request">
                           <Edit2 size={12} />
                         </button>
-                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(target.id, target.no)} aria-label="Delete project request">
+                        <button className="btn btn-sm btn-danger" onClick={() => handleOpenDelete(target)} aria-label="Delete project request">
                           <Trash2 size={12} />
                         </button>
                       </div>
@@ -309,7 +323,7 @@ export default function ProjectRequests() {
                     <Edit2 size={12} />
                     <span>Edit</span>
                   </button>
-                  <button className="btn btn-sm btn-danger" onClick={() => handleDelete(target.id, target.no)}>
+                  <button className="btn btn-sm btn-danger" onClick={() => handleOpenDelete(target)}>
                     <Trash2 size={12} />
                   </button>
                 </div>
@@ -342,7 +356,7 @@ export default function ProjectRequests() {
           )}
 
           <div className="form-group form-full">
-            <label className="form-label">Project Headline Item / Equipment *</label>
+            <label className="form-label" htmlFor="form-item">Project Headline Item / Equipment *</label>
             <input 
               type="text" 
               className="form-input" 
@@ -355,7 +369,7 @@ export default function ProjectRequests() {
           </div>
 
           <div className="form-group form-full">
-            <label className="form-label">Scope of works *</label>
+            <label className="form-label" htmlFor="form-scope">Scope of works *</label>
             <textarea 
               className="form-textarea" 
               placeholder="Describe full specifications, contractor deliverables, inspections..." 
@@ -367,7 +381,7 @@ export default function ProjectRequests() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Plant Unit</label>
+            <label className="form-label" htmlFor="form-plant">Plant Unit</label>
             <select className="form-select" value={plant} onChange={(e) => setPlant(e.target.value)} id="form-plant">
               <option value="RFG">RFG Plant Line</option>
               <option value="MIR">MIR Plant Line</option>
@@ -375,7 +389,7 @@ export default function ProjectRequests() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Agreed Price (THB)</label>
+            <label className="form-label" htmlFor="form-price">Agreed Price (THB)</label>
             <input 
               type="number" 
               className="form-input font-mono" 
@@ -387,7 +401,7 @@ export default function ProjectRequests() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">PR Code</label>
+            <label className="form-label" htmlFor="form-pr">PR Code</label>
             <input 
               type="text" 
               className="form-input font-mono" 
@@ -399,7 +413,7 @@ export default function ProjectRequests() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">PO Code</label>
+            <label className="form-label" htmlFor="form-po">PO Code</label>
             <input 
               type="text" 
               className="form-input font-mono" 
@@ -411,7 +425,7 @@ export default function ProjectRequests() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Contractor Supplier / Partner</label>
+            <label className="form-label" htmlFor="form-supplier">Contractor Supplier / Partner</label>
             <input 
               type="text" 
               className="form-input" 
@@ -423,7 +437,7 @@ export default function ProjectRequests() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Planned Execution Date</label>
+            <label className="form-label" htmlFor="form-planOn">Planned Execution Date</label>
             <input 
               type="date" 
               className="form-input font-mono" 
@@ -434,17 +448,17 @@ export default function ProjectRequests() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Task Status</label>
+            <label className="form-label" htmlFor="form-status">Task Status</label>
             <select className="form-select" value={status} onChange={(e) => setStatus(e.target.value)} id="form-status">
-              <option value="Open">Open</option>
+              <option value="Pending">Pending</option>
+              <option value="Finished">Finished</option>
               <option value="In Process">In Process</option>
-              <option value="Closed">Closed</option>
               <option value="On Hold">On Hold</option>
             </select>
           </div>
 
           <div className="form-group form-full">
-            <label className="form-label">Planner Remarks</label>
+            <label className="form-label" htmlFor="form-remark">Planner Remarks</label>
             <textarea 
               className="form-textarea" 
               placeholder="Internal notes, payment terms, or outstanding items..." 
@@ -455,6 +469,18 @@ export default function ProjectRequests() {
           </div>
         </form>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title={`Delete Project ${deleteModal.item?.no || ''}`}
+        message={`Are you sure you want to delete project "${deleteModal.item?.no || ''}" (${deleteModal.item?.item || ''})?`}
+        confirmText="Delete Project"
+        variant="danger"
+        loading={deleteModal.loading}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteModal({ isOpen: false, item: null, loading: false })}
+      />
     </div>
   );
 }

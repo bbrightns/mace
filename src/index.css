@@ -2,25 +2,90 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #fcf8fa; /* Main workspace light flat grayish-pink canvas */
-  --surface: #ffffff;
-  --surface2: #f6f3f5; /* surface-container-low */
-  --surface3: #eae7e9; /* surface-container-high */
-  --border: #e2e8f0;   /* Subtle modern light border */
-  --border2: #cbd5e1;  /* Inner border level */
-  --accent: #0066ff;   /* High visibility Electric Blue */
-  --accent-hover: #0052cc;
-  --green: #10b981;    /* Emerald for document closure and clear states */
-  --yellow: #f59e0b;   /* Amber for projects and items requiring action */
-  --red: #ef4444;      /* Industrial Breakdown Red */
-  --blue-soft: #eff6ff;
-  --text: #1b1b1d;     /* on-surface text */
-  --text2: #45464d;    /* on-surface-variant */
-  --text3: #64656b;    /* Muted outlines and metadata captions (4.8:1 contrast) */
+  /* =========================================================================
+     LAYER 1: PRIMITIVE TOKENS (Raw values)
+     ========================================================================= */
+  --blue-50: #eff6ff;
+  --blue-500: #3b82f6;
+  --blue-600: #0066ff;
+  --blue-700: #0052cc;
+  --blue-800: #1d4ed8;
 
-  /* Standard fonts */
+  --emerald-50: #f0fdf4;
+  --emerald-100: #dcfce7;
+  --emerald-500: #10b981;
+  --emerald-600: #059669;
+  --emerald-700: #15803d;
+
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+
+  --rose-50: #fff1f2;
+  --rose-100: #ffe4e6;
+  --rose-500: #f43f5e;
+  --rose-600: #e11d48;
+  --rose-700: #be123c;
+  --red-600: #ef4444;
+
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-700: #334155;
+  --slate-900: #0f172a;
+
+  /* =========================================================================
+     LAYER 2: SEMANTIC TOKENS (Purpose-driven aliases)
+     ========================================================================= */
+  --bg: #fcf8fa;
+  --surface: #ffffff;
+  --surface2: #f6f3f5;
+  --surface3: #eae7e9;
+  --border: var(--slate-200);
+  --border2: var(--slate-300);
+  
+  --accent: var(--blue-600);
+  --accent-hover: var(--blue-700);
+  --green: var(--emerald-500);
+  --yellow: var(--amber-500);
+  --red: var(--red-600);
+  --blue-soft: var(--blue-50);
+
+  --text: #1b1b1d;
+  --text2: #45464d;
+  --text3: #64656b;
+
+  /* Status Colors */
+  --status-finished-bg: var(--emerald-50);
+  --status-finished-text: var(--emerald-700);
+  --status-finished-dot: var(--emerald-500);
+
+  --status-pending-bg: var(--amber-50);
+  --status-pending-text: var(--amber-700);
+  --status-pending-dot: var(--amber-500);
+
+  --status-danger-bg: #fef2f2;
+  --status-danger-text: #b91c1c;
+  --status-danger-dot: var(--red-600);
+
+  /* Typography Scale */
   --font-sans: 'Hanken Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* =========================================================================
+     LAYER 3: COMPONENT TOKENS (Component-specific bindings)
+     ========================================================================= */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
 }
 
 /* Base resets */
@@ -795,8 +860,8 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 8px;
-  border-radius: 12px;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: 600;
   text-transform: capitalize;
@@ -804,35 +869,67 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Status Badge Themes mapped to semantic design tokens */
-.status-open {
-  background-color: #eff6ff;
-  color: #1d4ed8;
-}
-
-.status-in-process {
-  background-color: #fffbeb;
-  color: #b45309;
-}
-
-.status-closed {
-  background-color: #f0fdf4;
-  color: #15803d;
-}
-
-.status-on-hold {
-  background-color: #fef2f2;
-  color: #b91c1c;
-}
-
-.status-pending {
-  background-color: #fffbeb;
-  color: #b45309;
-}
-
+.status-finished,
+.status-closed,
 .status-purchased {
-  background-color: #f0fdf4;
-  color: #15803d;
+  background-color: var(--status-finished-bg);
+  color: var(--status-finished-text);
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
+
+.status-pending,
+.status-open,
+.status-in-process {
+  background-color: var(--status-pending-bg);
+  color: var(--status-pending-text);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-on-hold,
+.status-danger {
+  background-color: var(--status-danger-bg);
+  color: var(--status-danger-text);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Skeleton Pulse Animation */
+.skeleton-pulse {
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Modal Pop & Micro-interaction Keyframes */
+@keyframes modalPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 
 /* Empty states */
 .empty-state {
