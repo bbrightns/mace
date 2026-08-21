@@ -43,7 +43,8 @@ import {
   setDocument,
   batchWriteOperations,
   batchDeleteDocuments,
-  uploadAttachment
+  uploadAttachment,
+  getAttachmentFromLocalDB
 } from '../../firebase/collections';
 import Modal from '../../components/Modal';
 import PMReportPdfModal from '../../components/PMReportPdfModal';
@@ -450,6 +451,53 @@ export default function PMPlan() {
 
   const handleRemovePlanAttachment = (indexToRemove) => {
     setPlanAttachments(prev => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleOpenAttachment = async (att, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!att) return;
+
+    // 1. If cloudUrl exists, open in new tab
+    if (att.cloudUrl) {
+      window.open(att.cloudUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    // 2. If dataUrl exists, open/download
+    if (att.dataUrl) {
+      const win = window.open();
+      if (win) {
+        win.document.write(`<iframe src="${att.dataUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+      } else {
+        const link = document.createElement('a');
+        link.href = att.dataUrl;
+        link.download = att.name || 'document.pdf';
+        link.click();
+      }
+      return;
+    }
+
+    // 3. Fallback: try retrieving binary from local IndexedDB
+    if (att.id) {
+      const cached = await getAttachmentFromLocalDB(att.id);
+      if (cached) {
+        const win = window.open();
+        if (win) {
+          win.document.write(`<iframe src="${cached}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+        } else {
+          const link = document.createElement('a');
+          link.href = cached;
+          link.download = att.name || 'document.pdf';
+          link.click();
+        }
+        return;
+      }
+    }
+
+    showToast('File preview is unavailable.', 'warning');
   };
 
   const handleSubmit = async (e) => {
@@ -2773,13 +2821,10 @@ export default function PMPlan() {
                                 : (item.attachment ? [item.attachment] : []);
                               if (atts.length === 0) return null;
                               return atts.map((att, aIdx) => (
-                                <a
+                                <button
                                   key={att.name + aIdx}
-                                  href={att.cloudUrl || att.dataUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  download={att.name}
-                                  onClick={(e) => e.stopPropagation()}
+                                  type="button"
+                                  onClick={(e) => handleOpenAttachment(att, e)}
                                   style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
@@ -2790,14 +2835,14 @@ export default function PMPlan() {
                                     color: '#dc2626',
                                     fontSize: '9.5px',
                                     fontWeight: '600',
-                                    textDecoration: 'none',
-                                    border: '1px solid #fca5a5'
+                                    border: '1px solid #fca5a5',
+                                    cursor: 'pointer'
                                   }}
-                                  title={`Download PDF (${aIdx + 1}/${atts.length}): ${att.name}`}
+                                  title={`View/Download PDF (${aIdx + 1}/${atts.length}): ${att.name}`}
                                 >
                                   <Paperclip size={10} />
                                   <span>PDF{atts.length > 1 ? ` ${aIdx + 1}` : ''}</span>
-                                </a>
+                                </button>
                               ));
                             })()}
                             <span style={{ fontSize: '9.5px', color: 'var(--text3)', fontWeight: '600', textTransform: 'uppercase', marginLeft: 'auto' }}>
@@ -3123,13 +3168,10 @@ export default function PMPlan() {
                                 : (item.attachment ? [item.attachment] : []);
                               if (atts.length === 0) return null;
                               return atts.map((att, aIdx) => (
-                                <a
+                                <button
                                   key={att.name + aIdx}
-                                  href={att.cloudUrl || att.dataUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  download={att.name}
-                                  onClick={(e) => e.stopPropagation()}
+                                  type="button"
+                                  onClick={(e) => handleOpenAttachment(att, e)}
                                   style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
@@ -3140,14 +3182,14 @@ export default function PMPlan() {
                                     color: '#dc2626',
                                     fontSize: '9.5px',
                                     fontWeight: '600',
-                                    textDecoration: 'none',
-                                    border: '1px solid #fca5a5'
+                                    border: '1px solid #fca5a5',
+                                    cursor: 'pointer'
                                   }}
-                                  title={`Download PDF (${aIdx + 1}/${atts.length}): ${att.name}`}
+                                  title={`View/Download PDF (${aIdx + 1}/${atts.length}): ${att.name}`}
                                 >
                                   <Paperclip size={10} />
                                   <span>PDF{atts.length > 1 ? ` ${aIdx + 1}` : ''}</span>
-                                </a>
+                                </button>
                               ));
                             })()}
                           </div>
@@ -3237,13 +3279,10 @@ export default function PMPlan() {
                             : (item.attachment ? [item.attachment] : []);
                           if (atts.length === 0) return null;
                           return atts.map((att, aIdx) => (
-                            <a
+                            <button
                               key={att.name + aIdx}
-                              href={att.cloudUrl || att.dataUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              download={att.name}
-                              onClick={(e) => e.stopPropagation()}
+                              type="button"
+                              onClick={(e) => handleOpenAttachment(att, e)}
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
@@ -3254,14 +3293,14 @@ export default function PMPlan() {
                                 color: '#dc2626',
                                 fontSize: '9.5px',
                                 fontWeight: '600',
-                                textDecoration: 'none',
-                                border: '1px solid #fca5a5'
+                                border: '1px solid #fca5a5',
+                                cursor: 'pointer'
                               }}
-                              title={`Download PDF (${aIdx + 1}/${atts.length}): ${att.name}`}
+                              title={`View/Download PDF (${aIdx + 1}/${atts.length}): ${att.name}`}
                             >
                               <Paperclip size={10} />
                               <span>PDF{atts.length > 1 ? ` ${aIdx + 1}` : ''}</span>
-                            </a>
+                            </button>
                           ));
                         })()}
                       </div>
@@ -3647,18 +3686,16 @@ export default function PMPlan() {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                      <a
-                        href={att.cloudUrl || att.dataUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download={att.name}
+                      <button
+                        type="button"
+                        onClick={(e) => handleOpenAttachment(att, e)}
                         className="btn btn-sm"
                         style={{ fontSize: '11px', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                         title="View or Download PDF"
                       >
                         <Eye size={12} />
                         <span>View</span>
-                      </a>
+                      </button>
                       <button
                         type="button"
                         className="btn btn-sm btn-danger"
@@ -3923,18 +3960,16 @@ export default function PMPlan() {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                      <a
-                        href={att.cloudUrl || att.dataUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download={att.name}
+                      <button
+                        type="button"
+                        onClick={(e) => handleOpenAttachment(att, e)}
                         className="btn btn-sm"
                         style={{ fontSize: '11px', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                         title="View or Download PDF"
                       >
                         <Eye size={12} />
                         <span>View</span>
-                      </a>
+                      </button>
                       <button
                         type="button"
                         className="btn btn-sm btn-danger"
