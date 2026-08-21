@@ -1071,6 +1071,12 @@ export default function PMPlan() {
   // Dynamically accounts for earlier postponed/shifted rounds occupying scheduled months
   const getRoundOrdinal = (item, year, month) => {
     if (!item) return '';
+    const cycleStr = (item.cycle || '').toLowerCase();
+    // For monthly and 2 months cycles, omit round number (1st, 2nd, ...) to keep display clean
+    if (cycleStr === 'monthly' || cycleStr.includes('2 month')) {
+      return '';
+    }
+
     const targetMonth = Number(month);
 
     // If targetMonth is the execution month of an earlier shifted log,
@@ -1223,7 +1229,7 @@ export default function PMPlan() {
               day: doneDay,
               doneMonth,
               doneYear,
-              line1: roundOrdinal || 'Plan',
+              line1: roundOrdinal || '',
               line2: `➔ ${targetMName}`,
               text: `${roundOrdinal ? roundOrdinal + ' ' : ''}➔ ${targetMName}`,
               tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Planned ${MONTH_NAMES[month - 1]} ${year} ➔ Done ${planLog.doneDate} in ${targetMName} (Delayed)`
