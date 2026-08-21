@@ -489,7 +489,7 @@ export default function TroubleRecord() {
             <Download size={16} />
             <span>Export CSV</span>
           </button>
-          <button className="btn btn-danger" onClick={handleDeleteAll} title="Delete all trouble records">
+          <button className="btn btn-danger" onClick={handleOpenDeleteAll} title="Delete all trouble records">
             <Trash2 size={16} />
             <span>Delete All Data</span>
           </button>

@@ -295,7 +295,7 @@ export default function Drawings() {
                     <Edit2 size={12} />
                     <span>Edit</span>
                   </button>
-                  <button className="btn btn-sm btn-danger" onClick={() => handleDelete(target.id, target.drawingNo)}>
+                  <button className="btn btn-sm btn-danger" onClick={() => handleOpenDelete(target)}>
                     <Trash2 size={12} />
                   </button>
                 </div>
