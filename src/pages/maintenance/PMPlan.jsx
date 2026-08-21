@@ -1068,17 +1068,65 @@ export default function PMPlan() {
   };
 
   // Get the scheduled round ordinal for a given plan and month (e.g. 1st, 2nd, 3rd)
+  // Dynamically accounts for earlier postponed/shifted rounds occupying scheduled months
   const getRoundOrdinal = (item, year, month) => {
     if (!item) return '';
-    const scheduled = [];
+    const targetMonth = Number(month);
+
+    // If targetMonth is the execution month of an earlier shifted log,
+    // its round ordinal belongs to its original planned month
+    const earlierLog = logs.find((log) => {
+      if (log.planId !== item.id || !log.doneDate) return false;
+      const plannedM = Number(log.month);
+      const plannedY = Number(log.year);
+      if (plannedY < year || (plannedY === year && plannedM < targetMonth)) {
+        const parts = log.doneDate.split('-');
+        if (parts.length === 3) {
+          return Number(parts[0]) === year && Number(parts[1]) === targetMonth;
+        }
+        const d = new Date(log.doneDate);
+        return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === targetMonth;
+      }
+      return false;
+    });
+
+    if (earlierLog) {
+      return getRoundOrdinal(item, Number(earlierLog.year), Number(earlierLog.month));
+    }
+
+    let currentRoundNum = 0;
+    let targetRoundNum = 0;
+
     for (let m = 1; m <= 12; m++) {
+      // Check if month m is occupied by an earlier shifted log (and thus not a new scheduled round)
+      const isOccupiedByShifted = logs.some((log) => {
+        if (log.planId !== item.id || !log.doneDate) return false;
+        const plannedM = Number(log.month);
+        const plannedY = Number(log.year);
+        if (plannedY < year || (plannedY === year && plannedM < m)) {
+          const parts = log.doneDate.split('-');
+          if (parts.length === 3) {
+            return Number(parts[0]) === year && Number(parts[1]) === m;
+          }
+          const d = new Date(log.doneDate);
+          return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === m;
+        }
+        return false;
+      });
+
       if (isMonthRequired(item, year, m)) {
-        scheduled.push(m);
+        if (!isOccupiedByShifted) {
+          currentRoundNum++;
+          if (m === targetMonth) {
+            targetRoundNum = currentRoundNum;
+            break;
+          }
+        }
       }
     }
-    const idx = scheduled.indexOf(Number(month));
-    if (idx === -1) return '';
-    return getOrdinalSuffix(idx + 1);
+
+    if (targetRoundNum === 0) return '';
+    return getOrdinalSuffix(targetRoundNum);
   };
 
   // Determine cell execution details and state
