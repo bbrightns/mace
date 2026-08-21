@@ -2244,14 +2244,14 @@ export default function PMPlan() {
           transform: scale(1.02);
         }
         .color-shifted-actual {
-          background: #fff7ed;
+          background: #f0fdf4;
           color: #c2410c;
-          border-color: #fed7aa;
+          border-color: #bbf7d0;
           cursor: pointer;
           font-weight: 700;
         }
         .color-shifted-actual:hover {
-          background: #ffedd5;
+          background: #dcfce7;
           transform: scale(1.02);
         }
         .color-overdue {
@@ -2362,7 +2362,7 @@ export default function PMPlan() {
         .legend-block.ppending { background: #eff6ff; border-color: #bfdbfe; }
         .legend-block.pdone { background: #f0fdf4; border-color: #bbf7d0; }
         .legend-block.pshifted-plan { background: #fffbeb; border-color: #fde68a; }
-        .legend-block.pshifted-actual { background: #fff7ed; border-color: #fed7aa; }
+        .legend-block.pshifted-actual { background: #f0fdf4; border-color: #bbf7d0; }
         .legend-block.poverdue { background: #fef2f2; border-color: #fca5a5; }
 
         .year-selector-btn {
@@ -2962,7 +2962,7 @@ export default function PMPlan() {
             </div>
             <div className="legend-item">
               <span className="legend-block pshifted-actual"></span>
-              <span>Shifted Done (Orange e.g. 1st (22*))</span>
+              <span>Shifted Done (e.g. 1st (22*))</span>
             </div>
             <div className="legend-item">
               <span className="legend-block poverdue"></span>
