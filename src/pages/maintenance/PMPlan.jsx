@@ -1273,6 +1273,11 @@ export default function PMPlan() {
 
   // Click handler on grid cell
   const handleCellClick = (item, year, month, status) => {
+    // Only allow clicking on months that are part of the maintenance plan or already have logs
+    if (status === 'faded') {
+      return;
+    }
+
     setSelectedCellItem(item);
 
     if (status === 'shifted-actual') {
