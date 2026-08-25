@@ -3788,30 +3788,30 @@ export default function PMPlan() {
             />
           </div>
 
-          {/* ITEM NOTE / TECHNICAL SPECIFICATIONS */}
+          {/* NOTE */}
           <div className="form-group form-full">
             <label className="form-label" style={{ fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span>Item Note / Technical Specifications (บันทึกสเปก / รุ่นของ Motor / อะไหล่)</span>
+              <span>NOTE</span>
               <span style={{ fontSize: '11px', color: 'var(--text3)', fontWeight: 'normal' }}>
-                Optional technical details
+                Optional
               </span>
             </label>
             <textarea
               className="form-input"
               style={{ minHeight: '68px', fontSize: '12.5px', resize: 'vertical' }}
-              placeholder="e.g. Motor Model: M2BAX 132MA4 7.5kW 1450RPM, V-Belt: A-24 (4 pcs), Bearing: 6208-2Z"
+              placeholder="Item note, technical spec, etc."
               value={planNote}
               onChange={(e) => setPlanNote(e.target.value)}
               id="form-planNote"
             />
           </div>
 
-          {/* PDF ATTACHMENT FOR PM ITEM / MACHINE MANUAL */}
+          {/* ATTACHMENT */}
           <div className="form-group form-full">
             <label className="form-label" style={{ fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Paperclip size={14} style={{ color: 'var(--accent)' }} />
-                <span>Machine Manual / Checksheet PDFs (แนบไฟล์คู่มือ/เช็คชีท PDF)</span>
+                <span>ATTACHMENT</span>
               </div>
               <span style={{ fontSize: '11px', color: 'var(--text3)', fontWeight: 'normal' }}>
                 {planAttachments.length}/3 files attached
