@@ -24,7 +24,9 @@ import {
   Eye,
   FileSpreadsheet,
   StickyNote,
-  ShieldAlert
+  ShieldAlert,
+  MoreVertical,
+  ChevronDown
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -262,6 +264,23 @@ export default function PMPlan() {
 
   // PDF Export Modal State
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+
+  // More Actions Dropdown State
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const moreMenuRef = useRef(null);
+
+  // Close More Menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setIsMoreMenuOpen(false);
+      }
+    };
+    if (isMoreMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMoreMenuOpen]);
 
   const { showToast } = useToast();
   const logDoneDayInputRef = useRef(null);
@@ -2524,41 +2543,177 @@ export default function PMPlan() {
           <p className="page-subtitle">Schedule, verify, and log recurring machines inspect logs to maintain zero factory downtime.</p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <button className="btn" onClick={handleExportJSON} id="export-json-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} title="Download full JSON backup of items and completion logs">
-            <Download size={14} />
-            <span>Export JSON</span>
-          </button>
-          <button className="btn" onClick={handleExportCSV} id="export-csv-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} title="Download items list in Excel-compatible CSV format">
-            <Download size={14} />
-            <span>Export CSV</span>
-          </button>
+          {/* Rank Audit Alert Button - Only visible when mismatch items > 0 */}
+          {mismatchItems.length > 0 && (
+            <button 
+              className="btn" 
+              onClick={() => setIsRankAuditModalOpen(true)} 
+              id="audit-rank-btn" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                background: 'rgba(239, 68, 68, 0.12)', 
+                borderColor: '#ef4444',
+                color: '#dc2626',
+                boxShadow: '0 0 0 1px rgba(239, 68, 68, 0.2)'
+              }} 
+              title="Audit machine ranks against Machine Classification system"
+            >
+              <ShieldAlert size={14} style={{ color: '#dc2626' }} />
+              <span style={{ fontWeight: '700' }}>
+                ⚠️ Rank Audit ({mismatchItems.length})
+              </span>
+            </button>
+          )}
+
+          {/* Export PDF Report Button */}
           <button 
             className="btn" 
-            onClick={() => setIsRankAuditModalOpen(true)} 
-            id="audit-rank-btn" 
+            onClick={() => setIsPdfModalOpen(true)} 
+            id="export-pdf-report-btn" 
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
               gap: '6px', 
-              background: mismatchItems.length > 0 ? 'rgba(239, 68, 68, 0.08)' : 'var(--surface2)', 
-              borderColor: mismatchItems.length > 0 ? '#ef4444' : 'var(--border)',
-              color: mismatchItems.length > 0 ? '#dc2626' : 'var(--text)'
+              background: 'var(--surface2)', 
+              borderColor: 'var(--accent)' 
             }} 
-            title="Audit machine ranks against Machine Classification system"
+            title="Generate multi-page PDF report with schedule table, trend graph, and engineer/manager signature blocks"
           >
-            <ShieldAlert size={14} style={{ color: mismatchItems.length > 0 ? '#dc2626' : 'var(--text3)' }} />
-            <span style={{ fontWeight: '600' }}>
-              Rank Audit {mismatchItems.length > 0 && `(${mismatchItems.length})`}
-            </span>
-          </button>
-          <button className="btn" onClick={() => setIsPdfModalOpen(true)} id="export-pdf-report-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--surface2)', borderColor: 'var(--accent)' }} title="Generate multi-page PDF report with schedule table, trend graph, and engineer/manager signature blocks">
             <Printer size={14} style={{ color: 'var(--accent)' }} />
-            <span style={{ fontWeight: '600', color: 'var(--accent)' }}>Export PDF Report</span>
+            <span style={{ fontWeight: '600', color: 'var(--accent)' }}>Export PDF</span>
           </button>
-          <button className="btn" onClick={() => setIsImportModalOpen(true)} id="import-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px' }} title="Import items or completion logs from JSON/CSV files">
-            <Upload size={14} />
-            <span>Import</span>
-          </button>
+
+          {/* More Actions Dropdown (Import, CSV, JSON) */}
+          <div style={{ position: 'relative' }} ref={moreMenuRef}>
+            <button 
+              className="btn" 
+              onClick={() => setIsMoreMenuOpen(prev => !prev)} 
+              id="pm-more-menu-btn" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '4px',
+                background: isMoreMenuOpen ? 'var(--surface2)' : 'var(--surface)',
+                borderColor: isMoreMenuOpen ? 'var(--accent)' : 'var(--border)'
+              }}
+              title="More actions (Import, Export CSV, JSON backup)"
+            >
+              <MoreVertical size={14} />
+              <span>More</span>
+              <ChevronDown size={12} style={{ transform: isMoreMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+            </button>
+
+            {isMoreMenuOpen && (
+              <div 
+                style={{ 
+                  position: 'absolute', 
+                  right: 0, 
+                  top: '100%', 
+                  marginTop: '4px', 
+                  backgroundColor: 'var(--surface)', 
+                  border: '1px solid var(--border)', 
+                  borderRadius: '6px', 
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)', 
+                  zIndex: 100, 
+                  minWidth: '180px',
+                  padding: '4px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px'
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMoreMenuOpen(false);
+                    setIsImportModalOpen(true);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    padding: '8px 10px',
+                    fontSize: '12.5px',
+                    textAlign: 'left',
+                    background: 'none',
+                    border: 'none',
+                    borderRadius: '4px',
+                    color: 'var(--text)',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface2)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <Upload size={14} style={{ color: 'var(--accent)' }} />
+                  <span>Import Data (CSV/JSON)</span>
+                </button>
+
+                <div style={{ height: '1px', backgroundColor: 'var(--border)', margin: '2px 4px' }} />
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMoreMenuOpen(false);
+                    handleExportCSV();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    padding: '8px 10px',
+                    fontSize: '12.5px',
+                    textAlign: 'left',
+                    background: 'none',
+                    border: 'none',
+                    borderRadius: '4px',
+                    color: 'var(--text)',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface2)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <Download size={14} style={{ color: '#059669' }} />
+                  <span>Export CSV (Excel)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMoreMenuOpen(false);
+                    handleExportJSON();
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    padding: '8px 10px',
+                    fontSize: '12.5px',
+                    textAlign: 'left',
+                    background: 'none',
+                    border: 'none',
+                    borderRadius: '4px',
+                    color: 'var(--text)',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--surface2)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <Download size={14} style={{ color: 'var(--text3)' }} />
+                  <span>Export JSON Backup</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Primary Add Button */}
           <button className="btn btn-primary" onClick={handleOpenAdd} id="add-pm-btn">
             <Plus size={16} />
             <span>Add PM Item</span>
