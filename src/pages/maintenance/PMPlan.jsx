@@ -22,7 +22,8 @@ import {
   FileCheck,
   ExternalLink,
   Eye,
-  FileSpreadsheet
+  FileSpreadsheet,
+  StickyNote
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -1057,30 +1058,15 @@ export default function PMPlan() {
     return sortDirection === 'asc' ? comparison : -comparison;
   });
 
-  // Helper for round ordinal suffixes (1st, 2nd, 3rd, 4th, etc.)
-  const getOrdinalSuffix = (num) => {
-    const j = num % 10;
-    const k = num % 100;
-    if (j === 1 && k !== 11) return `${num}st`;
-    if (j === 2 && k !== 12) return `${num}nd`;
-    if (j === 3 && k !== 13) return `${num}rd`;
-    return `${num}th`;
-  };
-
-  // Get the scheduled round ordinal for a given plan and month (e.g. 1st, 2nd, 3rd)
+  // Get the scheduled round fraction for a given plan and month (e.g. 1/1, 1/4, 3/4)
   // Dynamically accounts for earlier postponed/shifted rounds occupying scheduled months
-  const getRoundOrdinal = (item, year, month) => {
+  const getRoundFraction = (item, year, month) => {
     if (!item) return '';
-    const cycleStr = (item.cycle || '').toLowerCase();
-    // For monthly and 2 months cycles, omit round number (1st, 2nd, ...) to keep display clean
-    if (cycleStr === 'monthly' || cycleStr.includes('2 month')) {
-      return '';
-    }
 
     const targetMonth = Number(month);
 
     // If targetMonth is the execution month of an earlier shifted log,
-    // its round ordinal belongs to its original planned month
+    // its round fraction belongs to its original planned month
     const earlierLog = logs.find((log) => {
       if (log.planId !== item.id || !log.doneDate) return false;
       const plannedM = Number(log.month);
@@ -1097,8 +1083,17 @@ export default function PMPlan() {
     });
 
     if (earlierLog) {
-      return getRoundOrdinal(item, Number(earlierLog.year), Number(earlierLog.month));
+      return getRoundFraction(item, Number(earlierLog.year), Number(earlierLog.month));
     }
+
+    // Count total required rounds in the year
+    let totalRoundsInYear = 0;
+    for (let m = 1; m <= 12; m++) {
+      if (isMonthRequired(item, year, m)) {
+        totalRoundsInYear++;
+      }
+    }
+    if (totalRoundsInYear === 0) totalRoundsInYear = 1;
 
     let currentRoundNum = 0;
     let targetRoundNum = 0;
@@ -1132,13 +1127,13 @@ export default function PMPlan() {
     }
 
     if (targetRoundNum === 0) return '';
-    return getOrdinalSuffix(targetRoundNum);
+    return `${targetRoundNum}/${totalRoundsInYear}`;
   };
 
   // Determine cell execution details and state
   const getCellDetails = (item, year, month) => {
     const required = isMonthRequired(item, year, month);
-    const roundOrdinal = getRoundOrdinal(item, year, month);
+    const roundFraction = getRoundFraction(item, year, month);
 
     // 1. Check if there is an earlier round's log that was delayed and executed in THIS (year, month)
     const earlierShiftedLog = logs.find((log) => {
@@ -1161,7 +1156,7 @@ export default function PMPlan() {
       let doneDay = 15;
       if (parts.length === 3) doneDay = parseInt(parts[2], 10);
       const plannedMonthNum = Number(earlierShiftedLog.month);
-      const plannedRound = getRoundOrdinal(item, Number(earlierShiftedLog.year), plannedMonthNum);
+      const plannedRound = getRoundFraction(item, Number(earlierShiftedLog.year), plannedMonthNum);
       const plannedMName = MONTH_NAMES[plannedMonthNum - 1] || `M${plannedMonthNum}`;
       return {
         status: 'shifted-actual',
@@ -1171,7 +1166,7 @@ export default function PMPlan() {
         line1: plannedRound || '',
         line2: `(${doneDay}*)`,
         text: `${plannedRound ? plannedRound + ' ' : ''}(${doneDay}*)`,
-        tooltip: `${plannedRound ? plannedRound + ' Round (Delayed): ' : ''}Executed on ${earlierShiftedLog.doneDate} (Shifted from ${plannedMName} plan)`
+        tooltip: `${plannedRound ? plannedRound + ' (Delayed): ' : ''}Executed on ${earlierShiftedLog.doneDate} (Shifted from ${plannedMName} plan)`
       };
     }
 
@@ -1216,10 +1211,10 @@ export default function PMPlan() {
               status: 'done',
               log: planLog,
               day: doneDay,
-              line1: roundOrdinal || '',
+              line1: roundFraction || '',
               line2: `(${doneDay})`,
-              text: `${roundOrdinal ? roundOrdinal + ' ' : ''}(${doneDay})`,
-              tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Completed on ${planLog.doneDate} (On-time)`
+              text: `${roundFraction ? roundFraction + ' ' : ''}(${doneDay})`,
+              tooltip: `${roundFraction ? roundFraction + ': ' : ''}Completed on ${planLog.doneDate} (On-time)`
             };
           } else {
             const targetMName = MONTH_NAMES[doneMonth - 1] || `M${doneMonth}`;
@@ -1229,19 +1224,19 @@ export default function PMPlan() {
               day: doneDay,
               doneMonth,
               doneYear,
-              line1: roundOrdinal || '',
+              line1: roundFraction || '',
               line2: `➔ ${targetMName}`,
-              text: `${roundOrdinal ? roundOrdinal + ' ' : ''}➔ ${targetMName}`,
-              tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Planned ${MONTH_NAMES[month - 1]} ${year} ➔ Done ${planLog.doneDate} in ${targetMName} (Delayed)`
+              text: `${roundFraction ? roundFraction + ' ' : ''}➔ ${targetMName}`,
+              tooltip: `${roundFraction ? roundFraction + ': ' : ''}Planned ${MONTH_NAMES[month - 1]} ${year} ➔ Done ${planLog.doneDate} in ${targetMName} (Delayed)`
             };
           }
         }
         return {
           status: 'done',
           log: planLog,
-          line1: roundOrdinal || '',
+          line1: roundFraction || '',
           line2: '✓',
-          text: `${roundOrdinal ? roundOrdinal + ' ' : ''}✓`,
+          text: `${roundFraction ? roundFraction + ' ' : ''}✓`,
           tooltip: 'Completed'
         };
       }
@@ -1254,10 +1249,10 @@ export default function PMPlan() {
           return {
             status: 'done',
             day: d.getDate(),
-            line1: roundOrdinal || '',
+            line1: roundFraction || '',
             line2: `(${d.getDate()})`,
-            text: `${roundOrdinal ? roundOrdinal + ' ' : ''}(${d.getDate()})`,
-            tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Completed on ${item.lastDoneDate}`
+            text: `${roundFraction ? roundFraction + ' ' : ''}(${d.getDate()})`,
+            tooltip: `${roundFraction ? roundFraction + ': ' : ''}Completed on ${item.lastDoneDate}`
           };
         }
       }
@@ -1269,10 +1264,10 @@ export default function PMPlan() {
       if (isPast) {
         return {
           status: 'overdue',
-          line1: roundOrdinal || '',
+          line1: roundFraction || '',
           line2: '!',
           text: '!',
-          tooltip: `Overdue! ${roundOrdinal ? roundOrdinal + ' Round ' : ''}Planned for ${MONTH_NAMES[month - 1]} ${year}`
+          tooltip: `Overdue! ${roundFraction ? roundFraction + ' ' : ''}Planned for ${MONTH_NAMES[month - 1]} ${year}`
         };
       }
 
@@ -1281,7 +1276,7 @@ export default function PMPlan() {
         line1: '',
         line2: '',
         text: '',
-        tooltip: `${roundOrdinal ? roundOrdinal + ' Round: ' : ''}Scheduled for ${MONTH_NAMES[month - 1]} ${year}`
+        tooltip: `${roundFraction ? roundFraction + ': ' : ''}Scheduled for ${MONTH_NAMES[month - 1]} ${year}`
       };
     }
 
@@ -1291,7 +1286,7 @@ export default function PMPlan() {
       let doneDay = 15;
       if (parts.length === 3) doneDay = parseInt(parts[2], 10);
       const plannedMonthNum = Number(actualLog.month);
-      const plannedRound = getRoundOrdinal(item, Number(actualLog.year), plannedMonthNum);
+      const plannedRound = getRoundFraction(item, Number(actualLog.year), plannedMonthNum);
       const plannedMName = MONTH_NAMES[plannedMonthNum - 1] || `M${plannedMonthNum}`;
       return {
         status: 'shifted-actual',
@@ -1301,7 +1296,7 @@ export default function PMPlan() {
         line1: plannedRound || '',
         line2: `(${doneDay}*)`,
         text: `${plannedRound ? plannedRound + ' ' : ''}(${doneDay}*)`,
-        tooltip: `${plannedRound ? plannedRound + ' Round (Delayed): ' : ''}Executed on ${actualLog.doneDate} (Shifted from ${plannedMName} plan)`
+        tooltip: `${plannedRound ? plannedRound + ' (Delayed): ' : ''}Executed on ${actualLog.doneDate} (Shifted from ${plannedMName} plan)`
       };
     }
 
@@ -2921,6 +2916,29 @@ export default function PMPlan() {
                                 </button>
                               ));
                             })()}
+                            {/* Note Icon Badge with Tooltip */}
+                            {(item.note || item.itemNote) && (
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '2px',
+                                  padding: '1px 5px',
+                                  borderRadius: '4px',
+                                  backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                  color: '#d97706',
+                                  fontSize: '9.5px',
+                                  fontWeight: '600',
+                                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                                  cursor: 'help'
+                                }}
+                                title={`Note: ${item.note || item.itemNote}`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <StickyNote size={10} />
+                                <span>Note</span>
+                              </span>
+                            )}
                             <span style={{ fontSize: '9.5px', color: 'var(--text3)', fontWeight: '600', textTransform: 'uppercase', marginLeft: 'auto' }}>
                               {displayResponsible}
                             </span>
@@ -2940,23 +2958,6 @@ export default function PMPlan() {
                           }}>
                             {item.machineName}
                           </span>
-                          {(item.note || item.itemNote) && (
-                            <div 
-                              style={{ 
-                                fontSize: '10.5px', 
-                                color: 'var(--text3)', 
-                                fontStyle: 'italic', 
-                                whiteSpace: 'normal', 
-                                lineHeight: '1.25',
-                                backgroundColor: 'rgba(0,0,0,0.03)',
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                borderLeft: '2px solid var(--accent)'
-                              }}
-                            >
-                              {item.note || item.itemNote}
-                            </div>
-                          )}
                         </div>
                       </td>
 
@@ -3047,7 +3048,7 @@ export default function PMPlan() {
             </div>
             <div className="legend-item">
               <span className="legend-block pdone"></span>
-              <span>On-Time Done (Green e.g. 1st (22))</span>
+              <span>On-Time Done (Green e.g. 1/1 (22))</span>
             </div>
             <div className="legend-item" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               <span style={{ 
@@ -3071,7 +3072,7 @@ export default function PMPlan() {
             </div>
             <div className="legend-item">
               <span className="legend-block pshifted-actual"></span>
-              <span>Shifted Done (e.g. 1st (22*))</span>
+              <span>Shifted Done (e.g. 1/1 (22*))</span>
             </div>
             <div className="legend-item">
               <span className="legend-block poverdue"></span>
@@ -3318,12 +3319,30 @@ export default function PMPlan() {
                                 </button>
                               ));
                             })()}
+                            {/* Note Icon Badge with Tooltip */}
+                            {(item.note || item.itemNote) && (
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '2px',
+                                  padding: '1px 5px',
+                                  borderRadius: '4px',
+                                  backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                  color: '#d97706',
+                                  fontSize: '9.5px',
+                                  fontWeight: '600',
+                                  border: '1px solid rgba(245, 158, 11, 0.35)',
+                                  cursor: 'help'
+                                }}
+                                title={`Note: ${item.note || item.itemNote}`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <StickyNote size={10} />
+                                <span>Note</span>
+                              </span>
+                            )}
                           </div>
-                          {(item.note || item.itemNote) && (
-                            <span style={{ fontSize: '11px', color: 'var(--text3)', fontStyle: 'italic', fontWeight: 'normal' }}>
-                              {item.note || item.itemNote}
-                            </span>
-                          )}
                         </div>
                       </td>
                       <td className="font-mono text-xs">
@@ -3429,12 +3448,30 @@ export default function PMPlan() {
                             </button>
                           ));
                         })()}
+                        {/* Note Icon Badge with Tooltip */}
+                        {(item.note || item.itemNote) && (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '2px',
+                              padding: '1px 5px',
+                              borderRadius: '4px',
+                              backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                              color: '#d97706',
+                              fontSize: '9.5px',
+                              fontWeight: '600',
+                              border: '1px solid rgba(245, 158, 11, 0.35)',
+                              cursor: 'help'
+                            }}
+                            title={`Note: ${item.note || item.itemNote}`}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <StickyNote size={10} />
+                            <span>Note</span>
+                          </span>
+                        )}
                       </div>
-                      {(item.note || item.itemNote) && (
-                        <div style={{ fontSize: '11px', color: 'var(--text3)', fontStyle: 'italic', marginTop: '3px' }}>
-                          {item.note || item.itemNote}
-                        </div>
-                      )}
                       {item.checksheetId && (
                         <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>
                           Checksheet ID: <strong className="font-mono">{item.checksheetId}</strong>
