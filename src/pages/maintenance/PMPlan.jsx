@@ -149,8 +149,28 @@ export default function PMPlan() {
   const [filterCycle, setFilterCycle] = useState('all');
   const [filterPlant, setFilterPlant] = useState('all');
   const [filterResponsible, setFilterResponsible] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('mace_pm_plan_filter_status');
+      if (saved) {
+        sessionStorage.removeItem('mace_pm_plan_filter_status');
+        return saved;
+      }
+    } catch (e) {}
+    return 'all';
+  });
   const [filterMonth, setFilterMonth] = useState('all');
+
+  // Check for navigation filter params from dashboard
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('mace_pm_plan_filter_status');
+      if (saved) {
+        setFilterStatus(saved);
+        sessionStorage.removeItem('mace_pm_plan_filter_status');
+      }
+    } catch (e) {}
+  }, [activeTab]);
 
   // Batch Selection & Batch Input Date / Due Date States
   const [selectedPlanIds, setSelectedPlanIds] = useState([]);
@@ -946,6 +966,31 @@ export default function PMPlan() {
     return false;
   };
 
+  const isPlanRemainingOrOverdue = (item, targetYear = selectedYear) => {
+    const today = new Date();
+    const currentYearVal = today.getFullYear();
+    const currentMonthVal = today.getMonth() + 1;
+
+    if (targetYear > currentYearVal) {
+      for (let m = 1; m <= 12; m++) {
+        if (isMonthRequired(item, targetYear, m)) {
+          const details = getCellDetails(item, targetYear, m);
+          if (details.status === 'pending' || details.status === 'overdue') return true;
+        }
+      }
+      return false;
+    }
+
+    const maxMonth = targetYear < currentYearVal ? 12 : currentMonthVal;
+    for (let m = 1; m <= maxMonth; m++) {
+      if (isMonthRequired(item, targetYear, m)) {
+        const details = getCellDetails(item, targetYear, m);
+        if (details.status === 'overdue' || details.status === 'pending') return true;
+      }
+    }
+    return false;
+  };
+
   const getNextDueText = (item) => {
     const today = new Date();
     const currentYear = today.getFullYear();
@@ -1076,7 +1121,17 @@ export default function PMPlan() {
     return <span className="pm-type-badge type-pm">🔧 PM</span>;
   };
 
-  // Summary counts for overdue items
+  // Summary counts for remaining & overdue items
+  const remainingOverdueCount = useMemo(() => {
+    return items.filter(item => {
+      if (filterMonth !== 'all') {
+        const cell = getCellDetails(item, selectedYear, Number(filterMonth));
+        return isMonthRequired(item, selectedYear, Number(filterMonth)) && (cell.status === 'overdue' || cell.status === 'pending');
+      }
+      return isPlanRemainingOrOverdue(item, selectedYear);
+    }).length;
+  }, [items, logs, selectedYear, filterMonth]);
+
   const overdueCount = useMemo(() => {
     return items.filter(item => {
       if (filterMonth !== 'all') {
@@ -1118,7 +1173,14 @@ export default function PMPlan() {
     const matchesMonth = filterMonth === 'all' || isMonthRequired(item, selectedYear, Number(filterMonth));
 
     let matchesStatus = true;
-    if (filterStatus === 'overdue') {
+    if (filterStatus === 'remaining_overdue') {
+      if (filterMonth !== 'all') {
+        const cell = getCellDetails(item, selectedYear, Number(filterMonth));
+        matchesStatus = isMonthRequired(item, selectedYear, Number(filterMonth)) && (cell.status === 'overdue' || cell.status === 'pending');
+      } else {
+        matchesStatus = isPlanRemainingOrOverdue(item, selectedYear);
+      }
+    } else if (filterStatus === 'overdue') {
       if (filterMonth !== 'all') {
         matchesStatus = getCellStatus(item, selectedYear, Number(filterMonth)) === 'overdue';
       } else {
@@ -1126,9 +1188,10 @@ export default function PMPlan() {
       }
     } else if (filterStatus === 'ontrack') {
       if (filterMonth !== 'all') {
-        matchesStatus = getCellStatus(item, selectedYear, Number(filterMonth)) !== 'overdue';
+        const cell = getCellDetails(item, selectedYear, Number(filterMonth));
+        matchesStatus = !isMonthRequired(item, selectedYear, Number(filterMonth)) || (cell.status === 'done' || cell.status === 'shifted-actual' || cell.status === 'shifted-plan');
       } else {
-        matchesStatus = !isPlanOverdue(item, selectedYear);
+        matchesStatus = !isPlanRemainingOrOverdue(item, selectedYear);
       }
     }
 
@@ -1157,10 +1220,12 @@ export default function PMPlan() {
     const matchesRank = filterRank === 'all' || (item.rank || 'B') === filterRank;
 
     let matchesStatus = true;
-    if (filterStatus === 'overdue') {
+    if (filterStatus === 'remaining_overdue') {
+      matchesStatus = isPlanRemainingOrOverdue(item, selectedYear);
+    } else if (filterStatus === 'overdue') {
       matchesStatus = isPlanOverdue(item, selectedYear);
     } else if (filterStatus === 'ontrack') {
-      matchesStatus = !isPlanOverdue(item, selectedYear);
+      matchesStatus = !isPlanRemainingOrOverdue(item, selectedYear);
     }
 
     return matchesSearch && matchesPlant && matchesResponsible && matchesCycle && matchesType && matchesRank && matchesStatus;
@@ -2943,7 +3008,7 @@ export default function PMPlan() {
           </select>
         </div>
 
-        {/* Status / Overdue Filter Dropdown */}
+        {/* Status / Remaining & Overdue Filter Dropdown */}
         <div style={{ flex: '0 0 auto' }}>
           <select
             className="form-select"
@@ -2954,19 +3019,22 @@ export default function PMPlan() {
               fontSize: '12px', 
               padding: '4px 8px', 
               width: 'auto',
-              borderColor: filterStatus === 'overdue' ? '#ef4444' : undefined,
-              color: filterStatus === 'overdue' ? '#dc2626' : undefined,
-              fontWeight: filterStatus === 'overdue' ? 'bold' : 'normal',
-              backgroundColor: filterStatus === 'overdue' ? 'rgba(239, 68, 68, 0.08)' : undefined
+              borderColor: (filterStatus === 'remaining_overdue' || filterStatus === 'overdue') ? '#ef4444' : undefined,
+              color: (filterStatus === 'remaining_overdue' || filterStatus === 'overdue') ? '#dc2626' : undefined,
+              fontWeight: (filterStatus === 'remaining_overdue' || filterStatus === 'overdue') ? 'bold' : 'normal',
+              backgroundColor: (filterStatus === 'remaining_overdue' || filterStatus === 'overdue') ? 'rgba(239, 68, 68, 0.08)' : undefined
             }}
             id="filter-status-select"
-            title="Filter by Schedule Status (Overdue / On Track)"
+            title="Filter by Schedule Status"
           >
             <option value="all">⚡ All Status</option>
-            <option value="overdue" style={{ color: '#dc2626', fontWeight: 'bold' }}>
-              ⚠️ Overdue ({overdueCount})
+            <option value="remaining_overdue" style={{ color: '#dc2626', fontWeight: 'bold' }}>
+              ⚠️ Remaining &amp; Overdue ({remainingOverdueCount})
             </option>
-            <option value="ontrack">✅ On Track</option>
+            <option value="overdue">
+              🚨 Overdue Only ({overdueCount})
+            </option>
+            <option value="ontrack">✅ Completed / On Track</option>
           </select>
         </div>
 

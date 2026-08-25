@@ -91,13 +91,25 @@ export default function Home({
     });
   }, [pmPlans, pmLogs, currentYear, currentMonth]);
 
+  // Filter PM plans that have remaining tasks in current month OR are overdue from earlier months
+  const remainingAndOverduePMs = useMemo(() => {
+    return pmPlans.filter(item => {
+      for (let m = 1; m <= currentMonth; m++) {
+        if (isMonthRequired(item, currentYear, m) && !isMonthFinished(item, currentYear, m)) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }, [pmPlans, pmLogs, currentYear, currentMonth]);
+
   const totalPmRequiredThisMonth = pmTasksDueThisMonth.length + pmTasksFinishedThisMonth.length;
   const pmCompletionPercent = totalPmRequiredThisMonth > 0 
     ? Math.round((pmTasksFinishedThisMonth.length / totalPmRequiredThisMonth) * 100) 
     : 100;
 
   // Dynamic status-based counters
-  const openPMs = pmTasksDueThisMonth.length;
+  const openPMs = remainingAndOverduePMs.length;
   const openVOSF = useMemo(() => vosfItems.filter(p => {
     const s = p.status?.toLowerCase();
     return s === 'pending' || s === 'open' || s === 'in process' || s === 'need advice';
@@ -208,13 +220,18 @@ export default function Home({
         
         {/* PM Tasks */}
         <MetricCard 
-          label="Remaining PM Tasks"
+          label="Remaining & Overdue PM"
           value={openPMs}
           subtext={`Cycle: ${currentMonthName}`}
           icon={ListTodo}
           glowColor="blue"
-          onClick={() => setCurrentPage('pm-plan')}
-          ariaLabel="View remaining PM tasks"
+          onClick={() => {
+            try {
+              sessionStorage.setItem('mace_pm_plan_filter_status', 'remaining_overdue');
+            } catch (e) {}
+            setCurrentPage('pm-plan');
+          }}
+          ariaLabel="View remaining and overdue PM tasks"
           id="home-metric-pm"
         />
 
