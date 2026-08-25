@@ -23,7 +23,8 @@ import {
   ExternalLink,
   Eye,
   FileSpreadsheet,
-  StickyNote
+  StickyNote,
+  ShieldAlert
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -171,6 +172,11 @@ export default function PMPlan() {
   const [isBatchTypeModalOpen, setIsBatchTypeModalOpen] = useState(false);
   const [batchTypeValue, setBatchTypeValue] = useState('pm'); // 'pm', 'calibrate', 'service_contract'
   const [isBatchTypeSaving, setIsBatchTypeSaving] = useState(false);
+  
+  // Rank Audit / Mismatch Modal States
+  const [isRankAuditModalOpen, setIsRankAuditModalOpen] = useState(false);
+  const [isSyncingAllRanks, setIsSyncingAllRanks] = useState(false);
+  const [syncingItemId, setSyncingItemId] = useState(null);
   
   // Sorting state
   const [sortField, setSortField] = useState('checksheetId'); // 'checksheetId', 'plant', 'machineName', 'itemType', 'rank', 'cycle', 'responsible', 'lastDone', 'nextDue'
@@ -707,6 +713,23 @@ export default function PMPlan() {
     return stats;
   }, [items]);
 
+  // Compute all mismatch items (where Machine Classification rank differs from PM plan rank)
+  const mismatchItems = useMemo(() => {
+    if (!items.length || !classifyItems.length) return [];
+    return items.map(item => {
+      const suggestion = findSuggestedRank(item.machineName, classifyItems);
+      if (suggestion && suggestion.rank && suggestion.rank !== item.rank) {
+        return {
+          ...item,
+          suggestedRank: suggestion.rank,
+          suggestedSource: suggestion.source,
+          suggestedConfidence: suggestion.confidence
+        };
+      }
+      return null;
+    }).filter(Boolean);
+  }, [items, classifyItems]);
+
   const rankStats = useMemo(() => {
     const stats = { all: items.length, S: 0, A: 0, B: 0, C: 0 };
     items.forEach(item => {
@@ -715,6 +738,42 @@ export default function PMPlan() {
     });
     return stats;
   }, [items]);
+
+  // Handlers for syncing mismatch ranks
+  const handleSyncSingleRank = async (item) => {
+    if (!item || !item.suggestedRank) return;
+    setSyncingItemId(item.id);
+    try {
+      await updateDocument('mace_pm_plans', item.id, { rank: item.suggestedRank });
+      showToast(`Updated "${item.machineName}" to Rank ${item.suggestedRank}`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update rank', 'error');
+    } finally {
+      setSyncingItemId(null);
+    }
+  };
+
+  const handleSyncAllMismatchRanks = async () => {
+    if (mismatchItems.length === 0) return;
+    setIsSyncingAllRanks(true);
+    try {
+      const ops = mismatchItems.map(item => ({
+        type: 'update',
+        collectionName: 'mace_pm_plans',
+        id: item.id,
+        data: { rank: item.suggestedRank }
+      }));
+      await batchWriteOperations(ops);
+      showToast(`Successfully synced ${mismatchItems.length} machine ranks with Machine Classification!`, 'success');
+      setIsRankAuditModalOpen(false);
+    } catch (err) {
+      console.error('Failed to sync all mismatch ranks:', err);
+      showToast('Failed to sync mismatch ranks', 'error');
+    } finally {
+      setIsSyncingAllRanks(false);
+    }
+  };
 
   // Helper to match activity type
   const isMatchingType = (itemTypeVal, filter) => {
@@ -759,7 +818,13 @@ export default function PMPlan() {
 
     const matchesCycle = filterCycle === 'all' || item.cycle === filterCycle || (filterCycle === 'every 3 months' && (item.cycle === 'quarterly' || item.cycle === '3 months'));
     const matchesType = isMatchingType(item.itemType || item.type || 'pm', filterType);
-    const matchesRank = filterRank === 'all' || (item.rank || 'B') === filterRank;
+    
+    let matchesRank = true;
+    if (filterRank === 'mismatch') {
+      matchesRank = mismatchItems.some(m => m.id === item.id);
+    } else if (filterRank !== 'all') {
+      matchesRank = (item.rank || 'B') === filterRank;
+    }
 
     const matchesMonth = filterMonth === 'all' || isMonthRequired(item, selectedYear, Number(filterMonth));
 
@@ -2464,6 +2529,25 @@ export default function PMPlan() {
             <Download size={14} />
             <span>Export CSV</span>
           </button>
+          <button 
+            className="btn" 
+            onClick={() => setIsRankAuditModalOpen(true)} 
+            id="audit-rank-btn" 
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              background: mismatchItems.length > 0 ? 'rgba(239, 68, 68, 0.08)' : 'var(--surface2)', 
+              borderColor: mismatchItems.length > 0 ? '#ef4444' : 'var(--border)',
+              color: mismatchItems.length > 0 ? '#dc2626' : 'var(--text)'
+            }} 
+            title="Audit machine ranks against Machine Classification system"
+          >
+            <ShieldAlert size={14} style={{ color: mismatchItems.length > 0 ? '#dc2626' : 'var(--text3)' }} />
+            <span style={{ fontWeight: '600' }}>
+              Rank Audit {mismatchItems.length > 0 && `(${mismatchItems.length})`}
+            </span>
+          </button>
           <button className="btn" onClick={() => setIsPdfModalOpen(true)} id="export-pdf-report-btn" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--surface2)', borderColor: 'var(--accent)' }} title="Generate multi-page PDF report with schedule table, trend graph, and engineer/manager signature blocks">
             <Printer size={14} style={{ color: 'var(--accent)' }} />
             <span style={{ fontWeight: '600', color: 'var(--accent)' }}>Export PDF Report</span>
@@ -2567,11 +2651,24 @@ export default function PMPlan() {
             className="form-select"
             value={filterRank}
             onChange={(e) => setFilterRank(e.target.value)}
-            style={{ height: '32px', fontSize: '12px', padding: '4px 8px', width: 'auto' }}
+            style={{ 
+              height: '32px', 
+              fontSize: '12px', 
+              padding: '4px 8px', 
+              width: 'auto',
+              borderColor: filterRank === 'mismatch' ? '#ef4444' : undefined,
+              color: filterRank === 'mismatch' ? '#dc2626' : undefined,
+              fontWeight: filterRank === 'mismatch' ? 'bold' : 'normal'
+            }}
             id="filter-rank-select"
             title="Filter by Criticality Rank"
           >
             <option value="all">🏅 All Ranks</option>
+            {mismatchItems.length > 0 && (
+              <option value="mismatch" style={{ color: '#dc2626', fontWeight: 'bold' }}>
+                ⚠️ Rank Mismatch ({mismatchItems.length})
+              </option>
+            )}
             <option value="S">Rank S ({rankStats.S})</option>
             <option value="A">Rank A ({rankStats.A})</option>
             <option value="B">Rank B ({rankStats.B})</option>
@@ -2885,6 +2982,36 @@ export default function PMPlan() {
                             <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
                               Rank {item.rank || 'B'}
                             </span>
+                            {/* Rank Mismatch Indicator Badge */}
+                            {(() => {
+                              const mismatch = mismatchItems.find(m => m.id === item.id);
+                              if (!mismatch) return null;
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsRankAuditModalOpen(true);
+                                  }}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '2px',
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                    color: '#dc2626',
+                                    fontSize: '9px',
+                                    fontWeight: 'bold',
+                                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                                    cursor: 'pointer'
+                                  }}
+                                  title={`⚠️ Classification suggests Rank ${mismatch.suggestedRank} (from "${mismatch.suggestedSource}"). Click to audit/sync.`}
+                                >
+                                  <span>⚠️ Classify: {mismatch.suggestedRank}</span>
+                                </button>
+                              );
+                            })()}
                             {/* PDF Attachment Badges (Single or Multi) */}
                             {(() => {
                               const atts = Array.isArray(item.attachments) 
@@ -3277,9 +3404,41 @@ export default function PMPlan() {
                         {renderItemTypeBadge(item.itemType || item.type || 'pm')}
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
-                          Rank {item.rank || 'B'}
-                        </span>
+                        <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                          <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
+                            Rank {item.rank || 'B'}
+                          </span>
+                          {(() => {
+                            const mismatch = mismatchItems.find(m => m.id === item.id);
+                            if (!mismatch) return null;
+                            return (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsRankAuditModalOpen(true);
+                                }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '2px',
+                                  padding: '1px 4px',
+                                  borderRadius: '3px',
+                                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                                  color: '#dc2626',
+                                  fontSize: '8.5px',
+                                  fontWeight: 'bold',
+                                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                                  cursor: 'pointer',
+                                  whiteSpace: 'nowrap'
+                                }}
+                                title={`⚠️ Classification suggests Rank ${mismatch.suggestedRank} (from "${mismatch.suggestedSource}"). Click to audit/sync.`}
+                              >
+                                ⚠️ {mismatch.suggestedRank}
+                              </button>
+                            );
+                          })()}
+                        </div>
                       </td>
                       <td 
                         style={{ fontWeight: '600', color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}
@@ -4763,6 +4922,122 @@ export default function PMPlan() {
             </div>
           </div>
         </form>
+      </Modal>
+
+      {/* MODAL 8: RANK AUDIT & SYNC MODAL */}
+      <Modal
+        isOpen={isRankAuditModalOpen}
+        onClose={() => setIsRankAuditModalOpen(false)}
+        title={`Machine Rank Audit vs Classification (${mismatchItems.length} Mismatches)`}
+        footerActions={
+          <>
+            <button className="btn" onClick={() => setIsRankAuditModalOpen(false)} disabled={isSyncingAllRanks}>
+              Close
+            </button>
+            {mismatchItems.length > 0 && (
+              <button 
+                className="btn btn-primary" 
+                onClick={handleSyncAllMismatchRanks} 
+                disabled={isSyncingAllRanks}
+                id="sync-all-ranks-btn"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#dc2626', borderColor: '#dc2626' }}
+              >
+                {isSyncingAllRanks ? <RefreshCw size={14} className="spin-icon" /> : <Check size={14} />}
+                <span>{isSyncingAllRanks ? 'Syncing All Ranks...' : `Sync All (${mismatchItems.length}) Ranks to Classification`}</span>
+              </button>
+            )}
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ padding: '12px 14px', background: mismatchItems.length > 0 ? 'rgba(239, 68, 68, 0.08)' : 'rgba(16, 185, 129, 0.08)', border: `1px solid ${mismatchItems.length > 0 ? '#fca5a5' : '#a7f3d0'}`, borderRadius: '6px', fontSize: '13px' }}>
+            {mismatchItems.length > 0 ? (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <AlertCircle size={18} style={{ color: '#dc2626', flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <strong style={{ color: '#dc2626' }}>Found {mismatchItems.length} machine{mismatchItems.length > 1 ? 's' : ''} with mismatched Criticality Rank!</strong>
+                  <p style={{ margin: '4px 0 0 0', color: 'var(--text2)', fontSize: '12px', lineHeight: '1.4' }}>
+                    These PM items have a different Rank in the schedule than what was calculated in the <strong>Machine Classification</strong> module. You can review each item below or sync them all automatically.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#047857' }}>
+                <Check size={18} />
+                <strong>All PM items are 100% aligned with the Machine Classification database! 🎉</strong>
+              </div>
+            )}
+          </div>
+
+          {mismatchItems.length > 0 && (
+            <div style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '6px' }}>
+              <table className="data-table" style={{ width: '100%', fontSize: '12px' }}>
+                <thead>
+                  <tr style={{ background: 'var(--surface2)', position: 'sticky', top: 0, zIndex: 2 }}>
+                    <th style={{ width: '35px', textAlign: 'center' }}>#</th>
+                    <th style={{ width: '60px' }}>Plant</th>
+                    <th>PM Machine Name</th>
+                    <th style={{ width: '90px', textAlign: 'center' }}>Current</th>
+                    <th style={{ width: '100px', textAlign: 'center' }}>Classify Suggest</th>
+                    <th style={{ width: '140px' }}>Matched Keyword</th>
+                    <th style={{ width: '90px', textAlign: 'center' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mismatchItems.map((item, idx) => (
+                    <tr key={item.id}>
+                      <td className="font-mono text3" style={{ textAlign: 'center' }}>{idx + 1}</td>
+                      <td>
+                        <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`} style={{ fontSize: '9.5px', padding: '1px 5px' }}>
+                          {item.plant || 'RFG'}
+                        </span>
+                      </td>
+                      <td style={{ fontWeight: '600' }}>
+                        <span 
+                          style={{ color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline' }}
+                          onClick={() => {
+                            setIsRankAuditModalOpen(false);
+                            handleOpenEdit(item);
+                          }}
+                          title="Click to edit schedule details"
+                        >
+                          {item.machineName}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
+                          Rank {item.rank || 'B'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`pm-rank-badge rank-${item.suggestedRank}`} style={{ boxShadow: '0 0 0 1px #dc2626' }}>
+                          Rank {item.suggestedRank}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '11px', color: 'var(--text2)' }}>
+                        <span className="font-mono" style={{ backgroundColor: 'var(--surface2)', padding: '1px 4px', borderRadius: '3px' }}>
+                          "{item.suggestedSource}"
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-primary"
+                          onClick={() => handleSyncSingleRank(item)}
+                          disabled={syncingItemId === item.id || isSyncingAllRanks}
+                          style={{ fontSize: '11px', padding: '2px 8px', height: '24px' }}
+                          title={`Change rank to ${item.suggestedRank}`}
+                        >
+                          {syncingItemId === item.id ? <RefreshCw size={11} className="spin-icon" /> : `Apply ${item.suggestedRank}`}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </Modal>
 
       {/* MODAL: CONFIRM DELETE PM PLAN ITEM */}
