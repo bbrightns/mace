@@ -663,36 +663,6 @@ export default function PMPlan() {
     return item.lastDoneDate || null;
   };
 
-  const isPlanOverdue = (item) => {
-    const currentYear = 2026; // Standard system year
-    const currentMonth = 5; // May
-    for (let m = 1; m < currentMonth; m++) {
-      const status = getCellStatus(item, currentYear, m);
-      if (status === 'overdue') return true;
-    }
-    return false;
-  };
-
-  const getNextDueText = (item) => {
-    const currentYear = 2026;
-    const currentMonth = 5;
-    
-    for (let m = currentMonth; m <= 12; m++) {
-      if (isMonthRequired(item, currentYear, m)) {
-        const hasLog = logs.some(l => l.planId === item.id && Number(l.year) === currentYear && Number(l.month) === m);
-        if (!hasLog) {
-          return `${MONTH_NAMES[m - 1]} ${currentYear}`;
-        }
-      }
-    }
-    for (let m = 1; m <= 12; m++) {
-      if (isMonthRequired(item, currentYear + 1, m)) {
-        return `${MONTH_NAMES[m - 1]} ${currentYear + 1}`;
-      }
-    }
-    return 'No upcoming schedule';
-  };
-
   // Calculate whether a cell requires a PM (by planning intervals starting at startMonth)
   const isMonthRequired = (item, year, month) => {
     if (item.cycle === 'monthly') return true; // Monthly means every single month is required!
@@ -708,6 +678,293 @@ export default function PMPlan() {
     else if (item.cycle === 'yearly') interval = 12;
     
     return (diff % interval + interval) % interval === 0;
+  };
+
+  // Get the scheduled round fraction for a given plan and month (e.g. 1/1, 1/4, 3/4)
+  // Dynamically accounts for earlier postponed/shifted rounds occupying scheduled months
+  const getRoundFraction = (item, year, month) => {
+    if (!item) return '';
+
+    const targetMonth = Number(month);
+
+    // If targetMonth is the execution month of an earlier shifted log,
+    // its round fraction belongs to its original planned month
+    const earlierLog = logs.find((log) => {
+      if (log.planId !== item.id || !log.doneDate) return false;
+      const plannedM = Number(log.month);
+      const plannedY = Number(log.year);
+      if (plannedY < year || (plannedY === year && plannedM < targetMonth)) {
+        const parts = log.doneDate.split('-');
+        if (parts.length === 3) {
+          return Number(parts[0]) === year && Number(parts[1]) === targetMonth;
+        }
+        const d = new Date(log.doneDate);
+        return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === targetMonth;
+      }
+      return false;
+    });
+
+    if (earlierLog) {
+      return getRoundFraction(item, Number(earlierLog.year), Number(earlierLog.month));
+    }
+
+    // Count total required rounds in the year
+    let totalRoundsInYear = 0;
+    for (let m = 1; m <= 12; m++) {
+      if (isMonthRequired(item, year, m)) {
+        totalRoundsInYear++;
+      }
+    }
+    if (totalRoundsInYear === 0) totalRoundsInYear = 1;
+
+    let currentRoundNum = 0;
+    let targetRoundNum = 0;
+
+    for (let m = 1; m <= 12; m++) {
+      // Check if month m is occupied by an earlier shifted log (and thus not a new scheduled round)
+      const isOccupiedByShifted = logs.some((log) => {
+        if (log.planId !== item.id || !log.doneDate) return false;
+        const plannedM = Number(log.month);
+        const plannedY = Number(log.year);
+        if (plannedY < year || (plannedY === year && plannedM < m)) {
+          const parts = log.doneDate.split('-');
+          if (parts.length === 3) {
+            return Number(parts[0]) === year && Number(parts[1]) === m;
+          }
+          const d = new Date(log.doneDate);
+          return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === m;
+        }
+        return false;
+      });
+
+      if (isMonthRequired(item, year, m)) {
+        if (!isOccupiedByShifted) {
+          currentRoundNum++;
+          if (m === targetMonth) {
+            targetRoundNum = currentRoundNum;
+            break;
+          }
+        }
+      }
+    }
+
+    if (targetRoundNum === 0) return '';
+    return `${targetRoundNum}/${totalRoundsInYear}`;
+  };
+
+  // Determine cell execution details and state
+  const getCellDetails = (item, year, month) => {
+    const required = isMonthRequired(item, year, month);
+    const roundFraction = getRoundFraction(item, year, month);
+
+    // 1. Check if there is an earlier round's log that was delayed and executed in THIS (year, month)
+    const earlierShiftedLog = logs.find((log) => {
+      if (log.planId !== item.id || !log.doneDate) return false;
+      const plannedM = Number(log.month);
+      const plannedY = Number(log.year);
+      if (plannedY < year || (plannedY === year && plannedM < month)) {
+        const parts = log.doneDate.split('-');
+        if (parts.length === 3) {
+          return Number(parts[0]) === year && Number(parts[1]) === month;
+        }
+        const d = new Date(log.doneDate);
+        return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month;
+      }
+      return false;
+    });
+
+    if (earlierShiftedLog) {
+      const parts = earlierShiftedLog.doneDate.split('-');
+      let doneDay = 15;
+      if (parts.length === 3) doneDay = parseInt(parts[2], 10);
+      const plannedMonthNum = Number(earlierShiftedLog.month);
+      const plannedRound = getRoundFraction(item, Number(earlierShiftedLog.year), plannedMonthNum);
+      const plannedMName = MONTH_NAMES[plannedMonthNum - 1] || `M${plannedMonthNum}`;
+      return {
+        status: 'shifted-actual',
+        log: earlierShiftedLog,
+        day: doneDay,
+        plannedMonth: plannedMonthNum,
+        line1: plannedRound || '',
+        line2: `(${doneDay}*)`,
+        text: `${plannedRound ? plannedRound + ' ' : ''}(${doneDay}*)`,
+        tooltip: `${plannedRound ? plannedRound + ' (Delayed): ' : ''}Executed on ${earlierShiftedLog.doneDate} (Shifted from ${plannedMName} plan)`
+      };
+    }
+
+    // 2. Check if there is a log planned for THIS specific (year, month)
+    const planLog = logs.find(
+      (log) => log.planId === item.id && Number(log.year) === year && Number(log.month) === month
+    );
+
+    // 3. Check if there is ANY other log whose actual doneDate happened in THIS (year, month)
+    const actualLog = logs.find((log) => {
+      if (log.planId !== item.id || !log.doneDate) return false;
+      const parts = log.doneDate.split('-');
+      if (parts.length === 3) {
+        return Number(parts[0]) === year && Number(parts[1]) === month;
+      }
+      const d = new Date(log.doneDate);
+      return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month;
+    });
+
+    if (required) {
+      if (planLog) {
+        if (planLog.doneDate) {
+          const parts = planLog.doneDate.split('-');
+          let doneYear = year;
+          let doneMonth = month;
+          let doneDay = 15;
+          if (parts.length === 3) {
+            doneYear = Number(parts[0]);
+            doneMonth = Number(parts[1]);
+            doneDay = parseInt(parts[2], 10);
+          } else {
+            const d = new Date(planLog.doneDate);
+            if (!isNaN(d.getTime())) {
+              doneYear = d.getFullYear();
+              doneMonth = d.getMonth() + 1;
+              doneDay = d.getDate();
+            }
+          }
+
+          if (doneYear === year && doneMonth === month) {
+            return {
+              status: 'done',
+              log: planLog,
+              day: doneDay,
+              line1: roundFraction || '',
+              line2: `(${doneDay})`,
+              text: `${roundFraction ? roundFraction + ' ' : ''}(${doneDay})`,
+              tooltip: `${roundFraction ? roundFraction + ': ' : ''}Completed on ${planLog.doneDate} (On-time)`
+            };
+          } else {
+            const targetMName = MONTH_NAMES[doneMonth - 1] || `M${doneMonth}`;
+            return {
+              status: 'shifted-plan',
+              log: planLog,
+              day: doneDay,
+              doneMonth,
+              doneYear,
+              line1: roundFraction || '',
+              line2: `➔ ${targetMName}`,
+              text: `${roundFraction ? roundFraction + ' ' : ''}➔ ${targetMName}`,
+              tooltip: `${roundFraction ? roundFraction + ': ' : ''}Planned ${MONTH_NAMES[month - 1]} ${year} ➔ Done ${planLog.doneDate} in ${targetMName} (Delayed)`
+            };
+          }
+        }
+        return {
+          status: 'done',
+          log: planLog,
+          line1: roundFraction || '',
+          line2: '✓',
+          text: `${roundFraction ? roundFraction + ' ' : ''}✓`,
+          tooltip: 'Completed'
+        };
+      }
+
+      // Check legacy item.lastDoneDate fallback ONLY IF no logs exist for this plan at all
+      const hasAnyLogs = logs.some((l) => l.planId === item.id);
+      if (!hasAnyLogs && item.lastDoneDate) {
+        const d = new Date(item.lastDoneDate);
+        if (!isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month) {
+          return {
+            status: 'done',
+            day: d.getDate(),
+            line1: roundFraction || '',
+            line2: `(${d.getDate()})`,
+            text: `${roundFraction ? roundFraction + ' ' : ''}(${d.getDate()})`,
+            tooltip: `${roundFraction ? roundFraction + ': ' : ''}Completed on ${item.lastDoneDate}`
+          };
+        }
+      }
+
+      const today = new Date();
+      const currentYearVal = today.getFullYear();
+      const currentMonthVal = today.getMonth() + 1;
+      const isPast = year < currentYearVal || (year === currentYearVal && month < currentMonthVal);
+      if (isPast) {
+        return {
+          status: 'overdue',
+          line1: roundFraction || '',
+          line2: '!',
+          text: '!',
+          tooltip: `Overdue! ${roundFraction ? roundFraction + ' ' : ''}Planned for ${MONTH_NAMES[month - 1]} ${year}`
+        };
+      }
+
+      return {
+        status: 'pending',
+        line1: '',
+        line2: '',
+        text: '',
+        tooltip: `${roundFraction ? roundFraction + ': ' : ''}Scheduled for ${MONTH_NAMES[month - 1]} ${year}`
+      };
+    }
+
+    // Month is NOT required in regular cycle (faded)
+    if (actualLog && !(Number(actualLog.year) === year && Number(actualLog.month) === month)) {
+      const parts = actualLog.doneDate.split('-');
+      let doneDay = 15;
+      if (parts.length === 3) doneDay = parseInt(parts[2], 10);
+      const plannedMonthNum = Number(actualLog.month);
+      const plannedRound = getRoundFraction(item, Number(actualLog.year), plannedMonthNum);
+      const plannedMName = MONTH_NAMES[plannedMonthNum - 1] || `M${plannedMonthNum}`;
+      return {
+        status: 'shifted-actual',
+        log: actualLog,
+        day: doneDay,
+        plannedMonth: plannedMonthNum,
+        line1: plannedRound || '',
+        line2: `(${doneDay}*)`,
+        text: `${plannedRound ? plannedRound + ' ' : ''}(${doneDay}*)`,
+        tooltip: `${plannedRound ? plannedRound + ' (Delayed): ' : ''}Executed on ${actualLog.doneDate} (Shifted from ${plannedMName} plan)`
+      };
+    }
+
+    return { status: 'faded', line1: '', line2: '', text: '', tooltip: 'No inspection required' };
+  };
+
+  const getCellStatus = (item, year, month) => {
+    return getCellDetails(item, year, month).status;
+  };
+
+  const isPlanOverdue = (item, targetYear = selectedYear) => {
+    const today = new Date();
+    const currentYearVal = today.getFullYear();
+    const currentMonthVal = today.getMonth() + 1;
+    
+    if (targetYear > currentYearVal) return false;
+
+    const maxMonth = targetYear < currentYearVal ? 12 : currentMonthVal;
+    for (let m = 1; m <= maxMonth; m++) {
+      if (isMonthRequired(item, targetYear, m)) {
+        const details = getCellDetails(item, targetYear, m);
+        if (details.status === 'overdue') return true;
+      }
+    }
+    return false;
+  };
+
+  const getNextDueText = (item) => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1;
+    
+    for (let m = currentMonth; m <= 12; m++) {
+      if (isMonthRequired(item, currentYear, m)) {
+        const hasLog = logs.some(l => l.planId === item.id && Number(l.year) === currentYear && Number(l.month) === m);
+        if (!hasLog) {
+          return `${MONTH_NAMES[m - 1]} ${currentYear}`;
+        }
+      }
+    }
+    for (let m = 1; m <= 12; m++) {
+      if (isMonthRequired(item, currentYear + 1, m)) {
+        return `${MONTH_NAMES[m - 1]} ${currentYear + 1}`;
+      }
+    }
+    return 'No upcoming schedule';
   };
 
   // Helper to determine active overdue status for the plan list
@@ -819,6 +1076,16 @@ export default function PMPlan() {
     return <span className="pm-type-badge type-pm">🔧 PM</span>;
   };
 
+  // Summary counts for overdue items
+  const overdueCount = useMemo(() => {
+    return items.filter(item => {
+      if (filterMonth !== 'all') {
+        return getCellStatus(item, selectedYear, Number(filterMonth)) === 'overdue';
+      }
+      return isPlanOverdue(item, selectedYear);
+    }).length;
+  }, [items, logs, selectedYear, filterMonth]);
+
   // Filter & Search logic
   const filteredItems = items.filter((item) => {
     const searchLower = search.toLowerCase().trim();
@@ -850,7 +1117,22 @@ export default function PMPlan() {
 
     const matchesMonth = filterMonth === 'all' || isMonthRequired(item, selectedYear, Number(filterMonth));
 
-    return matchesSearch && matchesPlant && matchesResponsible && matchesCycle && matchesType && matchesRank && matchesMonth;
+    let matchesStatus = true;
+    if (filterStatus === 'overdue') {
+      if (filterMonth !== 'all') {
+        matchesStatus = getCellStatus(item, selectedYear, Number(filterMonth)) === 'overdue';
+      } else {
+        matchesStatus = isPlanOverdue(item, selectedYear);
+      }
+    } else if (filterStatus === 'ontrack') {
+      if (filterMonth !== 'all') {
+        matchesStatus = getCellStatus(item, selectedYear, Number(filterMonth)) !== 'overdue';
+      } else {
+        matchesStatus = !isPlanOverdue(item, selectedYear);
+      }
+    }
+
+    return matchesSearch && matchesPlant && matchesResponsible && matchesCycle && matchesType && matchesRank && matchesMonth && matchesStatus;
   });
 
   const trendItems = items.filter((item) => {
@@ -874,7 +1156,14 @@ export default function PMPlan() {
     const matchesType = isMatchingType(item.itemType || item.type || 'pm', filterType);
     const matchesRank = filterRank === 'all' || (item.rank || 'B') === filterRank;
 
-    return matchesSearch && matchesPlant && matchesResponsible && matchesCycle && matchesType && matchesRank;
+    let matchesStatus = true;
+    if (filterStatus === 'overdue') {
+      matchesStatus = isPlanOverdue(item, selectedYear);
+    } else if (filterStatus === 'ontrack') {
+      matchesStatus = !isPlanOverdue(item, selectedYear);
+    }
+
+    return matchesSearch && matchesPlant && matchesResponsible && matchesCycle && matchesType && matchesRank && matchesStatus;
   });
 
   // Shift key range selection state
@@ -1144,255 +1433,6 @@ export default function PMPlan() {
 
     return sortDirection === 'asc' ? comparison : -comparison;
   });
-
-  // Get the scheduled round fraction for a given plan and month (e.g. 1/1, 1/4, 3/4)
-  // Dynamically accounts for earlier postponed/shifted rounds occupying scheduled months
-  const getRoundFraction = (item, year, month) => {
-    if (!item) return '';
-
-    const targetMonth = Number(month);
-
-    // If targetMonth is the execution month of an earlier shifted log,
-    // its round fraction belongs to its original planned month
-    const earlierLog = logs.find((log) => {
-      if (log.planId !== item.id || !log.doneDate) return false;
-      const plannedM = Number(log.month);
-      const plannedY = Number(log.year);
-      if (plannedY < year || (plannedY === year && plannedM < targetMonth)) {
-        const parts = log.doneDate.split('-');
-        if (parts.length === 3) {
-          return Number(parts[0]) === year && Number(parts[1]) === targetMonth;
-        }
-        const d = new Date(log.doneDate);
-        return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === targetMonth;
-      }
-      return false;
-    });
-
-    if (earlierLog) {
-      return getRoundFraction(item, Number(earlierLog.year), Number(earlierLog.month));
-    }
-
-    // Count total required rounds in the year
-    let totalRoundsInYear = 0;
-    for (let m = 1; m <= 12; m++) {
-      if (isMonthRequired(item, year, m)) {
-        totalRoundsInYear++;
-      }
-    }
-    if (totalRoundsInYear === 0) totalRoundsInYear = 1;
-
-    let currentRoundNum = 0;
-    let targetRoundNum = 0;
-
-    for (let m = 1; m <= 12; m++) {
-      // Check if month m is occupied by an earlier shifted log (and thus not a new scheduled round)
-      const isOccupiedByShifted = logs.some((log) => {
-        if (log.planId !== item.id || !log.doneDate) return false;
-        const plannedM = Number(log.month);
-        const plannedY = Number(log.year);
-        if (plannedY < year || (plannedY === year && plannedM < m)) {
-          const parts = log.doneDate.split('-');
-          if (parts.length === 3) {
-            return Number(parts[0]) === year && Number(parts[1]) === m;
-          }
-          const d = new Date(log.doneDate);
-          return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === m;
-        }
-        return false;
-      });
-
-      if (isMonthRequired(item, year, m)) {
-        if (!isOccupiedByShifted) {
-          currentRoundNum++;
-          if (m === targetMonth) {
-            targetRoundNum = currentRoundNum;
-            break;
-          }
-        }
-      }
-    }
-
-    if (targetRoundNum === 0) return '';
-    return `${targetRoundNum}/${totalRoundsInYear}`;
-  };
-
-  // Determine cell execution details and state
-  const getCellDetails = (item, year, month) => {
-    const required = isMonthRequired(item, year, month);
-    const roundFraction = getRoundFraction(item, year, month);
-
-    // 1. Check if there is an earlier round's log that was delayed and executed in THIS (year, month)
-    const earlierShiftedLog = logs.find((log) => {
-      if (log.planId !== item.id || !log.doneDate) return false;
-      const plannedM = Number(log.month);
-      const plannedY = Number(log.year);
-      if (plannedY < year || (plannedY === year && plannedM < month)) {
-        const parts = log.doneDate.split('-');
-        if (parts.length === 3) {
-          return Number(parts[0]) === year && Number(parts[1]) === month;
-        }
-        const d = new Date(log.doneDate);
-        return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month;
-      }
-      return false;
-    });
-
-    if (earlierShiftedLog) {
-      const parts = earlierShiftedLog.doneDate.split('-');
-      let doneDay = 15;
-      if (parts.length === 3) doneDay = parseInt(parts[2], 10);
-      const plannedMonthNum = Number(earlierShiftedLog.month);
-      const plannedRound = getRoundFraction(item, Number(earlierShiftedLog.year), plannedMonthNum);
-      const plannedMName = MONTH_NAMES[plannedMonthNum - 1] || `M${plannedMonthNum}`;
-      return {
-        status: 'shifted-actual',
-        log: earlierShiftedLog,
-        day: doneDay,
-        plannedMonth: plannedMonthNum,
-        line1: plannedRound || '',
-        line2: `(${doneDay}*)`,
-        text: `${plannedRound ? plannedRound + ' ' : ''}(${doneDay}*)`,
-        tooltip: `${plannedRound ? plannedRound + ' (Delayed): ' : ''}Executed on ${earlierShiftedLog.doneDate} (Shifted from ${plannedMName} plan)`
-      };
-    }
-
-    // 2. Check if there is a log planned for THIS specific (year, month)
-    const planLog = logs.find(
-      (log) => log.planId === item.id && Number(log.year) === year && Number(log.month) === month
-    );
-
-    // 3. Check if there is ANY other log whose actual doneDate happened in THIS (year, month)
-    const actualLog = logs.find((log) => {
-      if (log.planId !== item.id || !log.doneDate) return false;
-      const parts = log.doneDate.split('-');
-      if (parts.length === 3) {
-        return Number(parts[0]) === year && Number(parts[1]) === month;
-      }
-      const d = new Date(log.doneDate);
-      return !isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month;
-    });
-
-    if (required) {
-      if (planLog) {
-        if (planLog.doneDate) {
-          const parts = planLog.doneDate.split('-');
-          let doneYear = year;
-          let doneMonth = month;
-          let doneDay = 15;
-          if (parts.length === 3) {
-            doneYear = Number(parts[0]);
-            doneMonth = Number(parts[1]);
-            doneDay = parseInt(parts[2], 10);
-          } else {
-            const d = new Date(planLog.doneDate);
-            if (!isNaN(d.getTime())) {
-              doneYear = d.getFullYear();
-              doneMonth = d.getMonth() + 1;
-              doneDay = d.getDate();
-            }
-          }
-
-          if (doneYear === year && doneMonth === month) {
-            return {
-              status: 'done',
-              log: planLog,
-              day: doneDay,
-              line1: roundFraction || '',
-              line2: `(${doneDay})`,
-              text: `${roundFraction ? roundFraction + ' ' : ''}(${doneDay})`,
-              tooltip: `${roundFraction ? roundFraction + ': ' : ''}Completed on ${planLog.doneDate} (On-time)`
-            };
-          } else {
-            const targetMName = MONTH_NAMES[doneMonth - 1] || `M${doneMonth}`;
-            return {
-              status: 'shifted-plan',
-              log: planLog,
-              day: doneDay,
-              doneMonth,
-              doneYear,
-              line1: roundFraction || '',
-              line2: `➔ ${targetMName}`,
-              text: `${roundFraction ? roundFraction + ' ' : ''}➔ ${targetMName}`,
-              tooltip: `${roundFraction ? roundFraction + ': ' : ''}Planned ${MONTH_NAMES[month - 1]} ${year} ➔ Done ${planLog.doneDate} in ${targetMName} (Delayed)`
-            };
-          }
-        }
-        return {
-          status: 'done',
-          log: planLog,
-          line1: roundFraction || '',
-          line2: '✓',
-          text: `${roundFraction ? roundFraction + ' ' : ''}✓`,
-          tooltip: 'Completed'
-        };
-      }
-
-      // Check legacy item.lastDoneDate fallback ONLY IF no logs exist for this plan at all
-      const hasAnyLogs = logs.some((l) => l.planId === item.id);
-      if (!hasAnyLogs && item.lastDoneDate) {
-        const d = new Date(item.lastDoneDate);
-        if (!isNaN(d.getTime()) && d.getFullYear() === year && (d.getMonth() + 1) === month) {
-          return {
-            status: 'done',
-            day: d.getDate(),
-            line1: roundFraction || '',
-            line2: `(${d.getDate()})`,
-            text: `${roundFraction ? roundFraction + ' ' : ''}(${d.getDate()})`,
-            tooltip: `${roundFraction ? roundFraction + ': ' : ''}Completed on ${item.lastDoneDate}`
-          };
-        }
-      }
-
-      const today = new Date();
-      const currentYearVal = today.getFullYear();
-      const currentMonthVal = today.getMonth() + 1;
-      const isPast = year < currentYearVal || (year === currentYearVal && month < currentMonthVal);
-      if (isPast) {
-        return {
-          status: 'overdue',
-          line1: roundFraction || '',
-          line2: '!',
-          text: '!',
-          tooltip: `Overdue! ${roundFraction ? roundFraction + ' ' : ''}Planned for ${MONTH_NAMES[month - 1]} ${year}`
-        };
-      }
-
-      return {
-        status: 'pending',
-        line1: '',
-        line2: '',
-        text: '',
-        tooltip: `${roundFraction ? roundFraction + ': ' : ''}Scheduled for ${MONTH_NAMES[month - 1]} ${year}`
-      };
-    }
-
-    // Month is NOT required in regular cycle (faded)
-    if (actualLog && !(Number(actualLog.year) === year && Number(actualLog.month) === month)) {
-      const parts = actualLog.doneDate.split('-');
-      let doneDay = 15;
-      if (parts.length === 3) doneDay = parseInt(parts[2], 10);
-      const plannedMonthNum = Number(actualLog.month);
-      const plannedRound = getRoundFraction(item, Number(actualLog.year), plannedMonthNum);
-      const plannedMName = MONTH_NAMES[plannedMonthNum - 1] || `M${plannedMonthNum}`;
-      return {
-        status: 'shifted-actual',
-        log: actualLog,
-        day: doneDay,
-        plannedMonth: plannedMonthNum,
-        line1: plannedRound || '',
-        line2: `(${doneDay}*)`,
-        text: `${plannedRound ? plannedRound + ' ' : ''}(${doneDay}*)`,
-        tooltip: `${plannedRound ? plannedRound + ' (Delayed): ' : ''}Executed on ${actualLog.doneDate} (Shifted from ${plannedMName} plan)`
-      };
-    }
-
-    return { status: 'faded', line1: '', line2: '', text: '', tooltip: 'No inspection required' };
-  };
-
-  const getCellStatus = (item, year, month) => {
-    return getCellDetails(item, year, month).status;
-  };
 
   // Helper to get min/max date strings for the selected cell month/year
   const getMinMaxDates = () => {
@@ -2903,6 +2943,33 @@ export default function PMPlan() {
           </select>
         </div>
 
+        {/* Status / Overdue Filter Dropdown */}
+        <div style={{ flex: '0 0 auto' }}>
+          <select
+            className="form-select"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            style={{ 
+              height: '32px', 
+              fontSize: '12px', 
+              padding: '4px 8px', 
+              width: 'auto',
+              borderColor: filterStatus === 'overdue' ? '#ef4444' : undefined,
+              color: filterStatus === 'overdue' ? '#dc2626' : undefined,
+              fontWeight: filterStatus === 'overdue' ? 'bold' : 'normal',
+              backgroundColor: filterStatus === 'overdue' ? 'rgba(239, 68, 68, 0.08)' : undefined
+            }}
+            id="filter-status-select"
+            title="Filter by Schedule Status (Overdue / On Track)"
+          >
+            <option value="all">⚡ All Status</option>
+            <option value="overdue" style={{ color: '#dc2626', fontWeight: 'bold' }}>
+              ⚠️ Overdue ({overdueCount})
+            </option>
+            <option value="ontrack">✅ On Track</option>
+          </select>
+        </div>
+
         {/* Year Selector */}
         {activeTab === 'schedule' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: '0 0 auto' }}>
@@ -2923,7 +2990,7 @@ export default function PMPlan() {
         )}
 
         {/* Reset Filters Button */}
-        {(search || filterPlant !== 'all' || filterResponsible !== 'all' || filterCycle !== 'all' || filterType !== 'all' || filterRank !== 'all' || filterMonth !== 'all') && (
+        {(search || filterPlant !== 'all' || filterResponsible !== 'all' || filterCycle !== 'all' || filterType !== 'all' || filterRank !== 'all' || filterMonth !== 'all' || filterStatus !== 'all') && (
           <button 
             className="btn btn-sm"
             onClick={() => {
@@ -2934,6 +3001,7 @@ export default function PMPlan() {
               setFilterType('all');
               setFilterRank('all');
               setFilterMonth('all');
+              setFilterStatus('all');
             }}
             style={{ fontSize: '11.5px', padding: '4px 10px', height: '30px', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text2)', flex: '0 0 auto' }}
             title="Reset all filters"
