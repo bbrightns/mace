@@ -718,9 +718,12 @@ export default function PMPlan() {
     if (!items.length || !classifyItems.length) return [];
     return items.map(item => {
       const suggestion = findSuggestedRank(item.machineName, classifyItems);
-      if (suggestion && suggestion.rank && suggestion.rank !== item.rank) {
+      const currentRank = String(item.rank || 'B').trim().toUpperCase();
+      const suggestedRank = suggestion?.rank ? String(suggestion.rank).trim().toUpperCase() : null;
+      if (suggestedRank && suggestedRank !== '-' && suggestedRank !== currentRank) {
         return {
           ...item,
+          currentRankNormalized: currentRank,
           suggestedRank: suggestion.rank,
           suggestedSource: suggestion.source,
           suggestedConfidence: suggestion.confidence
