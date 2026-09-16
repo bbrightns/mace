@@ -26,7 +26,8 @@ import {
   StickyNote,
   ShieldAlert,
   MoreVertical,
-  ChevronDown
+  ChevronDown,
+  Database
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -53,6 +54,7 @@ import {
 } from '../../firebase/collections';
 import Modal from '../../components/Modal';
 import PMReportPdfModal from '../../components/PMReportPdfModal';
+import ServicesDatabase from './ServicesDatabase';
 import { useToast } from '../../components/Toast';
 import { formatDate, toInputDate } from '../../utils';
 import { calculateGradeAndRank } from './MachineClassify';
@@ -2819,10 +2821,12 @@ export default function PMPlan() {
           </div>
 
           {/* Primary Add Button */}
-          <button className="btn btn-primary" onClick={handleOpenAdd} id="add-pm-btn">
-            <Plus size={16} />
-            <span>Add PM Item</span>
-          </button>
+          {activeTab !== 'services-db' && (
+            <button className="btn btn-primary" onClick={handleOpenAdd} id="add-pm-btn">
+              <Plus size={16} />
+              <span>Add PM Item</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -2852,9 +2856,18 @@ export default function PMPlan() {
           <FileText size={15} />
           <span>List View (Manage Items)</span>
         </button>
+        <button 
+          className={`view-tab ${activeTab === 'services-db' ? 'active' : ''}`}
+          onClick={() => setActiveTab('services-db')}
+          id="tab-services-db-view"
+        >
+          <Database size={15} />
+          <span>Sevices Database</span>
+        </button>
       </div>
 
       {/* Global Filter Bar: Search + Dropdown Filters */}
+      {activeTab !== 'services-db' && (
       <div 
         className="card controls-bar" 
         id="pm-filters-bar" 
@@ -3079,9 +3092,10 @@ export default function PMPlan() {
           </button>
         )}
       </div>
+      )}
 
       {/* Floating / Sticky Batch Action Bar when items are selected */}
-      {selectedPlanIds.length > 0 && (
+      {activeTab !== 'services-db' && selectedPlanIds.length > 0 && (
         <div 
           style={{ 
             display: 'flex', 
@@ -3629,6 +3643,9 @@ export default function PMPlan() {
             </ResponsiveContainer>
           </div>
         </div>
+      ) : activeTab === 'services-db' ? (
+        /* --- VIEW 4: SERVICES DATABASE --- */
+        <ServicesDatabase />
       ) : (
         /* --- VIEW 2: LIST VIEW (ORIGINAL CRUD MANAGER) --- */
         <>
