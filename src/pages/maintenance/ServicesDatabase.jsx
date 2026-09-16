@@ -23,18 +23,15 @@ import {
   Tag
 } from 'lucide-react';
 import { 
-  subscribeCollection, 
-  createDocument, 
-  updateDocument, 
-  deleteDocument,
-  batchWriteOperations 
+  subscribeServicesDatabase, 
+  saveServicesDatabaseToCloud 
 } from '../../firebase/collections';
 import Modal from '../../components/Modal';
 import ConfirmModal from '../../components/ConfirmModal';
 import { useToast } from '../../components/Toast';
 
 // 37 Initial Records based on factory master data
-export const INITIAL_SERVICES_DATA = [
+const RAW_INITIAL_SERVICES_DATA = [
   // SiamTemp - Plant MIR (No. 1-6)
   {
     supplier: 'SiamTemp',
@@ -492,6 +489,15 @@ export const INITIAL_SERVICES_DATA = [
   }
 ];
 
+export const INITIAL_SERVICES_DATA = RAW_INITIAL_SERVICES_DATA.map((item, idx) => ({
+  id: item.id || `service_unit_${String(idx + 1).padStart(3, '0')}`,
+  isCleaned: Boolean(item.isCleaned),
+  cleanedAt: item.cleanedAt || null,
+  note: item.note || '',
+  noteUpdatedAt: item.noteUpdatedAt || null,
+  ...item
+}));
+
 // Helper to format ISO timestamp into readable Date & Time (Thai/English)
 export function formatDateTime(isoString) {
   if (!isoString) return '—';
@@ -580,15 +586,46 @@ export default function ServicesDatabase() {
   // Delete Confirmation Modal State
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null });
 
-  // Sync with Firestore collection: mace_services_database
+  // Sync with Cloud Firestore (mace_pm_plans/services_database_master)
   useEffect(() => {
     setLoading(true);
-    const unsub = subscribeCollection(
-      'mace_services_database',
-      (items) => {
-        if (items && items.length > 0) {
-          // Sort items naturally: by supplier, plant, itemNo
-          const sorted = [...items].sort((a, b) => {
+    const unsub = subscribeServicesDatabase(
+      async (cloudItems) => {
+        if (cloudItems && cloudItems.length > 0) {
+          // Check if local cache has any ticked items that might not have made it to cloud yet
+          let merged = [...cloudItems];
+          try {
+            const cached = localStorage.getItem('mace_services_database_cache');
+            if (cached) {
+              const localParsed = JSON.parse(cached);
+              if (Array.isArray(localParsed)) {
+                let hasLocalChanges = false;
+                merged = cloudItems.map(cItem => {
+                  const localMatch = localParsed.find(l => 
+                    (l.id && l.id === cItem.id) ||
+                    (l.supplier === cItem.supplier && l.plant === cItem.plant && l.itemNo === cItem.itemNo)
+                  );
+                  if (localMatch) {
+                    // If local has isCleaned true and cloud doesn't, preserve local tick!
+                    if (localMatch.isCleaned && !cItem.isCleaned) {
+                      hasLocalChanges = true;
+                      return { ...cItem, isCleaned: true, cleanedAt: localMatch.cleanedAt || new Date().toISOString() };
+                    }
+                    if (localMatch.note && !cItem.note) {
+                      hasLocalChanges = true;
+                      return { ...cItem, note: localMatch.note, noteUpdatedAt: localMatch.noteUpdatedAt || new Date().toISOString() };
+                    }
+                  }
+                  return cItem;
+                });
+                if (hasLocalChanges) {
+                  await saveServicesDatabaseToCloud(merged);
+                }
+              }
+            }
+          } catch (e) {}
+
+          const sorted = [...merged].sort((a, b) => {
             const supplierOrder = ['SiamTemp', 'Thai-Top-Therm', 'Carrier', 'KB Cool'];
             const sDiff = supplierOrder.indexOf(a.supplier) - supplierOrder.indexOf(b.supplier);
             if (sDiff !== 0) return sDiff;
@@ -601,41 +638,52 @@ export default function ServicesDatabase() {
             localStorage.setItem('mace_services_database_cache', JSON.stringify(sorted));
           } catch (e) {}
         } else {
-          // If Firestore collection is empty, automatically seed with 37 initial items!
-          seedInitialData();
+          // Cloud store is not initialized yet: seed to Cloud Firestore
+          let seedData = INITIAL_SERVICES_DATA;
+          try {
+            const cached = localStorage.getItem('mace_services_database_cache');
+            if (cached) {
+              const localParsed = JSON.parse(cached);
+              if (Array.isArray(localParsed) && localParsed.length > 0) {
+                seedData = INITIAL_SERVICES_DATA.map(initItem => {
+                  const match = localParsed.find(l => 
+                    (l.id && l.id === initItem.id) ||
+                    (l.supplier === initItem.supplier && l.plant === initItem.plant && l.itemNo === initItem.itemNo)
+                  );
+                  if (match) {
+                    return {
+                      ...initItem,
+                      isCleaned: Boolean(match.isCleaned),
+                      cleanedAt: match.cleanedAt || null,
+                      note: match.note || initItem.note,
+                      noteUpdatedAt: match.noteUpdatedAt || initItem.noteUpdatedAt
+                    };
+                  }
+                  return initItem;
+                });
+              }
+            }
+          } catch (e) {}
+
+          try {
+            await saveServicesDatabaseToCloud(seedData);
+            setUnits(seedData);
+            localStorage.setItem('mace_services_database_cache', JSON.stringify(seedData));
+          } catch (err) {
+            console.error('Failed to seed services database to cloud:', err);
+            setUnits(seedData);
+          }
         }
         setLoading(false);
       },
       (error) => {
-        console.warn('Firestore subscription fallback to local cache:', error);
+        console.warn('Cloud sync fallback to local cache:', error);
         setLoading(false);
       }
     );
 
     return () => unsub();
   }, []);
-
-  // Seed default 37 records to Firestore
-  const seedInitialData = async () => {
-    try {
-      const ops = INITIAL_SERVICES_DATA.map((item, idx) => ({
-        type: 'set',
-        collectionName: 'mace_services_database',
-        id: `service_unit_${String(idx + 1).padStart(3, '0')}`,
-        data: {
-          ...item,
-          createdAt: new Date().toISOString()
-        }
-      }));
-      await batchWriteOperations(ops);
-      setUnits(INITIAL_SERVICES_DATA);
-      try {
-        localStorage.setItem('mace_services_database_cache', JSON.stringify(INITIAL_SERVICES_DATA));
-      } catch (e) {}
-    } catch (err) {
-      console.error('Failed to seed initial data:', err);
-    }
-  };
 
   // Start inline editing for a note
   const handleStartInlineEdit = (unit) => {
@@ -649,7 +697,7 @@ export default function ServicesDatabase() {
     setInlineNoteValue('');
   };
 
-  // Save inline note
+  // Save inline note directly to Cloud Firestore
   const handleSaveInlineNote = async (unit) => {
     setIsSavingInline(true);
     const newNote = inlineNoteValue.trim();
@@ -671,26 +719,13 @@ export default function ServicesDatabase() {
       localStorage.setItem('mace_services_database_cache', JSON.stringify(updatedUnits));
     } catch (e) {}
 
-    // Save to Firestore
+    // Save directly to Cloud Firestore
     try {
-      if (unit.id) {
-        await updateDocument('mace_services_database', unit.id, {
-          note: newNote,
-          noteUpdatedAt: newNote ? nowIso : null
-        });
-      } else {
-        // Find by itemNo & supplier if ID was not yet attached
-        const createdId = await createDocument('mace_services_database', {
-          ...unit,
-          note: newNote,
-          noteUpdatedAt: newNote ? nowIso : null
-        });
-        unit.id = createdId;
-      }
+      await saveServicesDatabaseToCloud(updatedUnits);
       showToast('อัปเดตหมายเหตุเรียบร้อยแล้ว', 'success');
     } catch (err) {
-      console.error('Error saving inline note:', err);
-      showToast('บันทึกลงฐานข้อมูลไม่สำเร็จ แต่บันทึกลงเครื่องแล้ว', 'info');
+      console.error('Error saving inline note to cloud:', err);
+      showToast('บันทึกลงเครื่องแล้ว (เชื่อมต่อ Cloud ขัดข้อง)', 'warning');
     } finally {
       setIsSavingInline(false);
       setInlineEditingId(null);
@@ -698,7 +733,7 @@ export default function ServicesDatabase() {
     }
   };
 
-  // Toggle Cleaned Checkbox directly from table row
+  // Toggle Cleaned Checkbox directly from table row & sync with Cloud Firestore
   const handleToggleCleaned = async (unit) => {
     const nextVal = !unit.isCleaned;
     const nowIso = new Date().toISOString();
@@ -720,25 +755,13 @@ export default function ServicesDatabase() {
       localStorage.setItem('mace_services_database_cache', JSON.stringify(updatedUnits));
     } catch (e) {}
 
-    // Save to Firestore
+    // Save directly to Cloud Firestore
     try {
-      if (unit.id) {
-        await updateDocument('mace_services_database', unit.id, {
-          isCleaned: nextVal,
-          cleanedAt: nextCleanedAt
-        });
-      } else {
-        const createdId = await createDocument('mace_services_database', {
-          ...unit,
-          isCleaned: nextVal,
-          cleanedAt: nextCleanedAt
-        });
-        unit.id = createdId;
-      }
+      await saveServicesDatabaseToCloud(updatedUnits);
       showToast(nextVal ? `✓ บันทึกติ๊กล้างแอร์แล้ว: ${unit.newCode || unit.location}` : `ยกเลิกการติ๊กล้างแอร์: ${unit.newCode || unit.location}`, 'success');
     } catch (err) {
-      console.error('Failed to update cleaned status:', err);
-      showToast('บันทึกลงเครื่องแล้ว', 'info');
+      console.error('Failed to persist tick to cloud:', err);
+      showToast('บันทึกลงเครื่องแล้ว (เชื่อมต่อ Cloud ขัดข้อง)', 'warning');
     }
   };
 
@@ -774,10 +797,11 @@ export default function ServicesDatabase() {
     setIsModalOpen(true);
   };
 
-  // Submit Modal Form
+  // Submit Modal Form & sync to Cloud Firestore
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     const payload = {
+      id: editingItem?.id || `service_unit_${Date.now()}`,
       supplier: formSupplier,
       plant: formPlant,
       itemNo: Number(formItemNo) || formItemNo,
@@ -792,37 +816,47 @@ export default function ServicesDatabase() {
       cleanedAt: formIsCleaned ? (editingItem?.isCleaned ? editingItem?.cleanedAt || new Date().toISOString() : new Date().toISOString()) : null
     };
 
+    let nextUnits;
+    if (editingItem && editingItem.id) {
+      nextUnits = units.map(u => u.id === editingItem.id ? { ...u, ...payload } : u);
+    } else {
+      nextUnits = [...units, payload];
+    }
+
+    setUnits(nextUnits);
     try {
-      if (editingItem && editingItem.id) {
-        await updateDocument('mace_services_database', editingItem.id, payload);
-        showToast('แก้ไขข้อมูลอุปกรณ์เรียบร้อยแล้ว', 'success');
-      } else {
-        await createDocument('mace_services_database', payload);
-        showToast('เพิ่มอุปกรณ์ใหม่เข้าสู่ Services Database สำเร็จ', 'success');
-      }
+      localStorage.setItem('mace_services_database_cache', JSON.stringify(nextUnits));
+    } catch (e) {}
+
+    try {
+      await saveServicesDatabaseToCloud(nextUnits);
+      showToast(editingItem ? 'แก้ไขข้อมูลอุปกรณ์เรียบร้อยแล้ว' : 'เพิ่มอุปกรณ์ใหม่เข้าสู่ Services Database สำเร็จ', 'success');
       setIsModalOpen(false);
     } catch (err) {
-      console.error('Failed to save service unit:', err);
-      showToast('เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
+      console.error('Failed to save service unit to cloud:', err);
+      showToast('บันทึกลงเครื่องแล้ว (เชื่อมต่อ Cloud ขัดข้อง)', 'warning');
+      setIsModalOpen(false);
     }
   };
 
-  // Handle Delete Unit
+  // Handle Delete Unit & sync to Cloud Firestore
   const handleConfirmDelete = async () => {
     if (!deleteModal.item) return;
+    const targetId = deleteModal.item.id;
+    const nextUnits = units.filter(u => (u.id ? u.id !== targetId : u !== deleteModal.item));
+    setUnits(nextUnits);
     try {
-      if (deleteModal.item.id) {
-        await deleteDocument('mace_services_database', deleteModal.item.id);
-      } else {
-        const next = units.filter(u => u !== deleteModal.item);
-        setUnits(next);
-        localStorage.setItem('mace_services_database_cache', JSON.stringify(next));
-      }
+      localStorage.setItem('mace_services_database_cache', JSON.stringify(nextUnits));
+    } catch (e) {}
+
+    try {
+      await saveServicesDatabaseToCloud(nextUnits);
       showToast('ลบรายการออกจากฐานข้อมูลเรียบร้อยแล้ว', 'info');
-      setDeleteModal({ isOpen: false, item: null });
     } catch (err) {
-      console.error('Error deleting unit:', err);
-      showToast('ไม่สามารถลบรายการได้', 'error');
+      console.error('Error deleting unit from cloud:', err);
+      showToast('ลบออกจากเครื่องแล้ว (เชื่อมต่อ Cloud ขัดข้อง)', 'warning');
+    } finally {
+      setDeleteModal({ isOpen: false, item: null });
     }
   };
 

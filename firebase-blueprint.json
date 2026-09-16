@@ -232,6 +232,10 @@
     "mace_pm_logs": {
       "schema": "PMLog",
       "description": "Logs of completed PM checks per plan, year, and month"
+    },
+    "mace_services_database": {
+      "schema": "ServicesDatabase",
+      "description": "HVAC equipment database and cleaning verification records"
     }
   }
 }

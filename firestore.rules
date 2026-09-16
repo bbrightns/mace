@@ -45,5 +45,11 @@ service cloud.firestore {
     match /mace_machine_classify/{id} {
       allow read, write: if true;
     }
+    match /mace_services_database/{id} {
+      allow read, write: if true;
+    }
+    match /mace_attachment_chunks/{id} {
+      allow read, write: if true;
+    }
   }
 }

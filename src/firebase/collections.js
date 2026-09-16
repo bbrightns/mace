@@ -388,3 +388,39 @@ export async function batchDeleteDocuments(collectionName, ids) {
   await batchWriteOperations(ops);
 }
 
+/**
+ * Services Database Cloud Persistence
+ * Persists all HVAC units and contractor cleaning ticks to Cloud Firestore under 'services_database_master'
+ */
+export function subscribeServicesDatabase(onNext, onError) {
+  const storeDocRef = doc(db, 'mace_pm_plans', 'services_database_master');
+  return onSnapshot(
+    storeDocRef,
+    (snap) => {
+      if (snap.exists() && Array.isArray(snap.data()?.items)) {
+        onNext(snap.data().items);
+      } else {
+        onNext(null);
+      }
+    },
+    (error) => {
+      console.warn('Services database cloud sync error:', error);
+      if (onError) onError(error);
+    }
+  );
+}
+
+export async function saveServicesDatabaseToCloud(items) {
+  try {
+    const storeDocRef = doc(db, 'mace_pm_plans', 'services_database_master');
+    await setDoc(storeDocRef, {
+      items,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error('Failed to save services database to cloud:', error);
+    throw error;
+  }
+}
+

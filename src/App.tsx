@@ -78,7 +78,7 @@ function MainApp() {
     setSyncStatus('syncing');
     
     const unsub1 = subscribeCollection('mace_pm_plans', (data) => {
-      setPmPlans(data);
+      setPmPlans(data.filter(item => item.id !== 'services_database_master' && !item.id?.startsWith('service_unit_')));
     }, () => {});
 
     const unsubLogs = subscribeCollection('mace_pm_logs', (data) => {

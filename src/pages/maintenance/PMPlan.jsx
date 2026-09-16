@@ -335,7 +335,7 @@ export default function PMPlan() {
 
   useEffect(() => {
     const unsubscribePlans = subscribeCollection('mace_pm_plans', (data) => {
-      setItems(data);
+      setItems(data.filter(item => item.id !== 'services_database_master' && !item.id?.startsWith('service_unit_')));
       setLoadingPlans(false);
     }, (error) => {
       showToast('Failed to sync PM schedules.', 'error');
