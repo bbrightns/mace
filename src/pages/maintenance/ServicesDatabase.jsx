@@ -18,7 +18,9 @@ import {
   Save,
   Server,
   Zap,
-  Info
+  Info,
+  MapPin,
+  Tag
 } from 'lucide-react';
 import { 
   subscribeCollection, 
@@ -1351,131 +1353,315 @@ export default function ServicesDatabase() {
       <Modal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        title={editingItem ? `Edit Equipment (${editingItem.newCode || editingItem.location})` : 'Add New Equipment to Services Database'}
+        maxWidth="680px"
+        title={editingItem ? 'Edit Equipment Details' : 'Add New Equipment'}
+        subtitle={editingItem ? `${editingItem.supplier} • Plant ${editingItem.plant} • Code: ${editingItem.newCode || 'No Code'}` : 'Add an air conditioning unit, chiller, or control panel cooler to Services Database'}
         footerActions={
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', width: '100%' }}>
-            <button type="button" className="btn" onClick={() => setIsModalOpen(false)}>
-              Cancel
-            </button>
-            <button type="submit" form="service-unit-form" className="btn btn-primary">
-              <Save size={14} style={{ marginRight: '4px' }} />
-              <span>Save Equipment</span>
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            {editingItem ? (
+              <button 
+                type="button" 
+                className="btn btn-danger" 
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setDeleteModal({ isOpen: true, item: editingItem });
+                }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Trash2 size={14} />
+                <span>Delete Unit</span>
+              </button>
+            ) : <div />}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button type="button" className="btn" onClick={() => setIsModalOpen(false)}>
+                Cancel
+              </button>
+              <button type="submit" form="service-unit-form" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <Save size={14} />
+                <span>Save Equipment</span>
+              </button>
+            </div>
           </div>
         }
       >
-        <form id="service-unit-form" onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label className="form-label">Supplier *</label>
-              <select 
-                className="form-select"
-                value={formSupplier} 
-                onChange={(e) => setFormSupplier(e.target.value)}
+        <form id="service-unit-form" onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          
+          {/* SECTION 1: General & Location Info */}
+          <div style={{ 
+            background: 'var(--surface2)', 
+            border: '1px solid var(--border)', 
+            borderRadius: '10px', 
+            padding: '14px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px'
+          }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Building2 size={14} /> General &amp; Location
+            </div>
+
+            {/* Row 1: Supplier & Plant */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text2)', letterSpacing: '0.4px' }}>
+                  Supplier <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <select 
+                  value={formSupplier} 
+                  onChange={(e) => setFormSupplier(e.target.value)}
+                  required
+                  style={{ width: '100%', height: '38px', borderRadius: '8px', border: '1px solid var(--border)', padding: '0 10px', fontSize: '13px', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
+                >
+                  <option value="SiamTemp">SiamTemp</option>
+                  <option value="Thai-Top-Therm">Thai-Top-Therm</option>
+                  <option value="Carrier">Carrier</option>
+                  <option value="KB Cool">KB Cool</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text2)', letterSpacing: '0.4px' }}>
+                  Plant <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', height: '38px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setFormPlant('RFG')}
+                    style={{
+                      border: formPlant === 'RFG' ? '2px solid #3b82f6' : '1px solid var(--border)',
+                      background: formPlant === 'RFG' ? 'rgba(59, 130, 246, 0.12)' : 'var(--surface)',
+                      color: formPlant === 'RFG' ? '#2563eb' : 'var(--text2)',
+                      fontWeight: formPlant === 'RFG' ? '700' : '500',
+                      borderRadius: '8px',
+                      fontSize: '12.5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    RFG
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormPlant('MIR')}
+                    style={{
+                      border: formPlant === 'MIR' ? '2px solid #8b5cf6' : '1px solid var(--border)',
+                      background: formPlant === 'MIR' ? 'rgba(139, 92, 246, 0.12)' : 'var(--surface)',
+                      color: formPlant === 'MIR' ? '#7c3aed' : 'var(--text2)',
+                      fontWeight: formPlant === 'MIR' ? '700' : '500',
+                      borderRadius: '8px',
+                      fontSize: '12.5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    MIR
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 2: No. & New Code */}
+            <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text2)', letterSpacing: '0.4px' }}>
+                  No. <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <input 
+                  type="number" 
+                  value={formItemNo} 
+                  onChange={(e) => setFormItemNo(e.target.value)} 
+                  required 
+                  placeholder="1"
+                  style={{ width: '100%', height: '38px', borderRadius: '8px', border: '1px solid var(--border)', padding: '0 10px', fontSize: '13px', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'monospace', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text2)', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Tag size={12} /> ชื่อใหม่ (New Code) <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <input 
+                  type="text" 
+                  value={formNewCode} 
+                  onChange={(e) => setFormNewCode(e.target.value)} 
+                  required 
+                  placeholder="เช่น MIR-DE-1, RFG-CP-1, RFG-1"
+                  style={{ width: '100%', height: '38px', borderRadius: '8px', border: '1px solid var(--border)', padding: '0 12px', fontSize: '13px', background: 'var(--surface)', fontWeight: '600', fontFamily: 'monospace', color: 'var(--accent)', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            {/* Row 3: Location */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text2)', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <MapPin size={12} /> Location / ตำแหน่งติดตั้ง <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <input 
+                type="text" 
+                value={formLocation} 
+                onChange={(e) => setFormLocation(e.target.value)} 
                 required
-              >
-                <option value="SiamTemp">SiamTemp</option>
-                <option value="Thai-Top-Therm">Thai-Top-Therm</option>
-                <option value="Carrier">Carrier</option>
-                <option value="KB Cool">KB Cool</option>
-              </select>
-            </div>
-            <div>
-              <label className="form-label">Plant *</label>
-              <select 
-                className="form-select"
-                value={formPlant} 
-                onChange={(e) => setFormPlant(e.target.value)}
-                required
-              >
-                <option value="RFG">RFG</option>
-                <option value="MIR">MIR</option>
-              </select>
+                placeholder="เช่น CDU 38AE016 1 ตัว, P/S Room หน้าตู้ Auxiliary, O/P Room ใหญ่"
+                style={{ width: '100%', height: '38px', borderRadius: '8px', border: '1px solid var(--border)', padding: '0 12px', fontSize: '13px', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
+              />
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
-            <div>
-              <label className="form-label">No. *</label>
-              <input 
-                type="number" 
-                className="form-input" 
-                value={formItemNo} 
-                onChange={(e) => setFormItemNo(e.target.value)} 
-                required 
-                placeholder="1, 2, 3..."
-              />
+          {/* SECTION 2: Technical Specifications & Power */}
+          <div style={{ 
+            background: 'var(--surface2)', 
+            border: '1px solid var(--border)', 
+            borderRadius: '10px', 
+            padding: '14px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px'
+          }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Zap size={14} /> Equipment Specs &amp; Power
             </div>
-            <div>
-              <label className="form-label">ชื่อใหม่ (New Code) *</label>
+
+            {/* Brand & BTU */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text2)', letterSpacing: '0.4px' }}>
+                  Brand (ยี่ห้อ)
+                </label>
+                <input 
+                  type="text" 
+                  value={formBrand} 
+                  onChange={(e) => setFormBrand(e.target.value)} 
+                  placeholder="Carrier, Daikin, Linkwell..."
+                  style={{ width: '100%', height: '38px', borderRadius: '8px', border: '1px solid var(--border)', padding: '0 10px', fontSize: '13px', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
+                />
+                {/* Brand quick selection badges */}
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
+                  {['Carrier', 'Daikin', 'Linkwell Electric', 'STAR AIRE', 'Toptherm'].map(b => (
+                    <button
+                      key={b}
+                      type="button"
+                      onClick={() => setFormBrand(b)}
+                      style={{
+                        fontSize: '10px',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        border: '1px solid var(--border)',
+                        background: formBrand === b ? 'var(--accent)' : 'var(--surface)',
+                        color: formBrand === b ? '#ffffff' : 'var(--text3)',
+                        fontWeight: formBrand === b ? '600' : 'normal',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {b}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text2)', letterSpacing: '0.4px' }}>
+                  BTU / Cooling Capacity
+                </label>
+                <input 
+                  type="text" 
+                  value={formBtu} 
+                  onChange={(e) => setFormBtu(e.target.value)} 
+                  placeholder="เช่น 160,000 หรือ 454 kW"
+                  style={{ width: '100%', height: '38px', borderRadius: '8px', border: '1px solid var(--border)', padding: '0 10px', fontSize: '13px', background: 'var(--surface)', color: 'var(--text)', fontFamily: 'monospace', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            {/* Spec/Model */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text2)', letterSpacing: '0.4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Layers size={12} /> spec / model
+              </label>
               <input 
                 type="text" 
-                className="form-input" 
-                value={formNewCode} 
-                onChange={(e) => setFormNewCode(e.target.value)} 
-                required 
-                placeholder="เช่น RFG-1, MIR-CP-1, MIR-DE-1"
+                value={formSpecModel} 
+                onChange={(e) => setFormSpecModel(e.target.value)} 
+                placeholder="เช่น 40QBY060X-10FW, EIA05CPNC1A, Belt:B-50"
+                style={{ width: '100%', height: '38px', borderRadius: '8px', border: '1px solid var(--border)', padding: '0 12px', fontSize: '13px', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
               />
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div>
-              <label className="form-label">Brand</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                value={formBrand} 
-                onChange={(e) => setFormBrand(e.target.value)} 
-                placeholder="Carrier, Daikin, Linkwell Electric..."
-              />
+          {/* SECTION 3: Maintenance Remarks & Status */}
+          <div style={{ 
+            background: 'var(--surface2)', 
+            border: `1px solid ${formNote ? '#fca5a5' : 'var(--border)'}`, 
+            borderRadius: '10px', 
+            padding: '14px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: formNote ? '#dc2626' : 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <AlertTriangle size={14} style={{ color: formNote ? '#dc2626' : 'var(--accent)' }} /> 
+                Maintenance Remarks &amp; Status (หมายเหตุ)
+              </div>
+              {editingItem?.noteUpdatedAt && (
+                <span style={{ fontSize: '11px', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Clock size={11} style={{ color: 'var(--accent)' }} /> 
+                  แก้ไขล่าสุด: <strong>{formatDateTime(editingItem.noteUpdatedAt)}</strong>
+                </span>
+              )}
             </div>
-            <div>
-              <label className="form-label">BTU / Power</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                value={formBtu} 
-                onChange={(e) => setFormBtu(e.target.value)} 
-                placeholder="60,000 หรือ 454 kW"
-              />
+
+            {/* Quick Status Presets for instant single-click filling */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {[
+                { label: 'ปกติ (Normal)', val: '', bg: 'rgba(16, 185, 129, 0.1)', color: '#059669', border: '#a7f3d0' },
+                { label: 'น้ำยารั่ว', val: 'น้ำยารั่ว', bg: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '#fca5a5' },
+                { label: 'คอมเสีย', val: 'คอมเสีย', bg: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '#fca5a5' },
+                { label: 'ไม่เย็น (รั่ว)', val: 'ไม่เย็น (รั่ว)', bg: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '#fca5a5' },
+                { label: 'เสีย ไม่ได้ล้าง', val: 'เสีย ไม่ได้ล้าง', bg: 'rgba(245, 158, 11, 0.1)', color: '#d97706', border: '#fde68a' },
+                { label: 'รออะไหล่', val: 'รออะไหล่', bg: 'rgba(245, 158, 11, 0.1)', color: '#d97706', border: '#fde68a' }
+              ].map(preset => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => setFormNote(preset.val)}
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    background: formNote === preset.val ? preset.bg : 'var(--surface)',
+                    color: formNote === preset.val ? preset.color : 'var(--text2)',
+                    border: `1px solid ${formNote === preset.val ? preset.border : 'var(--border)'}`,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  {preset.label}
+                </button>
+              ))}
             </div>
-          </div>
 
-          <div>
-            <label className="form-label">Location / ตำแหน่งติดตั้ง *</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              value={formLocation} 
-              onChange={(e) => setFormLocation(e.target.value)} 
-              required
-              placeholder="เช่น P/S Room หน้าตู้ Auxiliary, O/P Room ใหญ่"
-            />
-          </div>
-
-          <div>
-            <label className="form-label">spec/model</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              value={formSpecModel} 
-              onChange={(e) => setFormSpecModel(e.target.value)} 
-              placeholder="40QBY060X-10FW, EIA05CPNC1A..."
-            />
-          </div>
-
-          <div>
-            <label className="form-label">หมายเหตุ (Remarks)</label>
+            {/* Remarks Textarea */}
             <textarea 
-              className="form-input" 
               rows={3} 
               value={formNote} 
               onChange={(e) => setFormNote(e.target.value)} 
-              placeholder="ระบุสถานะ เช่น น้ำยารั่ว, คอมเสีย, รออะไหล่ หรือข้อความอื่นๆ..."
+              placeholder="พิมพ์หมายเหตุ หรือคลิกเลือกสถานะด่วนด้านบน..."
+              style={{ 
+                width: '100%', 
+                boxSizing: 'border-box',
+                borderRadius: '8px', 
+                border: `1px solid ${formNote ? '#fca5a5' : 'var(--border)'}`, 
+                padding: '8px 12px', 
+                fontSize: '13px', 
+                background: 'var(--surface)',
+                color: 'var(--text)',
+                resize: 'vertical',
+                minHeight: '70px',
+                outline: 'none',
+                fontFamily: 'inherit'
+              }}
             />
-            <span style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '2px', display: 'block' }}>
-              * เมื่อบันทึกหมายเหตุ ระบบจะอัปเดตวันที่แก้ไขล่าสุดให้อัตโนมัติ
+            <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
+              💡 ระบบจะบันทึกวันที่และเวลาแก้ไขล่าสุดลงฐานข้อมูลให้อัตโนมัติเมื่อกดบันทึก
             </span>
           </div>
         </form>

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 
-export default function Modal({ isOpen, onClose, title, children, footerActions }) {
+export default function Modal({ isOpen, onClose, title, subtitle, children, footerActions, maxWidth }) {
   const modalRef = useRef(null);
   const onCloseRef = useRef(onClose);
 
@@ -51,6 +51,7 @@ export default function Modal({ isOpen, onClose, title, children, footerActions 
       <div 
         ref={modalRef}
         className="modal-container" 
+        style={maxWidth ? { maxWidth } : undefined}
         onClick={handleContentClick} 
         id="modal-container"
         role="dialog"
@@ -59,7 +60,10 @@ export default function Modal({ isOpen, onClose, title, children, footerActions 
         tabIndex={-1}
       >
         <div className="modal-header">
-          <h3 className="modal-title" id="modal-title-heading">{title || 'Details'}</h3>
+          <div>
+            <h3 className="modal-title" id="modal-title-heading">{title || 'Details'}</h3>
+            {subtitle && <p style={{ fontSize: '12px', color: 'var(--text3)', margin: '2px 0 0 0' }}>{subtitle}</p>}
+          </div>
           <button className="modal-close-btn" onClick={onClose} aria-label="Close dialog" type="button">
             <X size={16} />
           </button>
