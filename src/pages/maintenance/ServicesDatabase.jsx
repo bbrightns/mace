@@ -555,6 +555,7 @@ export default function ServicesDatabase() {
   const [search, setSearch] = useState('');
   const [filterSupplier, setFilterSupplier] = useState('all');
   const [filterPlant, setFilterPlant] = useState('all');
+  const [filterCleaned, setFilterCleaned] = useState('all'); // 'all', 'cleaned', 'pending'
   const [filterIssueOnly, setFilterIssueOnly] = useState(false);
 
   // Inline editing state for "หมายเหตุ"
@@ -574,6 +575,7 @@ export default function ServicesDatabase() {
   const [formBtu, setFormBtu] = useState('');
   const [formSpecModel, setFormSpecModel] = useState('');
   const [formNote, setFormNote] = useState('');
+  const [formIsCleaned, setFormIsCleaned] = useState(false);
 
   // Delete Confirmation Modal State
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null });
@@ -696,6 +698,50 @@ export default function ServicesDatabase() {
     }
   };
 
+  // Toggle Cleaned Checkbox directly from table row
+  const handleToggleCleaned = async (unit) => {
+    const nextVal = !unit.isCleaned;
+    const nowIso = new Date().toISOString();
+    const nextCleanedAt = nextVal ? nowIso : null;
+
+    // Optimistic local state update
+    const updatedUnits = units.map(u => {
+      if ((u.id && u.id === unit.id) || (u.supplier === unit.supplier && u.plant === unit.plant && u.itemNo === unit.itemNo)) {
+        return {
+          ...u,
+          isCleaned: nextVal,
+          cleanedAt: nextCleanedAt
+        };
+      }
+      return u;
+    });
+    setUnits(updatedUnits);
+    try {
+      localStorage.setItem('mace_services_database_cache', JSON.stringify(updatedUnits));
+    } catch (e) {}
+
+    // Save to Firestore
+    try {
+      if (unit.id) {
+        await updateDocument('mace_services_database', unit.id, {
+          isCleaned: nextVal,
+          cleanedAt: nextCleanedAt
+        });
+      } else {
+        const createdId = await createDocument('mace_services_database', {
+          ...unit,
+          isCleaned: nextVal,
+          cleanedAt: nextCleanedAt
+        });
+        unit.id = createdId;
+      }
+      showToast(nextVal ? `✓ บันทึกติ๊กล้างแอร์แล้ว: ${unit.newCode || unit.location}` : `ยกเลิกการติ๊กล้างแอร์: ${unit.newCode || unit.location}`, 'success');
+    } catch (err) {
+      console.error('Failed to update cleaned status:', err);
+      showToast('บันทึกลงเครื่องแล้ว', 'info');
+    }
+  };
+
   // Open modal to add new unit
   const handleOpenAdd = () => {
     setEditingItem(null);
@@ -708,6 +754,7 @@ export default function ServicesDatabase() {
     setFormBtu('');
     setFormSpecModel('');
     setFormNote('');
+    setFormIsCleaned(false);
     setIsModalOpen(true);
   };
 
@@ -723,6 +770,7 @@ export default function ServicesDatabase() {
     setFormBtu(unit.btu || '');
     setFormSpecModel(unit.specModel || '');
     setFormNote(unit.note || '');
+    setFormIsCleaned(Boolean(unit.isCleaned));
     setIsModalOpen(true);
   };
 
@@ -739,7 +787,9 @@ export default function ServicesDatabase() {
       btu: formBtu.trim(),
       specModel: formSpecModel.trim(),
       note: formNote.trim(),
-      noteUpdatedAt: formNote.trim() ? (editingItem?.note !== formNote.trim() ? new Date().toISOString() : editingItem?.noteUpdatedAt || new Date().toISOString()) : null
+      noteUpdatedAt: formNote.trim() ? (editingItem?.note !== formNote.trim() ? new Date().toISOString() : editingItem?.noteUpdatedAt || new Date().toISOString()) : null,
+      isCleaned: formIsCleaned,
+      cleanedAt: formIsCleaned ? (editingItem?.isCleaned ? editingItem?.cleanedAt || new Date().toISOString() : new Date().toISOString()) : null
     };
 
     try {
@@ -779,7 +829,7 @@ export default function ServicesDatabase() {
   // Export Table to CSV
   const handleExportCSV = () => {
     if (!units.length) return;
-    const headers = ['Supplier', 'Plant', 'No.', 'ชื่อใหม่ (New Code)', 'Brand', 'Location', 'BTU', 'spec/model', 'หมายเหตุ (Remarks)', 'แก้ไขล่าสุด (Last Updated)'];
+    const headers = ['Supplier', 'Plant', 'No.', 'ชื่อใหม่ (New Code)', 'Brand', 'Location', 'BTU', 'spec/model', 'สถานะล้างแอร์ (Cleaned)', 'วันที่ล้าง (Cleaned Date)', 'หมายเหตุ (Remarks)', 'แก้ไขล่าสุด (Last Updated)'];
     const rows = filteredUnits.map(u => [
       `"${u.supplier || ''}"`,
       `"${u.plant || ''}"`,
@@ -789,6 +839,8 @@ export default function ServicesDatabase() {
       `"${(u.location || '').replace(/"/g, '""')}"`,
       `"${u.btu || ''}"`,
       `"${(u.specModel || '').replace(/"/g, '""')}"`,
+      `"${u.isCleaned ? 'ล้างแล้ว' : 'ยังไม่ได้ล้าง'}"`,
+      `"${formatDateTime(u.cleanedAt)}"`,
       `"${(u.note || '').replace(/"/g, '""')}"`,
       `"${formatDateTime(u.noteUpdatedAt)}"`
     ]);
@@ -833,6 +885,14 @@ export default function ServicesDatabase() {
         return false;
       }
 
+      // Filter Cleaned Status
+      if (filterCleaned === 'cleaned' && !u.isCleaned) {
+        return false;
+      }
+      if (filterCleaned === 'pending' && u.isCleaned) {
+        return false;
+      }
+
       // Filter Issue Only
       if (filterIssueOnly && !u.note) {
         return false;
@@ -840,7 +900,7 @@ export default function ServicesDatabase() {
 
       return true;
     });
-  }, [units, search, filterSupplier, filterPlant, filterIssueOnly]);
+  }, [units, search, filterSupplier, filterPlant, filterCleaned, filterIssueOnly]);
 
   // Summary Metrics
   const metrics = useMemo(() => {
@@ -848,13 +908,15 @@ export default function ServicesDatabase() {
     const rfgCount = units.filter(u => u.plant === 'RFG').length;
     const mirCount = units.filter(u => u.plant === 'MIR').length;
     const issueCount = units.filter(u => u.note && u.note.trim().length > 0).length;
+    const cleanedCount = units.filter(u => Boolean(u.isCleaned)).length;
+    const cleanedPercent = total > 0 ? Math.round((cleanedCount / total) * 100) : 0;
     const bySupplier = {
       'SiamTemp': units.filter(u => u.supplier === 'SiamTemp').length,
       'Thai-Top-Therm': units.filter(u => u.supplier === 'Thai-Top-Therm').length,
       'Carrier': units.filter(u => u.supplier === 'Carrier').length,
       'KB Cool': units.filter(u => u.supplier === 'KB Cool').length
     };
-    return { total, rfgCount, mirCount, issueCount, bySupplier };
+    return { total, rfgCount, mirCount, issueCount, cleanedCount, cleanedPercent, bySupplier };
   }, [units]);
 
   return (
@@ -977,11 +1039,36 @@ export default function ServicesDatabase() {
             {metrics.bySupplier['SiamTemp'] + metrics.bySupplier['Carrier']} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text3)' }}>units</span>
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '2px' }}>
-            SiamTemp: 6 • Carrier Chiller: 5
+            SiamTemp: 6 • Carrier: 5
           </div>
         </div>
 
-        {/* Card 5: Issues / Repairs Pending */}
+        {/* Card 5: Cleaned Progress (ผรม. ล้างแอร์แล้ว) */}
+        <div 
+          className="card" 
+          onClick={() => setFilterCleaned(prev => prev === 'cleaned' ? 'all' : 'cleaned')}
+          style={{ 
+            padding: '12px 16px', 
+            background: filterCleaned === 'cleaned' ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface)', 
+            border: `1px solid ${filterCleaned === 'cleaned' ? '#10b981' : 'var(--border)'}`,
+            cursor: 'pointer',
+            transition: 'all 0.15s'
+          }}
+          title="คลิกเพื่อกรองดูเฉพาะตัวที่ ผรม. ล้างแอร์แล้ว"
+        >
+          <span style={{ fontSize: '11px', color: '#059669', textTransform: 'uppercase', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <CheckCircle2 size={13} style={{ color: '#10b981' }} />
+            ผรม. ล้างแอร์แล้ว
+          </span>
+          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#059669', marginTop: '4px' }}>
+            {metrics.cleanedCount} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text3)' }}>/ {metrics.total} ({metrics.cleanedPercent}%)</span>
+          </div>
+          <div style={{ width: '100%', height: '4px', background: 'var(--surface3)', borderRadius: '2px', marginTop: '6px', overflow: 'hidden' }}>
+            <div style={{ width: `${metrics.cleanedPercent}%`, height: '100%', background: '#10b981', transition: 'width 0.3s' }} />
+          </div>
+        </div>
+
+        {/* Card 6: Issues / Repairs Pending */}
         <div 
           className="card" 
           onClick={() => setFilterIssueOnly(prev => !prev)}
@@ -1019,7 +1106,7 @@ export default function ServicesDatabase() {
         }}
       >
         {/* Search */}
-        <div style={{ position: 'relative', width: '260px', minWidth: '200px' }}>
+        <div style={{ position: 'relative', width: '240px', minWidth: '180px' }}>
           <Search size={14} style={{ position: 'absolute', left: '10px', top: '9px', color: 'var(--text3)' }} />
           <input 
             type="text" 
@@ -1071,6 +1158,28 @@ export default function ServicesDatabase() {
           </select>
         </div>
 
+        {/* Filter Cleaned Status */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '11.5px', color: 'var(--text3)', fontWeight: '500' }}>สถานะล้าง:</span>
+          <select 
+            className="form-select" 
+            value={filterCleaned} 
+            onChange={(e) => setFilterCleaned(e.target.value)}
+            style={{ 
+              height: '32px', 
+              fontSize: '12.5px', 
+              padding: '0 8px',
+              borderColor: filterCleaned === 'cleaned' ? '#10b981' : undefined,
+              color: filterCleaned === 'cleaned' ? '#059669' : undefined,
+              fontWeight: filterCleaned === 'cleaned' ? '600' : 'normal'
+            }}
+          >
+            <option value="all">สถานะล้าง: ทั้งหมด</option>
+            <option value="cleaned">✓ ล้างแล้ว ({metrics.cleanedCount})</option>
+            <option value="pending">⏳ ยังไม่ล้าง ({metrics.total - metrics.cleanedCount})</option>
+          </select>
+        </div>
+
         {/* Quick Issue Filter Pill */}
         <button
           type="button"
@@ -1099,9 +1208,15 @@ export default function ServicesDatabase() {
 
       {/* Main Database Table */}
       <div className="card table-container" style={{ overflowX: 'auto', padding: 0 }}>
-        <table className="data-table" style={{ width: '100%', minWidth: '1050px', borderCollapse: 'collapse', fontSize: '12.5px' }}>
+        <table className="data-table" style={{ width: '100%', minWidth: '1100px', borderCollapse: 'collapse', fontSize: '12.5px' }}>
           <thead>
             <tr style={{ background: 'var(--surface2)', borderBottom: '2px solid var(--border)' }}>
+              <th style={{ width: '56px', padding: '10px 4px', textAlign: 'center' }} title="ติ๊กเมื่อผู้รับเหมาล้างแอร์แล้ว">
+                <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '1px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '700' }}>ล้าง</span>
+                  <span style={{ fontSize: '9px', color: 'var(--text3)', fontWeight: 'normal' }}>({metrics.cleanedCount})</span>
+                </div>
+              </th>
               <th style={{ width: '120px', padding: '10px 12px', textAlign: 'left' }}>Supplier</th>
               <th style={{ width: '60px', padding: '10px 8px', textAlign: 'center' }}>Plant</th>
               <th style={{ width: '45px', padding: '10px 8px', textAlign: 'center' }}>No.</th>
@@ -1128,7 +1243,7 @@ export default function ServicesDatabase() {
           <tbody>
             {filteredUnits.length === 0 ? (
               <tr>
-                <td colSpan={11} style={{ textAlign: 'center', padding: '36px', color: 'var(--text3)' }}>
+                <td colSpan={12} style={{ textAlign: 'center', padding: '36px', color: 'var(--text3)' }}>
                   <Info size={24} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
                   <div>ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา</div>
                 </td>
@@ -1144,11 +1259,34 @@ export default function ServicesDatabase() {
                     key={unit.id || `${unit.supplier}-${unit.plant}-${unit.itemNo}-${index}`}
                     style={{ 
                       borderBottom: '1px solid var(--border)',
-                      backgroundColor: hasIssue ? 'rgba(239, 68, 68, 0.02)' : undefined,
+                      backgroundColor: hasIssue ? 'rgba(239, 68, 68, 0.02)' : (unit.isCleaned ? 'rgba(16, 185, 129, 0.03)' : undefined),
                       transition: 'background-color 0.15s'
                     }}
                     className="hover:bg-slate-50 dark:hover:bg-slate-800/50"
                   >
+                    {/* Tick Cleaned Checkbox */}
+                    <td 
+                      style={{ 
+                        padding: '8px 4px', 
+                        textAlign: 'center', 
+                        backgroundColor: unit.isCleaned ? 'rgba(16, 185, 129, 0.08)' : undefined 
+                      }}
+                    >
+                      <input 
+                        type="checkbox"
+                        checked={Boolean(unit.isCleaned)}
+                        onChange={() => handleToggleCleaned(unit)}
+                        style={{
+                          width: '18px',
+                          height: '18px',
+                          cursor: 'pointer',
+                          accentColor: '#10b981',
+                          verticalAlign: 'middle'
+                        }}
+                        title={unit.isCleaned ? `ผรม. ล้างแล้ว (${formatDateTime(unit.cleanedAt) || 'บันทึกแล้ว'}) - คลิกเพื่อยกเลิก` : 'คลิกเพื่อติ๊กบันทึกว่า ผรม. ล้างแอร์แล้ว'}
+                      />
+                    </td>
+
                     {/* Supplier */}
                     <td style={{ padding: '8px 12px' }}>
                       <span 
@@ -1660,6 +1798,39 @@ export default function ServicesDatabase() {
                 fontFamily: 'inherit'
               }}
             />
+
+            {/* Checkbox for Cleaned Status */}
+            <div 
+              onClick={() => setFormIsCleaned(!formIsCleaned)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                background: formIsCleaned ? 'rgba(16, 185, 129, 0.1)' : 'var(--surface)',
+                border: `1px solid ${formIsCleaned ? '#10b981' : 'var(--border)'}`,
+                cursor: 'pointer',
+                transition: 'all 0.15s'
+              }}
+            >
+              <input 
+                type="checkbox"
+                checked={formIsCleaned}
+                onChange={(e) => setFormIsCleaned(e.target.checked)}
+                style={{ width: '18px', height: '18px', accentColor: '#10b981', cursor: 'pointer' }}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <div>
+                <strong style={{ fontSize: '13px', color: formIsCleaned ? '#059669' : 'var(--text)' }}>
+                  ผรม. ล้างแอร์เรียบร้อยแล้ว (Cleaned by Contractor)
+                </strong>
+                <span style={{ fontSize: '11px', color: 'var(--text3)', display: 'block' }}>
+                  {formIsCleaned ? '✓ ติ๊กไว้แล้วว่าเครื่องนี้ผ่านการล้างทำความสะอาดแล้ว' : 'ติ๊กเลือกหากผู้รับเหมาทำการล้างแอร์เครื่องนี้แล้ว'}
+                </span>
+              </div>
+            </div>
+
             <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
               💡 ระบบจะบันทึกวันที่และเวลาแก้ไขล่าสุดลงฐานข้อมูลให้อัตโนมัติเมื่อกดบันทึก
             </span>
