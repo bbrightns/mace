@@ -227,19 +227,19 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
               <Menu size={18} />
             </button>
             
-            <div className="sync-status" style={{ fontWeight: 600, color: 'var(--text)' }}>
+            <div className="sync-status hide-on-mobile" style={{ fontWeight: 600, color: 'var(--text)' }}>
               <span className="font-mono" style={{ fontSize: '14px', letterSpacing: '-0.3px' }}>MACE</span>
             </div>
             
-            <span className="breadcrumb-separator">/</span>
-            <span className="breadcrumb-separator" style={{ fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{breadcrumb.group}</span>
-            <span className="breadcrumb-separator">/</span>
-            <span className="breadcrumb-current">{breadcrumb.label}</span>
+            <span className="breadcrumb-separator hide-on-mobile">/</span>
+            <span className="breadcrumb-separator hide-on-mobile" style={{ fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{breadcrumb.group}</span>
+            <span className="breadcrumb-separator hide-on-mobile">/</span>
+            <span className="breadcrumb-current" style={{ fontWeight: 600 }}>{breadcrumb.label}</span>
           </div>
 
           <div className="header-right">
             {currentDateStr && (
-              <span className="current-date-badge" style={{ 
+              <span className="current-date-badge hide-on-mobile" style={{ 
                 fontSize: '11px', 
                 fontWeight: '600', 
                 color: 'var(--text2)', 
@@ -256,7 +256,7 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
 
             <button 
               type="button"
-              className="btn btn-secondary"
+              className="btn btn-secondary hide-on-mobile"
               onClick={() => setShowHelpModal(true)}
               title="Keyboard Shortcuts Guide"
               style={{ padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px' }}
@@ -266,9 +266,9 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
               <span className="font-mono">Shortcuts</span>
             </button>
 
-            <div className="sync-status" id="workspace-sync-status">
+            <div className="sync-status" id="workspace-sync-status" style={{ padding: '4px 8px', fontSize: '11.5px' }}>
               <span className={`sync-dot ${syncStatus === 'syncing' ? 'syncing' : ''}`}></span>
-              <span>{syncStatus === 'syncing' ? 'Updating...' : 'LIVE'}</span>
+              <span>{syncStatus === 'syncing' ? 'Sync' : 'LIVE'}</span>
             </div>
           </div>
         </header>
@@ -345,6 +345,67 @@ export default function Layout({ children, currentPage, setCurrentPage, syncStat
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar (Thumb friendly) */}
+      <nav className="mobile-bottom-nav" aria-label="Mobile Navigation" id="mobile-bottom-nav">
+        <button 
+          type="button" 
+          className={`mobile-nav-btn ${currentPage === 'home' && !mobileOpen ? 'active' : ''}`}
+          onClick={() => {
+            setCurrentPage('home');
+            setMobileOpen(false);
+          }}
+          id="mobile-nav-home"
+        >
+          <Home size={19} />
+          <span>Home</span>
+        </button>
+        <button 
+          type="button" 
+          className={`mobile-nav-btn ${currentPage === 'pm-plan' && !mobileOpen ? 'active' : ''}`}
+          onClick={() => {
+            setCurrentPage('pm-plan');
+            setMobileOpen(false);
+          }}
+          id="mobile-nav-pm-plan"
+        >
+          <Calendar size={19} />
+          <span>PM Plan</span>
+        </button>
+        <button 
+          type="button" 
+          className={`mobile-nav-btn ${currentPage === 'trouble-record' && !mobileOpen ? 'active' : ''}`}
+          onClick={() => {
+            setCurrentPage('trouble-record');
+            setMobileOpen(false);
+          }}
+          id="mobile-nav-trouble"
+        >
+          <AlertTriangle size={19} />
+          <span>Trouble</span>
+        </button>
+        <button 
+          type="button" 
+          className={`mobile-nav-btn ${currentPage === 'task-management' && !mobileOpen ? 'active' : ''}`}
+          onClick={() => {
+            setCurrentPage('task-management');
+            setMobileOpen(false);
+          }}
+          id="mobile-nav-tasks"
+        >
+          <MessageSquare size={19} />
+          <span>Tasks</span>
+        </button>
+        <button 
+          type="button" 
+          className={`mobile-nav-btn ${mobileOpen || !['home', 'pm-plan', 'trouble-record', 'task-management'].includes(currentPage) ? 'active' : ''}`}
+          onClick={() => setMobileOpen(!mobileOpen)}
+          id="mobile-nav-more"
+        >
+          <Menu size={19} />
+          <span>Menu</span>
+        </button>
+      </nav>
     </div>
   );
 }
