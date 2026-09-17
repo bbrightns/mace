@@ -390,10 +390,11 @@ export async function batchDeleteDocuments(collectionName, ids) {
 
 /**
  * Services Database Cloud Persistence
- * Persists all HVAC units and contractor cleaning ticks to Cloud Firestore under 'services_database_master'
+ * Persists all HVAC units and contractor cleaning ticks to Cloud Firestore under 'mace_audits/services_database_master'
+ * (Isolated from mace_pm_plans to prevent PM schedule collision)
  */
 export function subscribeServicesDatabase(onNext, onError) {
-  const storeDocRef = doc(db, 'mace_pm_plans', 'services_database_master');
+  const storeDocRef = doc(db, 'mace_audits', 'services_database_master');
   return onSnapshot(
     storeDocRef,
     (snap) => {
@@ -410,9 +411,23 @@ export function subscribeServicesDatabase(onNext, onError) {
   );
 }
 
+export async function getServicesDatabaseFromCloud() {
+  try {
+    const storeDocRef = doc(db, 'mace_audits', 'services_database_master');
+    const snap = await getDoc(storeDocRef);
+    if (snap.exists() && Array.isArray(snap.data()?.items)) {
+      return snap.data().items;
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to get services database from cloud:', error);
+    throw error;
+  }
+}
+
 export async function saveServicesDatabaseToCloud(items) {
   try {
-    const storeDocRef = doc(db, 'mace_pm_plans', 'services_database_master');
+    const storeDocRef = doc(db, 'mace_audits', 'services_database_master');
     await setDoc(storeDocRef, {
       items,
       updatedAt: new Date().toISOString()

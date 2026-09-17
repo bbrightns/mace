@@ -10,7 +10,8 @@ import {
   AlertTriangle, 
   FileSpreadsheet, 
   Download, 
-  RefreshCw, 
+  RefreshCw,
+  RotateCcw, 
   Building2, 
   Layers, 
   CheckCircle2, 
@@ -24,7 +25,8 @@ import {
 } from 'lucide-react';
 import { 
   subscribeServicesDatabase, 
-  saveServicesDatabaseToCloud 
+  saveServicesDatabaseToCloud,
+  getServicesDatabaseFromCloud
 } from '../../firebase/collections';
 import Modal from '../../components/Modal';
 import ConfirmModal from '../../components/ConfirmModal';
@@ -32,460 +34,560 @@ import { useToast } from '../../components/Toast';
 
 // 37 Initial Records based on factory master data
 const RAW_INITIAL_SERVICES_DATA = [
-  // SiamTemp - Plant MIR (No. 1-6)
   {
-    supplier: 'SiamTemp',
-    plant: 'MIR',
+    id: "service_unit_001",
+    supplier: "SiamTemp",
+    plant: "MIR",
     itemNo: 1,
-    newCode: 'MIR-DE-1',
-    brand: 'Carrier',
-    location: 'CDU 38AE016 1 ตัว',
-    btu: '160,000',
-    specModel: 'Belt:B-50',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-DE-1",
+    brand: "Carrier",
+    location: "CDU 38AE016 1 ตัว",
+    btu: "160,000",
+    specModel: "Belt:B-50",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:43:33.509Z"
   },
   {
-    supplier: 'SiamTemp',
-    plant: 'MIR',
+    id: "service_unit_002",
+    supplier: "SiamTemp",
+    plant: "MIR",
     itemNo: 2,
-    newCode: 'MIR-DE-1',
-    brand: 'Carrier',
-    location: 'CDU 38AE050 2 ตัว',
-    btu: '548,000',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-DE-1",
+    brand: "Carrier",
+    location: "CDU 38AE050 2 ตัว",
+    btu: "548,000",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:43:34.017Z"
   },
   {
-    supplier: 'SiamTemp',
-    plant: 'MIR',
+    id: "service_unit_003",
+    supplier: "SiamTemp",
+    plant: "MIR",
     itemNo: 3,
-    newCode: 'MIR-DE-1',
-    brand: 'Carrier',
-    location: 'AHU 39G1319 1 ตัว',
-    btu: '200,000',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-DE-1",
+    brand: "Carrier",
+    location: "AHU 39G1319 1 ตัว",
+    btu: "200,000",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:43:34.586Z"
   },
   {
-    supplier: 'SiamTemp',
-    plant: 'MIR',
+    id: "service_unit_004",
+    supplier: "SiamTemp",
+    plant: "MIR",
     itemNo: 4,
-    newCode: 'MIR-DE-1',
-    brand: '',
-    location: 'AHU 120,000-200,000 BTU 1 ตัว',
-    btu: '120,000-200,000',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-DE-1",
+    brand: "",
+    location: "AHU 120,000-200,000 BTU 1 ตัว",
+    btu: "120,000-200,000",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:43:35.850Z"
   },
   {
-    supplier: 'SiamTemp',
-    plant: 'MIR',
+    id: "service_unit_005",
+    supplier: "SiamTemp",
+    plant: "MIR",
     itemNo: 5,
-    newCode: 'MIR-DE-1',
-    brand: '',
-    location: 'OAU 39G1319 2 ตัว',
-    btu: '',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-DE-1",
+    brand: "",
+    location: "OAU 39G1319 2 ตัว",
+    btu: "",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:43:36.512Z"
   },
   {
-    supplier: 'SiamTemp',
-    plant: 'MIR',
+    id: "service_unit_006",
+    supplier: "SiamTemp",
+    plant: "MIR",
     itemNo: 6,
-    newCode: 'MIR-DE-1',
-    brand: '',
-    location: 'CDU 38LHU1505301',
-    btu: '150,000',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
-  },
-
-  // Thai-Top-Therm - Plant RFG (No. 1-2)
-  {
-    supplier: 'Thai-Top-Therm',
-    plant: 'RFG',
-    itemNo: 1,
-    newCode: 'RFG-CP-1',
-    brand: 'Linkwell Electric',
-    location: 'Benteler Washing Machine',
-    btu: '',
-    specModel: 'EIA05CPNC1A (220V, 1.7A, R134a), 500W/550W',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-DE-1",
+    brand: "",
+    location: "CDU 38LHU1505301",
+    btu: "150,000",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:43:37.041Z"
   },
   {
-    supplier: 'Thai-Top-Therm',
-    plant: 'RFG',
-    itemNo: 2,
-    newCode: 'RFG-CP-2',
-    brand: 'Linkwell Electric',
-    location: 'DVT Unload',
-    btu: '',
-    specModel: 'EIA05CPNC1A (220V, 1.7A, R134a), 500W/550W',
-    note: '',
-    noteUpdatedAt: null
-  },
-
-  // Thai-Top-Therm - Plant MIR (No. 3-8)
-  {
-    supplier: 'Thai-Top-Therm',
-    plant: 'MIR',
+    id: "service_unit_009",
+    supplier: "Thai-Top-Therm",
+    plant: "MIR",
     itemNo: 3,
-    newCode: 'MIR-CP-1',
-    brand: 'Linkwell Electric',
-    location: 'SB04 Control panel no.1',
-    btu: '',
-    specModel: 'EIA10CPNC1A (220V, 7A/7.5A, R134a), 1100W/1300W',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-CP-1",
+    brand: "Linkwell Electric",
+    location: "SB04 Control panel no.1",
+    btu: "",
+    specModel: "EIA10CPNC1A (220V, 7A/7.5A, R134a), 1100W/1300W",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:42:48.323Z"
   },
   {
-    supplier: 'Thai-Top-Therm',
-    plant: 'MIR',
+    id: "service_unit_010",
+    supplier: "Thai-Top-Therm",
+    plant: "MIR",
     itemNo: 4,
-    newCode: 'MIR-CP-2',
-    brand: 'Linkwell Electric',
-    location: 'SB04 Control panel no.2',
-    btu: '',
-    specModel: 'EIA10CPNC1A (220V, 7A/7.5A, R134a), 1100W/1300W',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-CP-2",
+    brand: "Linkwell Electric",
+    location: "SB04 Control panel no.2",
+    btu: "",
+    specModel: "EIA10CPNC1A (220V, 7A/7.5A, R134a), 1100W/1300W",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:42:49.992Z"
   },
   {
-    supplier: 'Thai-Top-Therm',
-    plant: 'MIR',
+    id: "service_unit_011",
+    supplier: "Thai-Top-Therm",
+    plant: "MIR",
     itemNo: 5,
-    newCode: 'MIR-CP-3',
-    brand: '',
-    location: 'SB04 Magnetic panel no.1',
-    btu: '',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-CP-3",
+    brand: "",
+    location: "SB04 Magnetic panel no.1",
+    btu: "",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:42:50.712Z"
   },
   {
-    supplier: 'Thai-Top-Therm',
-    plant: 'MIR',
+    id: "service_unit_012",
+    supplier: "Thai-Top-Therm",
+    plant: "MIR",
     itemNo: 6,
-    newCode: 'MIR-CP-4',
-    brand: '',
-    location: 'SB04 Magnetic panel no.2',
-    btu: '',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-CP-4",
+    brand: "",
+    location: "SB04 Magnetic panel no.2",
+    btu: "",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:42:51.558Z"
   },
   {
-    supplier: 'Thai-Top-Therm',
-    plant: 'MIR',
+    id: "service_unit_013",
+    supplier: "Thai-Top-Therm",
+    plant: "MIR",
     itemNo: 7,
-    newCode: 'MIR-CP-5',
-    brand: 'Toptherm',
-    location: 'Cutting Botero',
-    btu: '',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-CP-5",
+    brand: "Toptherm",
+    location: "Cutting Botero",
+    btu: "",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:42:52.470Z"
   },
   {
-    supplier: 'Thai-Top-Therm',
-    plant: 'MIR',
+    id: "service_unit_014",
+    supplier: "Thai-Top-Therm",
+    plant: "MIR",
     itemNo: 8,
-    newCode: 'MIR-CP-6',
-    brand: 'STAR AIRE',
-    location: 'SB03 Interlock Cabinet',
-    btu: '1,800',
-    specModel: 'M-18',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-CP-6",
+    brand: "STAR AIRE",
+    location: "SB03 Interlock Cabinet",
+    btu: "1,800",
+    specModel: "M-18",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:42:53.087Z"
   },
-
-  // Carrier - Plant RFG (No. 1-5)
   {
-    supplier: 'Carrier',
-    plant: 'RFG',
+    id: "service_unit_007",
+    supplier: "Thai-Top-Therm",
+    plant: "RFG",
     itemNo: 1,
-    newCode: 'RFG-CH-1',
-    brand: 'Toyo Carrier',
-    location: 'Chiller 1',
-    btu: '',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "RFG-CP-1",
+    brand: "Linkwell Electric",
+    location: "Benteler Washing Machine",
+    btu: "",
+    specModel: "EIA05CPNC1A (220V, 1.7A, R134a), 500W/550W",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:42:46.723Z"
   },
   {
-    supplier: 'Carrier',
-    plant: 'RFG',
+    id: "service_unit_008",
+    supplier: "Thai-Top-Therm",
+    plant: "RFG",
     itemNo: 2,
-    newCode: 'RFG-CH-2',
-    brand: 'Toyo Carrier',
-    location: 'Chiller 2',
-    btu: '',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "RFG-CP-2",
+    brand: "Linkwell Electric",
+    location: "DVT Unload",
+    btu: "",
+    specModel: "EIA05CPNC1A (220V, 1.7A, R134a), 500W/550W",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:42:47.877Z"
   },
   {
-    supplier: 'Carrier',
-    plant: 'RFG',
-    itemNo: 3,
-    newCode: 'RFG-CH-3',
-    brand: 'Carrier',
-    location: 'Chiller 3',
-    btu: '',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
-  },
-  {
-    supplier: 'Carrier',
-    plant: 'RFG',
-    itemNo: 4,
-    newCode: 'RFG-CH-4',
-    brand: 'Carrier',
-    location: 'Chiller 4',
-    btu: '',
-    specModel: '454 kW',
-    note: '',
-    noteUpdatedAt: null
-  },
-  {
-    supplier: 'Carrier',
-    plant: 'RFG',
-    itemNo: 5,
-    newCode: 'RFG-CH-5',
-    brand: 'Carrier',
-    location: 'Chiller 5',
-    btu: '',
-    specModel: '454 kW',
-    note: '',
-    noteUpdatedAt: null
-  },
-
-  // KB Cool - Plant RFG (No. 1-14)
-  {
-    supplier: 'KB Cool',
-    plant: 'RFG',
+    id: "service_unit_015",
+    supplier: "Carrier",
+    plant: "RFG",
     itemNo: 1,
-    newCode: 'RFG-1',
-    brand: 'Carrier',
-    location: 'P/S Room Entry/ตั้งพื้น',
-    btu: '60,000',
-    specModel: '40QBY060X-10FW',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "RFG-CH-1",
+    brand: "Toyo Carrier",
+    location: "Chiller 1",
+    btu: "",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:43:38.930Z"
   },
   {
-    supplier: 'KB Cool',
-    plant: 'RFG',
+    id: "service_unit_016",
+    supplier: "Carrier",
+    plant: "RFG",
     itemNo: 2,
-    newCode: 'RFG-2',
-    brand: '',
-    location: 'O/P Room เล็ก',
-    btu: '12,500',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "RFG-CH-2",
+    brand: "Toyo Carrier",
+    location: "Chiller 2",
+    btu: "",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:43:40.111Z"
   },
   {
-    supplier: 'KB Cool',
-    plant: 'RFG',
+    id: "service_unit_017",
+    supplier: "Carrier",
+    plant: "RFG",
     itemNo: 3,
-    newCode: 'RFG-3',
-    brand: 'Carrier',
-    location: 'P/S Room',
-    btu: '25,419',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "RFG-CH-3",
+    brand: "Carrier",
+    location: "Chiller 3",
+    btu: "",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:43:40.673Z"
   },
   {
-    supplier: 'KB Cool',
-    plant: 'RFG',
+    id: "service_unit_018",
+    supplier: "Carrier",
+    plant: "RFG",
     itemNo: 4,
-    newCode: 'RFG-4',
-    brand: 'Carrier',
-    location: 'P/S Room หน้าตู้ Auxiliary',
-    btu: '25,419',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "RFG-CH-4",
+    brand: "Carrier",
+    location: "Chiller 4",
+    btu: "",
+    specModel: "454 kW",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:43:42.193Z"
   },
   {
-    supplier: 'KB Cool',
-    plant: 'RFG',
+    id: "service_unit_019",
+    supplier: "Carrier",
+    plant: "RFG",
     itemNo: 5,
-    newCode: 'RFG-5',
-    brand: 'Carrier',
-    location: 'P/S Room ตัวกลางห้องตั้งพื้น',
-    btu: '60,000',
-    specModel: '40QBY060X-10FW',
-    note: 'น้ำยารั่ว',
-    noteUpdatedAt: '2026-09-16T16:00:00.000Z'
+    newCode: "RFG-CH-5",
+    brand: "Carrier",
+    location: "Chiller 5",
+    btu: "",
+    specModel: "454 kW",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:43:43.656Z"
   },
   {
-    supplier: 'KB Cool',
-    plant: 'RFG',
-    itemNo: 6,
-    newCode: 'RFG-6',
-    brand: 'Carrier',
-    location: 'P/S Room ตั้งพื้น ติดประตู',
-    btu: '100,000',
-    specModel: 'ติดตั้ง 2025',
-    note: '',
-    noteUpdatedAt: null
-  },
-  {
-    supplier: 'KB Cool',
-    plant: 'RFG',
-    itemNo: 7,
-    newCode: 'RFG-7',
-    brand: 'Carrier',
-    location: 'O/P Room ใหญ่',
-    btu: '36,100',
-    specModel: '42TGF0361CP',
-    note: '',
-    noteUpdatedAt: null
-  },
-  {
-    supplier: 'KB Cool',
-    plant: 'RFG',
-    itemNo: 8,
-    newCode: 'RFG-8',
-    brand: 'Carrier',
-    location: 'P/S Room unload ติดประตู',
-    btu: '24,918',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
-  },
-  {
-    supplier: 'KB Cool',
-    plant: 'RFG',
-    itemNo: 9,
-    newCode: 'RFG-9',
-    brand: 'Carrier',
-    location: 'P/S Room unload ติดกำแพง office',
-    btu: '100,000',
-    specModel: 'ติดตั้ง 2024',
-    note: '',
-    noteUpdatedAt: null
-  },
-  {
-    supplier: 'KB Cool',
-    plant: 'RFG',
-    itemNo: 10,
-    newCode: 'RFG-10',
-    brand: 'Carrier',
-    location: 'Dark room',
-    btu: '25,419',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
-  },
-  {
-    supplier: 'KB Cool',
-    plant: 'RFG',
-    itemNo: 11,
-    newCode: 'RFG-11',
-    brand: 'Carrier',
-    location: 'Optoplex No.1',
-    btu: '24,918',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
-  },
-  {
-    supplier: 'KB Cool',
-    plant: 'RFG',
-    itemNo: 12,
-    newCode: 'RFG-12',
-    brand: 'Carrier',
-    location: 'Optoplex No.2',
-    btu: '24,918',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
-  },
-  {
-    supplier: 'KB Cool',
-    plant: 'RFG',
-    itemNo: 13,
-    newCode: 'RFG-13',
-    brand: 'Daikin',
-    location: 'Small Temper ซ้าย',
-    btu: '13,000',
-    specModel: '',
-    note: 'คอมเสีย',
-    noteUpdatedAt: '2026-09-16T16:00:00.000Z'
-  },
-  {
-    supplier: 'KB Cool',
-    plant: 'RFG',
-    itemNo: 14,
-    newCode: 'RFG-14',
-    brand: 'Daikin',
-    location: 'Small Temper ขวา',
-    btu: '13,000',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
-  },
-
-  // KB Cool - Plant MIR (No. 15-18)
-  {
-    supplier: 'KB Cool',
-    plant: 'MIR',
+    id: "service_unit_034",
+    supplier: "KB Cool",
+    plant: "MIR",
     itemNo: 15,
-    newCode: 'MIR-3',
-    brand: 'Daikin',
-    location: 'SB03 Control Cabinet',
-    btu: '24,000',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-3",
+    brand: "Daikin",
+    location: "SB03 Control Cabinet",
+    btu: "24,000",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: false,
+    cleanedAt: null
   },
   {
-    supplier: 'KB Cool',
-    plant: 'MIR',
+    id: "service_unit_035",
+    supplier: "KB Cool",
+    plant: "MIR",
     itemNo: 16,
-    newCode: 'MIR-4',
-    brand: 'Carrier',
-    location: 'LOGO Control Room',
-    btu: '9,000',
-    specModel: '',
-    note: 'เสีย ไม่ได้ล้าง',
-    noteUpdatedAt: '2026-09-16T16:00:00.000Z'
+    newCode: "MIR-4",
+    brand: "Carrier",
+    location: "LOGO Control Room",
+    btu: "12200",
+    specModel: "38TSAA013 / 42TSAA013",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: false,
+    cleanedAt: null
   },
   {
-    supplier: 'KB Cool',
-    plant: 'MIR',
+    id: "service_unit_036",
+    supplier: "KB Cool",
+    plant: "MIR",
     itemNo: 17,
-    newCode: 'MIR-5',
-    brand: 'Carrier',
-    location: 'SB-01 Control Room',
-    btu: '25,000',
-    specModel: '',
-    note: '',
-    noteUpdatedAt: null
+    newCode: "MIR-5",
+    brand: "Carrier",
+    location: "SB-01 Control Room",
+    btu: "25,000",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: false,
+    cleanedAt: null
   },
   {
-    supplier: 'KB Cool',
-    plant: 'MIR',
+    id: "service_unit_037",
+    supplier: "KB Cool",
+    plant: "MIR",
     itemNo: 18,
-    newCode: 'MIR-6',
-    brand: 'Daikin',
-    location: 'SB-02 Control Room',
-    btu: '24,000',
-    specModel: '',
-    note: 'ไม่เย็น (รั่ว)',
-    noteUpdatedAt: '2026-09-16T16:00:00.000Z'
+    newCode: "MIR-6",
+    brand: "Daikin",
+    location: "SB-02 Control Room",
+    btu: "24,000",
+    specModel: "",
+    note: "ไม่เย็น (รั่ว)",
+    noteUpdatedAt: "2026-09-16T16:00:00.000Z",
+    isCleaned: false,
+    cleanedAt: null
+  },
+  {
+    id: "service_unit_020",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 1,
+    newCode: "RFG-1",
+    brand: "Carrier",
+    location: "P/S Room Entry/ตั้งพื้น",
+    btu: "60,000",
+    specModel: "40QBY060X-10FW",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:39:07.422Z"
+  },
+  {
+    id: "service_unit_021",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 2,
+    newCode: "RFG-2",
+    brand: "",
+    location: "O/P Room เล็ก",
+    btu: "12,500",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:39:08.100Z"
+  },
+  {
+    id: "service_unit_022",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 3,
+    newCode: "RFG-3",
+    brand: "Carrier",
+    location: "P/S Room",
+    btu: "25,419",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: false,
+    cleanedAt: null
+  },
+  {
+    id: "service_unit_023",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 4,
+    newCode: "RFG-4",
+    brand: "Carrier",
+    location: "P/S Room หน้าตู้ Auxiliary",
+    btu: "25,419",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: false,
+    cleanedAt: null
+  },
+  {
+    id: "service_unit_024",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 5,
+    newCode: "RFG-5",
+    brand: "Carrier",
+    location: "P/S Room ตัวกลางห้องตั้งพื้น",
+    btu: "60,000",
+    specModel: "40QBY060X-10FW",
+    note: "น้ำยารั่ว",
+    noteUpdatedAt: "2026-09-16T16:00:00.000Z",
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:39:13.621Z"
+  },
+  {
+    id: "service_unit_025",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 6,
+    newCode: "RFG-6",
+    brand: "Carrier",
+    location: "P/S Room ตั้งพื้น ติดประตู",
+    btu: "100,000",
+    specModel: "ติดตั้ง 2025",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:39:14.218Z"
+  },
+  {
+    id: "service_unit_026",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 7,
+    newCode: "RFG-7",
+    brand: "Carrier",
+    location: "O/P Room ใหญ่",
+    btu: "36,100",
+    specModel: "42TGF0361CP",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:39:14.858Z"
+  },
+  {
+    id: "service_unit_027",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 8,
+    newCode: "RFG-8",
+    brand: "Carrier",
+    location: "P/S Room unload ติดประตู",
+    btu: "24,918",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: false,
+    cleanedAt: null
+  },
+  {
+    id: "service_unit_028",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 9,
+    newCode: "RFG-9",
+    brand: "Carrier",
+    location: "P/S Room unload ติดกำแพง office",
+    btu: "100,000",
+    specModel: "ติดตั้ง 2024",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:39:29.779Z"
+  },
+  {
+    id: "service_unit_029",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 10,
+    newCode: "RFG-10",
+    brand: "Carrier",
+    location: "Dark room",
+    btu: "25,419",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: false,
+    cleanedAt: null
+  },
+  {
+    id: "service_unit_030",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 11,
+    newCode: "RFG-11",
+    brand: "Carrier",
+    location: "Optoplex No.1",
+    btu: "24,918",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: false,
+    cleanedAt: null
+  },
+  {
+    id: "service_unit_031",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 12,
+    newCode: "RFG-12",
+    brand: "Carrier",
+    location: "Optoplex No.2",
+    btu: "24,918",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: false,
+    cleanedAt: null
+  },
+  {
+    id: "service_unit_032",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 13,
+    newCode: "RFG-13",
+    brand: "Daikin",
+    location: "Small Temper ซ้าย",
+    btu: "13,000",
+    specModel: "",
+    note: "คอมเสีย",
+    noteUpdatedAt: "2026-09-16T16:00:00.000Z",
+    isCleaned: false,
+    cleanedAt: null
+  },
+  {
+    id: "service_unit_033",
+    supplier: "KB Cool",
+    plant: "RFG",
+    itemNo: 14,
+    newCode: "RFG-14",
+    brand: "Daikin",
+    location: "Small Temper ขวา",
+    btu: "13,000",
+    specModel: "",
+    note: "",
+    noteUpdatedAt: null,
+    isCleaned: true,
+    cleanedAt: "2026-09-16T09:39:33.951Z"
   }
 ];
 
@@ -685,9 +787,33 @@ export default function ServicesDatabase() {
     return () => unsub();
   }, []);
 
-  // Reset / Reseed master data from default 37 units
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Manual re-sync from Cloud Firestore
+  const handleRefreshFromCloud = async () => {
+    setIsRefreshing(true);
+    try {
+      const cloudData = await getServicesDatabaseFromCloud();
+      if (cloudData && Array.isArray(cloudData) && cloudData.length > 0) {
+        setUnits(cloudData);
+        try {
+          localStorage.setItem('mace_services_database_cache', JSON.stringify(cloudData));
+        } catch (e) {}
+        showToast('ซิงค์ข้อมูลล่าสุดจาก Cloud สำเร็จแล้ว', 'success');
+      } else {
+        showToast('ข้อมูลบน Cloud พร้อมใช้งานแล้ว', 'info');
+      }
+    } catch (err) {
+      console.error('Refresh from cloud failed:', err);
+      showToast('เชื่อมต่อ Cloud ไม่สำเร็จ', 'warning');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Reset / Reseed master data from default 37 units (Factory Reset)
   const handleResetMasterData = async () => {
-    if (!window.confirm('คุณต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้น 37 รายการใช่หรือไม่? (สถานะที่เคยติ๊กและหมายเหตุจะถูกรีเซ็ต)')) {
+    if (!window.confirm('⚠️ คำเตือน: คุณต้องการรีเซ็ตข้อมูลทั้งหมด 37 รายการกลับเป็นค่าเริ่มต้นโรงงานใช่หรือไม่?\n\n(หากกดตกลง ข้อมูลจะถูกบันทึกลง Cloud ใหม่)')) {
       return;
     }
     try {
@@ -833,8 +959,15 @@ export default function ServicesDatabase() {
     };
 
     let nextUnits;
-    if (editingItem && editingItem.id) {
-      nextUnits = units.map(u => u.id === editingItem.id ? { ...u, ...payload } : u);
+    if (editingItem) {
+      nextUnits = units.map(u => {
+        const matchById = editingItem.id && u.id === editingItem.id;
+        const matchByCompound = u.supplier === editingItem.supplier && u.plant === editingItem.plant && Number(u.itemNo) === Number(editingItem.itemNo);
+        if (matchById || matchByCompound) {
+          return { ...u, ...payload };
+        }
+        return u;
+      });
     } else {
       nextUnits = [...units, payload];
     }
@@ -1004,12 +1137,23 @@ export default function ServicesDatabase() {
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button 
             className="btn" 
-            onClick={handleResetMasterData}
-            title="คืนค่าข้อมูลเริ่มต้น 37 รายการ"
+            onClick={handleRefreshFromCloud}
+            disabled={isRefreshing}
+            title="ดึงข้อมูลสถานะล่าสุดจาก Cloud Firestore"
             style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
           >
-            <RefreshCw size={14} />
-            <span>Reset Master Data</span>
+            <RefreshCw size={14} className={isRefreshing ? 'spin' : ''} />
+            <span>{isRefreshing ? 'กำลังซิงค์...' : 'รีเฟรช Cloud'}</span>
+          </button>
+
+          <button 
+            className="btn" 
+            onClick={handleResetMasterData}
+            title="คำเตือน: รีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้นโรงงาน 37 รายการ"
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#ef4444', borderColor: '#fca5a5' }}
+          >
+            <RotateCcw size={12} />
+            <span>รีเซ็ตค่าเริ่มต้น</span>
           </button>
 
           <button 
@@ -1256,6 +1400,44 @@ export default function ServicesDatabase() {
         </div>
       </div>
 
+      {/* Active Filter Notice Banner */}
+      {(filterCleaned !== 'all' || filterIssueOnly || filterSupplier !== 'all' || filterPlant !== 'all' || search.trim()) && (
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          background: 'rgba(59, 130, 246, 0.08)', 
+          border: '1px solid rgba(59, 130, 246, 0.2)', 
+          borderRadius: '8px', 
+          padding: '8px 12px', 
+          marginBottom: '12px',
+          fontSize: '12.5px',
+          color: 'var(--text)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <Filter size={14} style={{ color: 'var(--accent)' }} />
+            <span>กำลังกรองข้อมูล: <strong>แสดง {filteredUnits.length} จาก {units.length} รายการ</strong></span>
+            {filterCleaned === 'pending' && <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', fontSize: '11px', fontWeight: '600' }}>เฉพาะที่ยังไม่ได้ล้าง</span>}
+            {filterCleaned === 'cleaned' && <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#d1fae5', color: '#065f46', fontSize: '11px', fontWeight: '600' }}>เฉพาะที่ล้างแล้ว</span>}
+            {filterIssueOnly && <span style={{ padding: '2px 8px', borderRadius: '4px', background: '#fee2e2', color: '#991b1b', fontSize: '11px', fontWeight: '600' }}>เฉพาะมีหมายเหตุเสีย</span>}
+          </div>
+          <button 
+            type="button"
+            className="btn btn-sm"
+            onClick={() => {
+              setSearch('');
+              setFilterSupplier('all');
+              setFilterPlant('all');
+              setFilterCleaned('all');
+              setFilterIssueOnly(false);
+            }}
+            style={{ fontSize: '11.5px', padding: '2px 8px' }}
+          >
+            แสดงทั้งหมด 37 รายการ
+          </button>
+        </div>
+      )}
+
       {/* Main Database Table */}
       <div className="card table-container" style={{ overflowX: 'auto', padding: 0 }}>
         <table className="data-table" style={{ width: '100%', minWidth: '1100px', borderCollapse: 'collapse', fontSize: '12.5px' }}>
@@ -1281,10 +1463,11 @@ export default function ServicesDatabase() {
                   <span style={{ fontSize: '10px', color: '#d97706', fontWeight: 'normal' }}>(คลิกเพื่อแก้ไข)</span>
                 </div>
               </th>
-              <th style={{ width: '135px', padding: '10px 10px', textAlign: 'left' }}>
+              <th style={{ width: '145px', padding: '10px 10px', textAlign: 'left' }} title="บันทึกวันและเวลาที่มีการแก้ไขช่องหมายเหตุล่าสุดให้อัตโนมัติ (จะแสดงเป็น — หากไม่มีการแก้ไขหมายเหตุ)">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Clock size={12} style={{ color: 'var(--text3)' }} />
+                  <Clock size={12} style={{ color: 'var(--accent)' }} />
                   <span>แก้ไขล่าสุด</span>
+                  <Info size={11} style={{ color: 'var(--text3)', cursor: 'help' }} />
                 </div>
               </th>
               <th style={{ width: '80px', padding: '10px 8px', textAlign: 'center' }}>จัดการ</th>

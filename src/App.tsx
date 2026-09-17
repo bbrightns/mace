@@ -78,7 +78,13 @@ function MainApp() {
     setSyncStatus('syncing');
     
     const unsub1 = subscribeCollection('mace_pm_plans', (data) => {
-      setPmPlans(data.filter(item => item.id !== 'services_database_master' && !item.id?.startsWith('service_unit_')));
+      setPmPlans(data.filter(item => 
+        item &&
+        item.id !== 'services_database_master' && 
+        !item.id?.startsWith('service_unit_') &&
+        typeof item.machineName === 'string' &&
+        item.machineName.trim().length > 0
+      ));
     }, () => {});
 
     const unsubLogs = subscribeCollection('mace_pm_logs', (data) => {

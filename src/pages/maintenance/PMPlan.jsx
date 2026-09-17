@@ -335,7 +335,13 @@ export default function PMPlan() {
 
   useEffect(() => {
     const unsubscribePlans = subscribeCollection('mace_pm_plans', (data) => {
-      setItems(data.filter(item => item.id !== 'services_database_master' && !item.id?.startsWith('service_unit_')));
+      setItems(data.filter(item => 
+        item &&
+        item.id !== 'services_database_master' && 
+        !item.id?.startsWith('service_unit_') &&
+        typeof item.machineName === 'string' &&
+        item.machineName.trim().length > 0
+      ));
       setLoadingPlans(false);
     }, (error) => {
       showToast('Failed to sync PM schedules.', 'error');
@@ -1145,6 +1151,9 @@ export default function PMPlan() {
 
   // Filter & Search logic
   const filteredItems = items.filter((item) => {
+    if (!item || typeof item.machineName !== 'string' || !item.machineName.trim() || item.id === 'services_database_master' || item.id?.startsWith('service_unit_')) {
+      return false;
+    }
     const searchLower = search.toLowerCase().trim();
     const itemTypeVal = (item.itemType || item.type || 'pm').toLowerCase();
     const itemRankVal = (item.rank || 'B').toLowerCase();
