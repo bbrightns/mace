@@ -183,6 +183,7 @@ export default function PMPlan() {
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [mobileScheduleMonth, setMobileScheduleMonth] = useState(() => new Date().getMonth() + 1);
   const [mobileScheduleViewMode, setMobileScheduleViewMode] = useState('agenda'); // 'agenda' or 'matrix'
+  const [mobileListViewMode, setMobileListViewMode] = useState('cards'); // 'cards' or 'table'
   const [isMobileSelectMode, setIsMobileSelectMode] = useState(false);
 
   const activeFiltersCount = useMemo(() => {
@@ -2714,9 +2715,9 @@ export default function PMPlan() {
             </button>
           )}
 
-          {/* Export PDF Report Button */}
+          {/* Export PDF Report Button (Desktop only) */}
           <button 
-            className="btn" 
+            className="btn hide-on-mobile" 
             onClick={() => setIsPdfModalOpen(true)} 
             id="export-pdf-report-btn" 
             style={{ 
@@ -2732,8 +2733,8 @@ export default function PMPlan() {
             <span style={{ fontWeight: '600', color: 'var(--accent)' }}>Export PDF</span>
           </button>
 
-          {/* More Actions Dropdown (Import, CSV, JSON) */}
-          <div style={{ position: 'relative' }} ref={moreMenuRef}>
+          {/* More Actions Dropdown (Desktop only) */}
+          <div className="hide-on-mobile" style={{ position: 'relative' }} ref={moreMenuRef}>
             <button 
               className="btn" 
               onClick={() => setIsMoreMenuOpen(prev => !prev)} 
@@ -4217,8 +4218,58 @@ export default function PMPlan() {
       ) : (
         /* --- VIEW 2: LIST VIEW (ORIGINAL CRUD MANAGER) --- */
         <>
-          {/* Desktop Table View */}
-          <div className="table-container hide-on-mobile" id="pm-table-view">
+          {/* Mobile View Switcher & Hint when Table is Active */}
+          <div className="mobile-only" style={{ marginBottom: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 2px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '11.5px', color: 'var(--text3)', fontWeight: 600 }}>
+                รายการ: {sortedItems.length} เครื่อง
+              </span>
+              <div style={{ display: 'inline-flex', borderRadius: '5px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+                <button
+                  type="button"
+                  onClick={() => setMobileListViewMode('cards')}
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    border: 'none',
+                    backgroundColor: mobileListViewMode === 'cards' ? 'var(--accent)' : 'var(--surface)',
+                    color: mobileListViewMode === 'cards' ? '#fff' : 'var(--text2)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  📱 การ์ด
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileListViewMode('table')}
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    border: 'none',
+                    backgroundColor: mobileListViewMode === 'table' ? 'var(--accent)' : 'var(--surface)',
+                    color: mobileListViewMode === 'table' ? '#fff' : 'var(--text2)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  📊 ตาราง
+                </button>
+              </div>
+            </div>
+            {mobileListViewMode === 'table' && (
+              <div style={{ padding: '6px 10px', fontSize: '11px', color: 'var(--text3)', background: 'var(--surface2)', borderRadius: '6px' }}>
+                👉 ปัดเลื่อนซ้าย-ขวาเพื่อดูคอลัมน์ทั้งหมดของตาราง
+              </div>
+            )}
+          </div>
+
+          {/* Desktop & Mobile Table View */}
+          <div 
+            className={`table-container ${mobileListViewMode === 'cards' ? 'hide-on-mobile' : ''}`} 
+            id="pm-table-view"
+            style={{ overflowX: 'auto' }}
+          >
             <table className="data-table">
               <thead>
                 <tr>
@@ -4432,7 +4483,8 @@ export default function PMPlan() {
           </div>
 
           {/* Mobile responsive cards view */}
-          <div className="mobile-cards-view" id="pm-mobile-view">
+          {mobileListViewMode === 'cards' && (
+            <div className="mobile-cards-view mobile-only" id="pm-mobile-view">
             {/* Mobile Header Bar with Select Mode Toggle */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 2px', marginBottom: '4px' }}>
               <span style={{ fontSize: '11.5px', color: 'var(--text3)', fontWeight: 600 }}>
@@ -4587,6 +4639,7 @@ export default function PMPlan() {
               );
             })}
           </div>
+          )}
         </>
       )}
 

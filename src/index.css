@@ -1451,6 +1451,23 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Base Desktop Responsive Rules (Default) */
+.mobile-cards-view {
+  display: none !important;
+}
+
+.hide-on-desktop {
+  display: none !important;
+}
+
+.mobile-only {
+  display: none !important;
+}
+
+.mobile-bottom-nav {
+  display: none !important;
+}
+
 @media (max-width: 768px) {
   .form-grid {
     grid-template-columns: 1fr;
@@ -1461,7 +1478,7 @@ h1, h2, h3, h4, h5, h6 {
   
   /* Tables turn into cards for mobile compliance */
   .mobile-cards-view {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
     gap: 12px;
   }
@@ -1475,7 +1492,7 @@ h1, h2, h3, h4, h5, h6 {
     gap: 8px;
   }
   .table-container.hide-on-mobile {
-    display: none;
+    display: none !important;
   }
   
   .controls-bar {
@@ -1503,7 +1520,7 @@ h1, h2, h3, h4, h5, h6 {
 
   /* Mobile Bottom Navigation Bar */
   .mobile-bottom-nav {
-    display: flex;
+    display: flex !important;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -1573,23 +1590,6 @@ h1, h2, h3, h4, h5, h6 {
     gap: 8px !important;
     margin-bottom: 16px !important;
   }
-}
-
-/* Base Desktop Responsive Rules */
-.mobile-cards-view {
-  display: none;
-}
-
-.hide-on-desktop {
-  display: none !important;
-}
-
-.mobile-only {
-  display: none !important;
-}
-
-.mobile-bottom-nav {
-  display: none;
 }
 
 /* Extracted Design System Utility Classes */

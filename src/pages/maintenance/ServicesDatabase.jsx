@@ -665,6 +665,7 @@ export default function ServicesDatabase() {
   const [filterPlant, setFilterPlant] = useState('all');
   const [filterCleaned, setFilterCleaned] = useState('all'); // 'all', 'cleaned', 'pending'
   const [filterIssueOnly, setFilterIssueOnly] = useState(false);
+  const [mobileViewMode, setMobileViewMode] = useState('cards'); // 'cards' or 'table'
 
   // Inline editing state for "หมายเหตุ"
   const [inlineEditingId, setInlineEditingId] = useState(null);
@@ -1076,7 +1077,7 @@ export default function ServicesDatabase() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <button 
             className="btn" 
             onClick={handleRefreshFromCloud}
@@ -1089,7 +1090,7 @@ export default function ServicesDatabase() {
           </button>
 
           <button 
-            className="btn" 
+            className="btn hide-on-mobile" 
             onClick={handleResetMasterData}
             title="คำเตือน: รีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้นโรงงาน 37 รายการ"
             style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#ef4444', borderColor: '#fca5a5' }}
@@ -1099,7 +1100,7 @@ export default function ServicesDatabase() {
           </button>
 
           <button 
-            className="btn" 
+            className="btn hide-on-mobile" 
             onClick={handleExportCSV}
             title="ส่งออกไฟล์ Excel / CSV"
             style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
@@ -1191,9 +1192,9 @@ export default function ServicesDatabase() {
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
+      {/* Filter & Search Bar (Desktop) */}
       <div 
-        className="card controls-bar" 
+        className="card controls-bar hide-on-mobile" 
         style={{ 
           display: 'flex', 
           flexWrap: 'wrap', 
@@ -1304,9 +1305,163 @@ export default function ServicesDatabase() {
         </div>
       </div>
 
-      {/* Active Filter Notice Banner */}
+      {/* Filter & View Switcher (Mobile) */}
+      <div className="card mobile-only" style={{ padding: '10px 12px', marginBottom: '12px' }}>
+        {/* Row 1: Search + View Mode Switcher */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
+            <input 
+              type="text" 
+              placeholder="ค้นหาชื่อ, Brand, Location..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="form-input"
+              style={{ paddingLeft: '32px', paddingRight: search ? '28px' : '10px', height: '34px', fontSize: '12px', width: '100%' }}
+            />
+            {search && (
+              <button 
+                onClick={() => setSearch('')}
+                style={{ position: 'absolute', right: '8px', top: '8px', background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: '2px' }}
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          {/* View Mode Toggle: Cards vs Table */}
+          <div style={{ display: 'inline-flex', borderRadius: '6px', border: '1px solid var(--border)', overflow: 'hidden', flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => setMobileViewMode('cards')}
+              style={{
+                padding: '5px 9px',
+                fontSize: '11px',
+                fontWeight: 600,
+                border: 'none',
+                backgroundColor: mobileViewMode === 'cards' ? 'var(--accent)' : 'var(--surface)',
+                color: mobileViewMode === 'cards' ? '#fff' : 'var(--text2)',
+                cursor: 'pointer'
+              }}
+            >
+              📱 การ์ด
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileViewMode('table')}
+              style={{
+                padding: '5px 9px',
+                fontSize: '11px',
+                fontWeight: 600,
+                border: 'none',
+                backgroundColor: mobileViewMode === 'table' ? 'var(--accent)' : 'var(--surface)',
+                color: mobileViewMode === 'table' ? '#fff' : 'var(--text2)',
+                cursor: 'pointer'
+              }}
+            >
+              📊 ตาราง
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: 2-Column Dropdowns */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '6px' }}>
+          <select 
+            className="form-select" 
+            value={filterSupplier} 
+            onChange={(e) => setFilterSupplier(e.target.value)}
+            style={{ height: '32px', fontSize: '11.5px', padding: '0 6px', width: '100%' }}
+          >
+            <option value="all">🏢 ผู้รับเหมา: ทั้งหมด</option>
+            <option value="SiamTemp">SiamTemp ({metrics.bySupplier['SiamTemp']})</option>
+            <option value="Thai-Top-Therm">Thai-Top-Therm ({metrics.bySupplier['Thai-Top-Therm']})</option>
+            <option value="Carrier">Carrier ({metrics.bySupplier['Carrier']})</option>
+            <option value="KB Cool">KB Cool ({metrics.bySupplier['KB Cool']})</option>
+          </select>
+
+          <select 
+            className="form-select" 
+            value={filterPlant} 
+            onChange={(e) => setFilterPlant(e.target.value)}
+            style={{ height: '32px', fontSize: '11.5px', padding: '0 6px', width: '100%' }}
+          >
+            <option value="all">🏭 Plant: ทั้งหมด</option>
+            <option value="RFG">RFG ({metrics.rfgCount})</option>
+            <option value="MIR">MIR ({metrics.mirCount})</option>
+          </select>
+        </div>
+
+        {/* Row 3: Cleaned Status & Issue Toggle */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '6px' }}>
+          <select 
+            className="form-select" 
+            value={filterCleaned} 
+            onChange={(e) => setFilterCleaned(e.target.value)}
+            style={{ 
+              height: '32px', 
+              fontSize: '11.5px', 
+              padding: '0 6px',
+              width: '100%',
+              borderColor: filterCleaned === 'cleaned' ? '#10b981' : undefined,
+              color: filterCleaned === 'cleaned' ? '#059669' : undefined,
+              fontWeight: filterCleaned === 'cleaned' ? '600' : 'normal'
+            }}
+          >
+            <option value="all">สถานะล้าง: ทั้งหมด</option>
+            <option value="cleaned">✓ ล้างแล้ว ({metrics.cleanedCount})</option>
+            <option value="pending">⏳ ยังไม่ล้าง ({metrics.total - metrics.cleanedCount})</option>
+          </select>
+
+          <button
+            type="button"
+            onClick={() => setFilterIssueOnly(prev => !prev)}
+            className="btn"
+            style={{
+              height: '32px',
+              fontSize: '11px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              padding: '0 4px',
+              background: filterIssueOnly ? 'rgba(239, 68, 68, 0.15)' : 'var(--surface2)',
+              color: filterIssueOnly ? '#dc2626' : 'var(--text)',
+              borderColor: filterIssueOnly ? '#ef4444' : 'var(--border)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <AlertTriangle size={12} style={{ color: filterIssueOnly ? '#dc2626' : 'var(--text3)' }} />
+            <span>มีปัญหา ({metrics.issueCount})</span>
+          </button>
+        </div>
+
+        {/* Row 4: Summary count & quick reset */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid var(--border)' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
+            แสดง <strong>{filteredUnits.length}</strong> จาก {units.length} รายการ
+          </span>
+          {(filterSupplier !== 'all' || filterPlant !== 'all' || filterCleaned !== 'all' || filterIssueOnly || search) && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => {
+                setSearch('');
+                setFilterSupplier('all');
+                setFilterPlant('all');
+                setFilterCleaned('all');
+                setFilterIssueOnly(false);
+              }}
+              style={{ fontSize: '10.5px', padding: '2px 6px', height: '22px' }}
+            >
+              รีเซ็ตตัวกรอง
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Active Filter Notice Banner (Desktop) */}
       {(filterCleaned !== 'all' || filterIssueOnly || filterSupplier !== 'all' || filterPlant !== 'all' || search.trim()) && (
-        <div style={{ 
+        <div className="hide-on-mobile" style={{ 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'space-between',
@@ -1342,8 +1497,18 @@ export default function ServicesDatabase() {
         </div>
       )}
 
-      {/* Main Database Table (Desktop) */}
-      <div className="card table-container hide-on-mobile" style={{ overflowX: 'auto', padding: 0 }}>
+      {/* Mobile Scroll Table Hint */}
+      {mobileViewMode === 'table' && (
+        <div className="mobile-only" style={{ padding: '6px 10px', fontSize: '11px', color: 'var(--text3)', background: 'var(--surface2)', borderRadius: '6px', marginBottom: '8px' }}>
+          👉 ปัดเลื่อนซ้าย-ขวาเพื่อดูคอลัมน์ทั้งหมดของตาราง
+        </div>
+      )}
+
+      {/* Main Database Table (Always on Desktop; on Mobile shown only when mobileViewMode === 'table') */}
+      <div 
+        className={`card table-container ${mobileViewMode === 'cards' ? 'hide-on-mobile' : ''}`} 
+        style={{ overflowX: 'auto', padding: 0 }}
+      >
         <table className="data-table" style={{ width: '100%', minWidth: '1100px', borderCollapse: 'collapse', fontSize: '12.5px' }}>
           <thead>
             <tr style={{ background: 'var(--surface2)', borderBottom: '2px solid var(--border)' }}>
@@ -1625,7 +1790,8 @@ export default function ServicesDatabase() {
       </div>
 
       {/* Mobile Equipment Cards (Optimized for field check on narrow screens) */}
-      <div className="mobile-cards-view mobile-only" id="services-db-mobile-cards" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+      {mobileViewMode === 'cards' && (
+        <div className="mobile-cards-view mobile-only" id="services-db-mobile-cards" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
         {filteredUnits.length === 0 ? (
           <div className="card" style={{ padding: '24px', textAlign: 'center', color: 'var(--text3)' }}>
             <Info size={24} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
@@ -1811,6 +1977,7 @@ export default function ServicesDatabase() {
           })
         )}
       </div>
+      )}
 
       {/* Mobile Floating Action Button (FAB) for Add Equipment */}
       <div className="mobile-only" style={{ position: 'fixed', right: '18px', bottom: '70px', zIndex: 980 }}>
