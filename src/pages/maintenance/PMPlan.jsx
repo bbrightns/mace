@@ -184,6 +184,7 @@ export default function PMPlan() {
   const [mobileScheduleMonth, setMobileScheduleMonth] = useState(() => new Date().getMonth() + 1);
   const [mobileScheduleViewMode, setMobileScheduleViewMode] = useState('agenda'); // 'agenda' or 'matrix'
   const [mobileListViewMode, setMobileListViewMode] = useState('cards'); // 'cards' or 'table'
+  const [mobileOverdueMonth, setMobileOverdueMonth] = useState('all'); // 'all' or month number 1-12
   const [isMobileSelectMode, setIsMobileSelectMode] = useState(false);
 
   const activeFiltersCount = useMemo(() => {
@@ -1265,6 +1266,65 @@ export default function PMPlan() {
 
     return matchesSearch && matchesPlant && matchesResponsible && matchesCycle && matchesType && matchesRank && matchesStatus;
   });
+
+  // All overdue PM tasks across all 12 months for current year (used for mobile overdue cards view)
+  const allOverdueScheduleTasks = useMemo(() => {
+    const list = [];
+    items.forEach((item) => {
+      if (!item || typeof item.machineName !== 'string' || !item.machineName.trim() || item.id === 'services_database_master' || item.id?.startsWith('service_unit_')) {
+        return;
+      }
+      // Apply search, plant, cycle, type, rank filters (same as filteredItems without filterMonth and filterStatus)
+      const searchLower = search.toLowerCase().trim();
+      const itemTypeVal = (item.itemType || item.type || 'pm').toLowerCase();
+      const itemRankVal = (item.rank || 'B').toLowerCase();
+
+      const matchesSearch = !searchLower || 
+        item.machineName?.toLowerCase().includes(searchLower) || 
+        item.checksheetId?.toLowerCase().includes(searchLower) ||
+        itemTypeVal.includes(searchLower) ||
+        `rank ${itemRankVal}`.includes(searchLower);
+      if (!matchesSearch) return;
+
+      const matchesPlant = filterPlant === 'all' || (item.plant || 'RFG') === filterPlant;
+      if (!matchesPlant) return;
+
+      const displayResp = item.responsible === 'Own Team' ? 'My team' : (item.responsible || 'My team');
+      const matchesResponsible = filterResponsible === 'all' || displayResp === filterResponsible;
+      if (!matchesResponsible) return;
+
+      const matchesCycle = filterCycle === 'all' || item.cycle === filterCycle || (filterCycle === 'every 3 months' && (item.cycle === 'quarterly' || item.cycle === '3 months'));
+      if (!matchesCycle) return;
+
+      const matchesType = isMatchingType(item.itemType || item.type || 'pm', filterType);
+      if (!matchesType) return;
+
+      let matchesRank = true;
+      if (filterRank === 'mismatch') {
+        matchesRank = mismatchItems.some(m => m.id === item.id);
+      } else if (filterRank !== 'all') {
+        matchesRank = (item.rank || 'B') === filterRank;
+      }
+      if (!matchesRank) return;
+
+      // Find all overdue months for this item
+      for (let m = 1; m <= 12; m++) {
+        if (isMonthRequired(item, selectedYear, m)) {
+          const details = getCellDetails(item, selectedYear, m);
+          if (details.status === 'overdue') {
+            list.push({
+              item,
+              month: m,
+              monthName: MONTH_NAMES[m - 1],
+              cellDetails: details
+            });
+          }
+        }
+      }
+    });
+
+    return list.sort((a, b) => a.month - b.month);
+  }, [items, search, filterPlant, filterResponsible, filterCycle, filterType, filterRank, mismatchItems, selectedYear, logs]);
 
   // Shift key range selection state
   const [lastSelectedId, setLastSelectedId] = useState(null);
@@ -3809,250 +3869,563 @@ export default function PMPlan() {
               </div>
             </div>
           ) : (
-            /* Month-by-Month Agenda Cards View */
+            /* Mobile Agenda Mode (Month-by-Month or All Overdue View) */
             <>
-              {/* Horizontal Month Selector Carousel */}
-              <div 
-                style={{ 
-                  display: 'flex', 
-                  gap: '6px', 
-                  overflowX: 'auto', 
-                  padding: '4px 2px', 
-                  scrollbarWidth: 'none', 
-                  WebkitOverflowScrolling: 'touch' 
-                }}
-              >
-                {MONTH_NAMES.map((name, i) => {
-                  const mIdx = i + 1;
-                  const isCurrent = mobileScheduleMonth === mIdx;
-                  // Count items in this month
-                  const mCount = sortedItems.filter(item => isMonthRequired(item, selectedYear, mIdx)).length;
+              {/* Quick Status Filter Tabs on Mobile */}
+              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', padding: '2px 0 2px 0', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+                {[
+                  { id: 'all', label: 'ทั้งหมด' },
+                  { id: 'remaining_overdue', label: '⏳ ค้าง / เกินกำหนด' },
+                  { id: 'overdue', label: `🚨 เกินกำหนด${allOverdueScheduleTasks.length > 0 ? ` (${allOverdueScheduleTasks.length})` : ''}` },
+                  { id: 'ontrack', label: '✅ ตามแผน / เสร็จ' }
+                ].map((tab) => {
+                  const isActive = filterStatus === tab.id;
                   return (
                     <button
-                      key={name}
+                      key={tab.id}
                       type="button"
-                      onClick={() => setMobileScheduleMonth(mIdx)}
+                      onClick={() => {
+                        setFilterStatus(tab.id);
+                        if (tab.id === 'overdue') {
+                          setMobileOverdueMonth('all');
+                        }
+                      }}
                       style={{
                         flex: '0 0 auto',
-                        padding: '6px 12px',
-                        borderRadius: '18px',
-                        border: isCurrent ? '2px solid var(--accent)' : '1px solid var(--border)',
-                        backgroundColor: isCurrent ? 'var(--accent)' : 'var(--surface)',
-                        color: isCurrent ? '#ffffff' : 'var(--text)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '2px',
+                        padding: '4px 10px',
+                        borderRadius: '16px',
+                        fontSize: '11px',
+                        fontWeight: isActive ? 700 : 500,
+                        border: isActive ? (tab.id === 'overdue' ? '1.5px solid #ef4444' : '1.5px solid var(--accent)') : '1px solid var(--border)',
+                        backgroundColor: isActive ? (tab.id === 'overdue' ? '#fee2e2' : 'var(--accent)') : 'var(--surface)',
+                        color: isActive ? (tab.id === 'overdue' ? '#dc2626' : '#ffffff') : 'var(--text2)',
                         cursor: 'pointer',
-                        boxShadow: isCurrent ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none',
+                        whiteSpace: 'nowrap',
+                        boxShadow: isActive ? '0 2px 6px rgba(0,0,0,0.1)' : 'none',
                         transition: 'all 0.15s ease'
                       }}
                     >
-                      <span style={{ fontSize: '12px', fontWeight: 700 }}>{name}</span>
-                      <span style={{ 
-                        fontSize: '9.5px', 
-                        opacity: isCurrent ? 0.9 : 0.6,
-                        fontWeight: isCurrent ? 700 : 500
-                      }}>
-                        {mCount} งาน
-                      </span>
+                      {tab.label}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Selected Month Summary Banner */}
-              {(() => {
-                const mReqItems = sortedItems.filter(item => isMonthRequired(item, selectedYear, mobileScheduleMonth));
-                const mDoneCount = mReqItems.filter(item => ['done', 'shifted-plan'].includes(getCellStatus(item, selectedYear, mobileScheduleMonth))).length;
-                const mPendingCount = mReqItems.length - mDoneCount;
-                const pct = mReqItems.length > 0 ? Math.round((mDoneCount / mReqItems.length) * 100) : 100;
+              {/* BRANCH 1: When user selects 'overdue', show ALL overdue items across all months as cards */}
+              {filterStatus === 'overdue' ? (
+                <>
+                  {/* Overdue Month Filter Carousel */}
+                  <div 
+                    style={{ 
+                      display: 'flex', 
+                      gap: '6px', 
+                      overflowX: 'auto', 
+                      padding: '4px 2px', 
+                      scrollbarWidth: 'none', 
+                      WebkitOverflowScrolling: 'touch' 
+                    }}
+                  >
+                    {/* Option: All Months */}
+                    <button
+                      type="button"
+                      onClick={() => setMobileOverdueMonth('all')}
+                      style={{
+                        flex: '0 0 auto',
+                        padding: '6px 14px',
+                        borderRadius: '18px',
+                        border: mobileOverdueMonth === 'all' ? '2px solid #dc2626' : '1px solid #fca5a5',
+                        backgroundColor: mobileOverdueMonth === 'all' ? '#dc2626' : '#fee2e2',
+                        color: mobileOverdueMonth === 'all' ? '#ffffff' : '#dc2626',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '2px',
+                        cursor: 'pointer',
+                        boxShadow: mobileOverdueMonth === 'all' ? '0 2px 8px rgba(220, 38, 38, 0.35)' : 'none',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <span style={{ fontSize: '12px', fontWeight: 700 }}>🚨 ทุกเดือน</span>
+                      <span style={{ fontSize: '9.5px', fontWeight: 600 }}>
+                        {allOverdueScheduleTasks.length} งาน
+                      </span>
+                    </button>
 
-                return (
-                  <div className="card" style={{ padding: '10px 12px', backgroundColor: 'var(--surface2)', border: '1px solid var(--border)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
-                          {MONTH_NAMES[mobileScheduleMonth - 1]} {selectedYear}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>
-                          ทั้งหมด <strong>{mReqItems.length}</strong> • เสร็จ <strong style={{ color: '#10b981' }}>{mDoneCount}</strong> • ค้าง <strong style={{ color: mPendingCount > 0 ? '#f59e0b' : 'var(--text3)' }}>{mPendingCount}</strong>
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '15px', fontWeight: 800, color: pct >= 100 ? '#10b981' : 'var(--accent)' }}>
-                          {pct}%
-                        </span>
-                      </div>
-                    </div>
-                    {/* Mini Progress Bar */}
-                    <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--surface3)', borderRadius: '2px', marginTop: '6px', overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', backgroundColor: '#10b981', borderRadius: '2px', transition: 'width 0.3s' }} />
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Agenda Machine Cards List for Active Month */}
-              {(() => {
-                const mReqItems = sortedItems.filter(item => isMonthRequired(item, selectedYear, mobileScheduleMonth));
-                if (mReqItems.length === 0) {
-                  return (
-                    <div className="card" style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--text3)' }}>
-                      <CalendarDays size={28} style={{ margin: '0 auto 8px', opacity: 0.4 }} />
-                      <div style={{ fontWeight: 600, fontSize: '13.5px' }}>ไม่มีกำหนดการ PM ในเดือน {MONTH_NAMES[mobileScheduleMonth - 1]} {selectedYear}</div>
-                      <p style={{ fontSize: '11.5px', marginTop: '4px' }}>ลองสลับเลือกดูเดือนอื่น หรือตรวจสอบตัวกรอง</p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {mReqItems.map((item) => {
-                      const cellDetails = getCellDetails(item, selectedYear, mobileScheduleMonth);
-                      const isDone = ['done', 'shifted-plan'].includes(cellDetails.status);
-                      const isOverdue = cellDetails.status === 'overdue';
-                      const isShifted = cellDetails.status.startsWith('shifted');
+                    {/* Individual Months with Overdue Items */}
+                    {MONTH_NAMES.map((name, i) => {
+                      const mIdx = i + 1;
+                      const mCount = allOverdueScheduleTasks.filter(e => e.month === mIdx).length;
+                      if (mCount === 0) return null;
+                      const isCurrent = mobileOverdueMonth === mIdx;
 
                       return (
-                        <div 
-                          key={item.id} 
-                          className="card"
-                          style={{ 
-                            padding: '12px', 
-                            backgroundColor: 'var(--surface)', 
-                            border: `1px solid ${isOverdue ? 'rgba(239, 68, 68, 0.4)' : (isDone ? 'rgba(16, 185, 129, 0.35)' : 'var(--border)')}`,
-                            borderRadius: '10px',
+                        <button
+                          key={name}
+                          type="button"
+                          onClick={() => setMobileOverdueMonth(mIdx)}
+                          style={{
+                            flex: '0 0 auto',
+                            padding: '6px 12px',
+                            borderRadius: '18px',
+                            border: isCurrent ? '2px solid #dc2626' : '1px solid #fca5a5',
+                            backgroundColor: isCurrent ? '#dc2626' : 'var(--surface)',
+                            color: isCurrent ? '#ffffff' : '#dc2626',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '8px'
+                            alignItems: 'center',
+                            gap: '2px',
+                            cursor: 'pointer',
+                            boxShadow: isCurrent ? '0 2px 8px rgba(220, 38, 38, 0.35)' : 'none',
+                            transition: 'all 0.15s ease'
                           }}
                         >
-                          {/* Card Top: Badges & Status */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
-                              <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`}>{item.plant || 'RFG'}</span>
-                              {renderItemTypeBadge(item.itemType || item.type || 'pm')}
-                              <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>Rank {item.rank || 'B'}</span>
-                            </div>
+                          <span style={{ fontSize: '12px', fontWeight: 700 }}>{name}</span>
+                          <span style={{ fontSize: '9.5px', fontWeight: 600, opacity: isCurrent ? 0.95 : 0.85 }}>
+                            {mCount} เกินกำหนด
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                            {/* Status Badge */}
-                            <span style={{
-                              padding: '2px 8px',
-                              borderRadius: '12px',
-                              fontSize: '10.5px',
-                              fontWeight: 700,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              backgroundColor: isDone ? 'rgba(16, 185, 129, 0.12)' : (isOverdue ? '#fee2e2' : 'var(--surface2)'),
-                              color: isDone ? '#059669' : (isOverdue ? '#dc2626' : 'var(--text2)'),
-                              border: isDone ? '1px solid #10b981' : (isOverdue ? '1px solid #fca5a5' : '1px solid var(--border)')
-                            }}>
-                              {isDone ? (
-                                <>
-                                  <CheckCircle2 size={11} style={{ color: '#10b981' }} />
-                                  <span>{cellDetails.line1 || 'เสร็จแล้ว'}</span>
-                                </>
-                              ) : isOverdue ? (
-                                <>
-                                  <AlertCircle size={11} />
-                                  <span>เลยกำหนด</span>
-                                </>
-                              ) : isShifted ? (
-                                <span>{cellDetails.text}</span>
-                              ) : (
-                                <span>{cellDetails.text || 'มีแผน'}</span>
-                              )}
+                  {/* Overdue Summary Banner */}
+                  {(() => {
+                    const displayedTasks = mobileOverdueMonth === 'all'
+                      ? allOverdueScheduleTasks
+                      : allOverdueScheduleTasks.filter(e => e.month === mobileOverdueMonth);
+
+                    return (
+                      <>
+                        <div className="card" style={{ padding: '10px 12px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <AlertTriangle size={18} style={{ color: '#dc2626', flexShrink: 0 }} />
+                              <div>
+                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#b91c1c' }}>
+                                  {mobileOverdueMonth === 'all' 
+                                    ? `รายการ PM ค้างเกินกำหนดจากทุกเดือน (${selectedYear})` 
+                                    : `รายการ PM ค้างเกินกำหนดเดือน ${MONTH_NAMES[mobileOverdueMonth - 1]} ${selectedYear}`}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#dc2626', marginTop: '2px' }}>
+                                  พบงานค้างเกินกำหนด <strong>{displayedTasks.length}</strong> รายการ (จากทั้งหมด {allOverdueScheduleTasks.length} งาน)
+                                </div>
+                              </div>
+                            </div>
+                            <span style={{ fontSize: '13px', fontWeight: 800, padding: '3px 8px', borderRadius: '6px', backgroundColor: '#dc2626', color: '#fff', flexShrink: 0 }}>
+                              {displayedTasks.length} เกินกำหนด
                             </span>
                           </div>
+                        </div>
 
-                          {/* Machine Name & Checksheet ID */}
-                          <div>
-                            <div 
-                              style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)', cursor: 'pointer' }}
-                              onClick={() => handleOpenEdit(item)}
-                            >
-                              {item.machineName}
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>
-                              <span>รอบ: <strong style={{ textTransform: 'capitalize' }}>{item.cycle}</strong></span>
-                              {item.checksheetId && <span>• ID: <strong className="font-mono">{item.checksheetId}</strong></span>}
-                            </div>
+                        {/* Overdue Machine Cards List */}
+                        {displayedTasks.length === 0 ? (
+                          <div className="card" style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--text3)' }}>
+                            <CheckCircle2 size={32} style={{ margin: '0 auto 8px', color: '#10b981' }} />
+                            <div style={{ fontWeight: 700, fontSize: '14px', color: '#059669' }}>ยอดเยี่ยมมาก! ไม่มีรายการ PM เกินกำหนด</div>
+                            <p style={{ fontSize: '12px', marginTop: '4px', color: 'var(--text3)' }}>
+                              {mobileOverdueMonth === 'all' ? 'ทุกเครื่องได้รับการตรวจเช็คครบตามกำหนดเวลาตลอดทั้งปี' : `ไม่มีงานเกินกำหนดในเดือน ${MONTH_NAMES[mobileOverdueMonth - 1]}`}
+                            </p>
                           </div>
-
-                          {/* 12-Month Mini Indicator Heatmap */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', paddingTop: '2px' }}>
-                            <span style={{ fontSize: '9.5px', color: 'var(--text3)', marginRight: '2px' }}>ทั้งปี:</span>
-                            {MONTH_NAMES.map((mShort, idx) => {
-                              const mNum = idx + 1;
-                              const mReq = isMonthRequired(item, selectedYear, mNum);
-                              const mDet = getCellDetails(item, selectedYear, mNum);
-                              const isCurMonth = mNum === mobileScheduleMonth;
-                              let dotBg = 'var(--surface2)';
-                              if (mDet.status === 'done' || mDet.status === 'shifted-actual') dotBg = '#10b981';
-                              else if (mDet.status === 'overdue') dotBg = '#ef4444';
-                              else if (mDet.status === 'shifted-plan') dotBg = '#f59e0b';
-                              else if (mReq) dotBg = '#93c5fd';
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {displayedTasks.map((entry) => {
+                              const item = entry.item;
+                              const cellDetails = entry.cellDetails;
 
                               return (
-                                <div
-                                  key={mShort}
-                                  onClick={() => setMobileScheduleMonth(mNum)}
-                                  title={`${mShort}: ${mDet.tooltip}`}
-                                  style={{
-                                    width: '16px',
-                                    height: '16px',
-                                    borderRadius: '3px',
-                                    backgroundColor: dotBg,
-                                    border: isCurMonth ? '2px solid var(--accent)' : '1px solid rgba(0,0,0,0.08)',
+                                <div 
+                                  key={`${item.id}-${entry.month}`}
+                                  className="card"
+                                  style={{ 
+                                    padding: '12px', 
+                                    backgroundColor: 'var(--surface)', 
+                                    border: '1.5px solid #ef4444', 
+                                    borderRadius: '10px',
                                     display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '8px',
-                                    fontWeight: 700,
-                                    color: (mDet.status === 'done' || mDet.status === 'overdue') ? '#fff' : 'var(--text2)',
-                                    cursor: 'pointer'
+                                    flexDirection: 'column',
+                                    gap: '8px',
+                                    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.08)'
                                   }}
                                 >
-                                  {mShort[0]}
+                                  {/* Card Top: Badges & Overdue Label */}
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                                      <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`}>{item.plant || 'RFG'}</span>
+                                      {renderItemTypeBadge(item.itemType || item.type || 'pm')}
+                                      <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>Rank {item.rank || 'B'}</span>
+                                    </div>
+                                    <span style={{
+                                      padding: '2px 8px',
+                                      borderRadius: '12px',
+                                      fontSize: '10.5px',
+                                      fontWeight: 700,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      backgroundColor: '#fee2e2',
+                                      color: '#dc2626',
+                                      border: '1px solid #fca5a5',
+                                      flexShrink: 0
+                                    }}>
+                                      🚨 เกินกำหนด: {entry.monthName} {selectedYear}
+                                    </span>
+                                  </div>
+
+                                  {/* Machine Name & Cycle */}
+                                  <div>
+                                    <div 
+                                      style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)', cursor: 'pointer' }}
+                                      onClick={() => handleOpenEdit(item)}
+                                    >
+                                      {item.machineName}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>
+                                      <span>รอบ: <strong style={{ textTransform: 'capitalize' }}>{item.cycle}</strong></span>
+                                      {item.checksheetId && <span>• ID: <strong className="font-mono">{item.checksheetId}</strong></span>}
+                                    </div>
+                                  </div>
+
+                                  {/* 12-Month Mini Indicator Heatmap */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', paddingTop: '2px' }}>
+                                    <span style={{ fontSize: '9.5px', color: 'var(--text3)', marginRight: '2px' }}>ทั้งปี:</span>
+                                    {MONTH_NAMES.map((mShort, idx) => {
+                                      const mNum = idx + 1;
+                                      const mReq = isMonthRequired(item, selectedYear, mNum);
+                                      const mDet = getCellDetails(item, selectedYear, mNum);
+                                      const isThisOverdueMonth = mNum === entry.month;
+                                      let dotBg = 'var(--surface2)';
+                                      if (mDet.status === 'done' || mDet.status === 'shifted-actual') dotBg = '#10b981';
+                                      else if (mDet.status === 'overdue') dotBg = '#ef4444';
+                                      else if (mDet.status === 'shifted-plan') dotBg = '#f59e0b';
+                                      else if (mReq) dotBg = '#93c5fd';
+
+                                      return (
+                                        <div
+                                          key={mShort}
+                                          title={`${mShort}: ${mDet.tooltip}`}
+                                          style={{
+                                            width: '16px',
+                                            height: '16px',
+                                            borderRadius: '3px',
+                                            backgroundColor: dotBg,
+                                            border: isThisOverdueMonth ? '2px solid #b91c1c' : '1px solid rgba(0,0,0,0.08)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '8px',
+                                            fontWeight: 700,
+                                            color: (mDet.status === 'done' || mDet.status === 'overdue') ? '#fff' : 'var(--text2)',
+                                            boxShadow: isThisOverdueMonth ? '0 0 0 1px #dc2626' : 'none'
+                                          }}
+                                        >
+                                          {mShort[0]}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Footer Action Button */}
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: '6px' }}>
+                                    <span style={{ fontSize: '10.5px', color: 'var(--text3)' }}>
+                                      {item.responsible === 'Own Team' ? 'My team' : (item.responsible || 'My team')}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-primary"
+                                      onClick={() => handleCellClick(item, selectedYear, entry.month, cellDetails.status)}
+                                      style={{ padding: '4px 10px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#dc2626', borderColor: '#b91c1c' }}
+                                    >
+                                      <Check size={12} />
+                                      <span>บันทึกผล PM ({entry.monthName})</span>
+                                    </button>
+                                  </div>
                                 </div>
                               );
                             })}
                           </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </>
+              ) : (
+                /* BRANCH 2: Month-by-Month Agenda Mode (with Green/Red Border Indicators for Remaining/Overdue) */
+                <>
+                  {/* Horizontal Month Selector Carousel */}
+                  <div 
+                    style={{ 
+                      display: 'flex', 
+                      gap: '6px', 
+                      overflowX: 'auto', 
+                      padding: '4px 2px', 
+                      scrollbarWidth: 'none', 
+                      WebkitOverflowScrolling: 'touch' 
+                    }}
+                  >
+                    {MONTH_NAMES.map((name, i) => {
+                      const mIdx = i + 1;
+                      const isCurrent = mobileScheduleMonth === mIdx;
 
-                          {/* Footer Quick Action Button */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: '6px' }}>
-                            <span style={{ fontSize: '10.5px', color: 'var(--text3)' }}>
-                              {item.responsible === 'Own Team' ? 'My team' : (item.responsible || 'My team')}
-                            </span>
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              <button
-                                type="button"
-                                className={`btn btn-sm ${isDone ? 'btn-secondary' : 'btn-primary'}`}
-                                onClick={() => handleCellClick(item, selectedYear, mobileScheduleMonth, cellDetails.status)}
-                                style={{ padding: '3px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                              >
-                                {isDone ? (
-                                  <>
-                                    <Edit2 size={11} />
-                                    <span>แก้ไขผล</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Check size={11} />
-                                    <span>บันทึกผล PM</span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
+                      // Count items in this month
+                      const mReqItems = sortedItems.filter(item => isMonthRequired(item, selectedYear, mIdx));
+                      const mOverdueItems = mReqItems.filter(item => getCellStatus(item, selectedYear, mIdx) === 'overdue');
+                      const mPendingItems = mReqItems.filter(item => getCellStatus(item, selectedYear, mIdx) === 'pending');
+                      const mDoneItems = mReqItems.filter(item => ['done', 'shifted-actual', 'shifted-plan'].includes(getCellStatus(item, selectedYear, mIdx)));
+
+                      const hasOverdue = mOverdueItems.length > 0;
+                      const hasRemaining = mPendingItems.length > 0;
+                      const isAllDone = mReqItems.length > 0 && mDoneItems.length === mReqItems.length;
+
+                      // Border and styling for green vs red borders
+                      let pillBorder = isCurrent ? '2px solid var(--accent)' : '1px solid var(--border)';
+                      let pillBg = isCurrent ? 'var(--accent)' : 'var(--surface)';
+                      let pillTextColor = isCurrent ? '#ffffff' : 'var(--text)';
+                      let badgeText = `${mReqItems.length} งาน`;
+
+                      if (hasOverdue) {
+                        // กรอบสีแดง สำหรับเดือนที่มีงาน Overdue
+                        pillBorder = isCurrent ? '2px solid #b91c1c' : '2px solid #ef4444';
+                        pillBg = isCurrent ? '#dc2626' : 'rgba(239, 68, 68, 0.08)';
+                        pillTextColor = isCurrent ? '#ffffff' : '#b91c1c';
+                        badgeText = `⚠️ ${mOverdueItems.length} หลุด`;
+                      } else if (hasRemaining || isAllDone) {
+                        // กรอบสีเขียว สำหรับเดือนที่มีงาน Remaining (ตามแผน) หรือเสร็จครบ
+                        pillBorder = isCurrent ? '2px solid #047857' : '2px solid #10b981';
+                        pillBg = isCurrent ? '#059669' : 'rgba(16, 185, 129, 0.08)';
+                        pillTextColor = isCurrent ? '#ffffff' : '#065f46';
+                        badgeText = isAllDone ? '✓ ครบ' : `${mPendingItems.length} ค้าง`;
+                      }
+
+                      return (
+                        <button
+                          key={name}
+                          type="button"
+                          onClick={() => setMobileScheduleMonth(mIdx)}
+                          style={{
+                            flex: '0 0 auto',
+                            padding: '6px 12px',
+                            borderRadius: '18px',
+                            border: pillBorder,
+                            backgroundColor: pillBg,
+                            color: pillTextColor,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '2px',
+                            cursor: 'pointer',
+                            boxShadow: isCurrent 
+                              ? (hasOverdue ? '0 2px 8px rgba(220, 38, 38, 0.35)' : (hasRemaining || isAllDone ? '0 2px 8px rgba(16, 185, 129, 0.35)' : '0 2px 8px rgba(59, 130, 246, 0.3)')) 
+                              : 'none',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <span style={{ fontSize: '12px', fontWeight: 700 }}>{name}</span>
+                          <span style={{ 
+                            fontSize: '9.5px', 
+                            opacity: isCurrent ? 0.95 : 0.85,
+                            fontWeight: isCurrent ? 700 : 600
+                          }}>
+                            {badgeText}
+                          </span>
+                        </button>
                       );
                     })}
                   </div>
-                );
-              })()}
+
+                  {/* Selected Month Summary Banner */}
+                  {(() => {
+                    const mReqItems = sortedItems.filter(item => isMonthRequired(item, selectedYear, mobileScheduleMonth));
+                    const mDoneCount = mReqItems.filter(item => ['done', 'shifted-plan'].includes(getCellStatus(item, selectedYear, mobileScheduleMonth))).length;
+                    const mPendingCount = mReqItems.length - mDoneCount;
+                    const pct = mReqItems.length > 0 ? Math.round((mDoneCount / mReqItems.length) * 100) : 100;
+
+                    return (
+                      <div className="card" style={{ padding: '10px 12px', backgroundColor: 'var(--surface2)', border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
+                              {MONTH_NAMES[mobileScheduleMonth - 1]} {selectedYear}
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>
+                              ทั้งหมด <strong>{mReqItems.length}</strong> • เสร็จ <strong style={{ color: '#10b981' }}>{mDoneCount}</strong> • ค้าง <strong style={{ color: mPendingCount > 0 ? '#f59e0b' : 'var(--text3)' }}>{mPendingCount}</strong>
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <span style={{ fontSize: '15px', fontWeight: 800, color: pct >= 100 ? '#10b981' : 'var(--accent)' }}>
+                              {pct}%
+                            </span>
+                          </div>
+                        </div>
+                        {/* Mini Progress Bar */}
+                        <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--surface3)', borderRadius: '2px', marginTop: '6px', overflow: 'hidden' }}>
+                          <div style={{ width: `${pct}%`, height: '100%', backgroundColor: '#10b981', borderRadius: '2px', transition: 'width 0.3s' }} />
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Agenda Machine Cards List for Active Month */}
+                  {(() => {
+                    const mReqItems = sortedItems.filter(item => isMonthRequired(item, selectedYear, mobileScheduleMonth));
+                    if (mReqItems.length === 0) {
+                      return (
+                        <div className="card" style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--text3)' }}>
+                          <CalendarDays size={28} style={{ margin: '0 auto 8px', opacity: 0.4 }} />
+                          <div style={{ fontWeight: 600, fontSize: '13.5px' }}>ไม่มีกำหนดการ PM ในเดือน {MONTH_NAMES[mobileScheduleMonth - 1]} {selectedYear}</div>
+                          <p style={{ fontSize: '11.5px', marginTop: '4px' }}>ลองสลับเลือกดูเดือนอื่น หรือตรวจสอบตัวกรอง</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {mReqItems.map((item) => {
+                          const cellDetails = getCellDetails(item, selectedYear, mobileScheduleMonth);
+                          const isDone = ['done', 'shifted-plan'].includes(cellDetails.status);
+                          const isOverdue = cellDetails.status === 'overdue';
+                          const isShifted = cellDetails.status.startsWith('shifted');
+
+                          return (
+                            <div 
+                              key={item.id} 
+                              className="card"
+                              style={{ 
+                                padding: '12px', 
+                                backgroundColor: 'var(--surface)', 
+                                border: `1px solid ${isOverdue ? 'rgba(239, 68, 68, 0.4)' : (isDone ? 'rgba(16, 185, 129, 0.35)' : 'var(--border)')}`,
+                                borderRadius: '10px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '8px'
+                              }}
+                            >
+                              {/* Card Top: Badges & Status */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                                  <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`}>{item.plant || 'RFG'}</span>
+                                  {renderItemTypeBadge(item.itemType || item.type || 'pm')}
+                                  <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>Rank {item.rank || 'B'}</span>
+                                </div>
+
+                                {/* Status Badge */}
+                                <span style={{
+                                  padding: '2px 8px',
+                                  borderRadius: '12px',
+                                  fontSize: '10.5px',
+                                  fontWeight: 700,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  backgroundColor: isDone ? 'rgba(16, 185, 129, 0.12)' : (isOverdue ? '#fee2e2' : 'var(--surface2)'),
+                                  color: isDone ? '#059669' : (isOverdue ? '#dc2626' : 'var(--text2)'),
+                                  border: isDone ? '1px solid #10b981' : (isOverdue ? '1px solid #fca5a5' : '1px solid var(--border)')
+                                }}>
+                                  {isDone ? (
+                                    <>
+                                      <CheckCircle2 size={11} style={{ color: '#10b981' }} />
+                                      <span>{cellDetails.line1 || 'เสร็จแล้ว'}</span>
+                                    </>
+                                  ) : isOverdue ? (
+                                    <>
+                                      <AlertCircle size={11} />
+                                      <span>เลยกำหนด</span>
+                                    </>
+                                  ) : isShifted ? (
+                                    <span>{cellDetails.text}</span>
+                                  ) : (
+                                    <span>{cellDetails.text || 'มีแผน'}</span>
+                                  )}
+                                </span>
+                              </div>
+
+                              {/* Machine Name & Checksheet ID */}
+                              <div>
+                                <div 
+                                  style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)', cursor: 'pointer' }}
+                                  onClick={() => handleOpenEdit(item)}
+                                >
+                                  {item.machineName}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>
+                                  <span>รอบ: <strong style={{ textTransform: 'capitalize' }}>{item.cycle}</strong></span>
+                                  {item.checksheetId && <span>• ID: <strong className="font-mono">{item.checksheetId}</strong></span>}
+                                </div>
+                              </div>
+
+                              {/* 12-Month Mini Indicator Heatmap */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '3px', paddingTop: '2px' }}>
+                                <span style={{ fontSize: '9.5px', color: 'var(--text3)', marginRight: '2px' }}>ทั้งปี:</span>
+                                {MONTH_NAMES.map((mShort, idx) => {
+                                  const mNum = idx + 1;
+                                  const mReq = isMonthRequired(item, selectedYear, mNum);
+                                  const mDet = getCellDetails(item, selectedYear, mNum);
+                                  const isCurMonth = mNum === mobileScheduleMonth;
+                                  let dotBg = 'var(--surface2)';
+                                  if (mDet.status === 'done' || mDet.status === 'shifted-actual') dotBg = '#10b981';
+                                  else if (mDet.status === 'overdue') dotBg = '#ef4444';
+                                  else if (mDet.status === 'shifted-plan') dotBg = '#f59e0b';
+                                  else if (mReq) dotBg = '#93c5fd';
+
+                                  return (
+                                    <div
+                                      key={mShort}
+                                      onClick={() => setMobileScheduleMonth(mNum)}
+                                      title={`${mShort}: ${mDet.tooltip}`}
+                                      style={{
+                                        width: '16px',
+                                        height: '16px',
+                                        borderRadius: '3px',
+                                        backgroundColor: dotBg,
+                                        border: isCurMonth ? '2px solid var(--accent)' : '1px solid rgba(0,0,0,0.08)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '8px',
+                                        fontWeight: 700,
+                                        color: (mDet.status === 'done' || mDet.status === 'overdue') ? '#fff' : 'var(--text2)',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      {mShort[0]}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Footer Quick Action Button */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: '6px' }}>
+                                <span style={{ fontSize: '10.5px', color: 'var(--text3)' }}>
+                                  {item.responsible === 'Own Team' ? 'My team' : (item.responsible || 'My team')}
+                                </span>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                  <button
+                                    type="button"
+                                    className={`btn btn-sm ${isDone ? 'btn-secondary' : 'btn-primary'}`}
+                                    onClick={() => handleCellClick(item, selectedYear, mobileScheduleMonth, cellDetails.status)}
+                                    style={{ padding: '3px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                  >
+                                    {isDone ? (
+                                      <>
+                                        <Edit2 size={11} />
+                                        <span>แก้ไขผล</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Check size={11} />
+                                        <span>บันทึกผล PM</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
             </>
           )}
         </div>
