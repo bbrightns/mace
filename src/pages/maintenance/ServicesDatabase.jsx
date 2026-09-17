@@ -2818,7 +2818,7 @@ export default function ServicesDatabase({
                             flexDirection: 'column',
                             gap: '6px'
                           }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', flexWrap: 'wrap' }}>
                               <label style={{
                                 fontSize: '11.5px',
                                 fontWeight: 700,
@@ -2831,9 +2831,34 @@ export default function ServicesDatabase({
                                 <span>{histStatus === 'resolved' ? 'วันที่ซ่อมเสร็จสิ้น (Timeline ปิดงาน)' : 'วันที่เริ่มเฝ้าระวัง/ทดสอบ'}</span>
                                 <span style={{ color: '#ef4444' }}>*</span>
                               </label>
-                              <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
-                                แสดงเป็นไทม์ไลน์บันทึกขั้นตอนต่อลงมา
-                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setHistResolvedDate(histDate)}
+                                  title="ใช้วันเดียวกับวันที่พบเหตุ/ซ่อม"
+                                  style={{
+                                    fontSize: '10.5px',
+                                    padding: '2px 7px',
+                                    borderRadius: '5px',
+                                    border: `1px solid ${histStatus === 'resolved' ? '#10b981' : '#f59e0b'}`,
+                                    backgroundColor: histResolvedDate === histDate && histDate
+                                      ? (histStatus === 'resolved' ? '#10b981' : '#f59e0b')
+                                      : 'transparent',
+                                    color: histResolvedDate === histDate && histDate
+                                      ? '#fff'
+                                      : (histStatus === 'resolved' ? '#059669' : '#d97706'),
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap',
+                                    fontWeight: 600,
+                                    transition: 'all 0.15s'
+                                  }}
+                                >
+                                  = วันเดียวกับวันพบเหตุ
+                                </button>
+                                <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
+                                  แสดงเป็นไทม์ไลน์บันทึกขั้นตอนต่อลงมา
+                                </span>
+                              </div>
                             </div>
                             <input
                               type="date"
@@ -2983,7 +3008,12 @@ export default function ServicesDatabase({
                                         color: 'var(--text)'
                                       }}>
                                         <Calendar size={13} style={{ color: 'var(--accent)' }} />
-                                        <span>{formatDateThai(entry.date)}</span>
+                                        <span>{formatDateThai(isResolved ? (entry.resolvedDate || (entry.updatedAt ? entry.updatedAt.split('T')[0] : entry.date)) : entry.date)}</span>
+                                        {isResolved && (entry.resolvedDate || entry.updatedAt) && (entry.resolvedDate || entry.updatedAt.split('T')[0]) !== entry.date && (
+                                          <span style={{ fontSize: '10.5px', color: 'var(--text3)', fontWeight: 500 }}>
+                                            (พบเหตุ: {formatDateThai(entry.date)})
+                                          </span>
+                                        )}
                                       </span>
 
                                       {/* Type Badge */}
@@ -3034,46 +3064,10 @@ export default function ServicesDatabase({
                                     </div>
                                   </div>
 
-                                  {/* Body: Connected Timeline Progression or Pending View */}
+                                  {/* Body: Connected Timeline Progression (ใหม่อยู่บน เก่าอยู่ล่าง) */}
                                   {isResolved ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginTop: '2px' }}>
-                                      {/* Stage 1: Incident / Discovery */}
-                                      <div style={{ display: 'flex', gap: '10px' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0 }}>
-                                          <div style={{
-                                            width: '12px',
-                                            height: '12px',
-                                            borderRadius: '50%',
-                                            backgroundColor: '#ef4444',
-                                            border: '2px solid var(--surface)',
-                                            boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.3)',
-                                            marginTop: '3px'
-                                          }} />
-                                          <div style={{
-                                            width: '2px',
-                                            flex: 1,
-                                            minHeight: '24px',
-                                            backgroundColor: '#cbd5e1',
-                                            margin: '2px 0'
-                                          }} />
-                                        </div>
-
-                                        <div style={{ flex: 1, paddingBottom: '8px' }}>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                            <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#dc2626', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
-                                              พบเหตุ
-                                            </span>
-                                            <span style={{ fontSize: '11.5px', color: 'var(--text2)', fontWeight: 600 }}>
-                                              {formatDateThai(entry.date)}
-                                            </span>
-                                          </div>
-                                          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', marginTop: '2px' }}>
-                                            {entry.title}
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      {/* Stage 2: Repaired / Resolved (ต่อลงมา) */}
+                                      {/* Stage 1 (บน - ล่าสุด): ซ่อมเสร็จสิ้น */}
                                       <div style={{ display: 'flex', gap: '10px' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0 }}>
                                           <div style={{
@@ -3085,9 +3079,16 @@ export default function ServicesDatabase({
                                             boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.3)',
                                             marginTop: '3px'
                                           }} />
+                                          <div style={{
+                                            width: '2px',
+                                            flex: 1,
+                                            minHeight: '26px',
+                                            backgroundColor: '#cbd5e1',
+                                            margin: '2px 0'
+                                          }} />
                                         </div>
 
-                                        <div style={{ flex: 1 }}>
+                                        <div style={{ flex: 1, paddingBottom: '10px' }}>
                                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                             <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#059669', backgroundColor: 'rgba(16, 185, 129, 0.12)', padding: '1px 6px', borderRadius: '4px' }}>
                                               ซ่อมเสร็จสิ้น
@@ -3118,10 +3119,8 @@ export default function ServicesDatabase({
                                           )}
                                         </div>
                                       </div>
-                                    </div>
-                                  ) : isMonitoring ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginTop: '2px' }}>
-                                      {/* Stage 1: Incident */}
+
+                                      {/* Stage 2 (ล่าง - เหตุการณ์เดิม): พบเหตุ / แจ้งปัญหา */}
                                       <div style={{ display: 'flex', gap: '10px' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0 }}>
                                           <div style={{
@@ -3133,31 +3132,26 @@ export default function ServicesDatabase({
                                             boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.3)',
                                             marginTop: '3px'
                                           }} />
-                                          <div style={{
-                                            width: '2px',
-                                            flex: 1,
-                                            minHeight: '24px',
-                                            backgroundColor: '#cbd5e1',
-                                            margin: '2px 0'
-                                          }} />
                                         </div>
 
-                                        <div style={{ flex: 1, paddingBottom: '8px' }}>
+                                        <div style={{ flex: 1 }}>
                                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                             <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#dc2626', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
-                                              พบเหตุ
+                                              พบเหตุ / แจ้งปัญหา
                                             </span>
                                             <span style={{ fontSize: '11.5px', color: 'var(--text2)', fontWeight: 600 }}>
                                               {formatDateThai(entry.date)}
                                             </span>
                                           </div>
-                                          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', marginTop: '2px' }}>
+                                          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', marginTop: '3px' }}>
                                             {entry.title}
                                           </div>
                                         </div>
                                       </div>
-
-                                      {/* Stage 2: Monitoring (ต่อลงมา) */}
+                                    </div>
+                                  ) : isMonitoring ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginTop: '2px' }}>
+                                      {/* Stage 1 (บน - ล่าสุด): เฝ้าระวัง / ทดสอบ */}
                                       <div style={{ display: 'flex', gap: '10px' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0 }}>
                                           <div style={{
@@ -3169,9 +3163,16 @@ export default function ServicesDatabase({
                                             boxShadow: '0 0 0 2px rgba(245, 158, 11, 0.3)',
                                             marginTop: '3px'
                                           }} />
+                                          <div style={{
+                                            width: '2px',
+                                            flex: 1,
+                                            minHeight: '26px',
+                                            backgroundColor: '#cbd5e1',
+                                            margin: '2px 0'
+                                          }} />
                                         </div>
 
-                                        <div style={{ flex: 1 }}>
+                                        <div style={{ flex: 1, paddingBottom: '10px' }}>
                                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                             <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#d97706', backgroundColor: 'rgba(245, 158, 11, 0.12)', padding: '1px 6px', borderRadius: '4px' }}>
                                               เริ่มเฝ้าระวัง / ทดสอบ
@@ -3196,6 +3197,35 @@ export default function ServicesDatabase({
                                               {entry.details}
                                             </div>
                                           )}
+                                        </div>
+                                      </div>
+
+                                      {/* Stage 2 (ล่าง - เหตุการณ์เดิม): พบเหตุ */}
+                                      <div style={{ display: 'flex', gap: '10px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0 }}>
+                                          <div style={{
+                                            width: '12px',
+                                            height: '12px',
+                                            borderRadius: '50%',
+                                            backgroundColor: '#ef4444',
+                                            border: '2px solid var(--surface)',
+                                            boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.3)',
+                                            marginTop: '3px'
+                                          }} />
+                                        </div>
+
+                                        <div style={{ flex: 1 }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#dc2626', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
+                                              พบเหตุ / แจ้งปัญหา
+                                            </span>
+                                            <span style={{ fontSize: '11.5px', color: 'var(--text2)', fontWeight: 600 }}>
+                                              {formatDateThai(entry.date)}
+                                            </span>
+                                          </div>
+                                          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', marginTop: '3px' }}>
+                                            {entry.title}
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
