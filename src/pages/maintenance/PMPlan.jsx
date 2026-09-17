@@ -27,7 +27,12 @@ import {
   ShieldAlert,
   MoreVertical,
   ChevronDown,
-  Database
+  Database,
+  Filter,
+  CheckCircle2,
+  ChevronRight,
+  ChevronLeft,
+  SlidersHorizontal
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -173,6 +178,24 @@ export default function PMPlan() {
       }
     } catch (e) {}
   }, [activeTab]);
+
+  // Mobile Specific States
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [mobileScheduleMonth, setMobileScheduleMonth] = useState(() => new Date().getMonth() + 1);
+  const [mobileScheduleViewMode, setMobileScheduleViewMode] = useState('agenda'); // 'agenda' or 'matrix'
+  const [isMobileSelectMode, setIsMobileSelectMode] = useState(false);
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filterType !== 'all') count++;
+    if (filterRank !== 'all') count++;
+    if (filterCycle !== 'all') count++;
+    if (filterPlant !== 'all') count++;
+    if (filterResponsible !== 'all') count++;
+    if (filterStatus !== 'all') count++;
+    if (filterMonth !== 'all') count++;
+    return count;
+  }, [filterType, filterRank, filterCycle, filterPlant, filterResponsible, filterStatus, filterMonth]);
 
   // Batch Selection & Batch Input Date / Due Date States
   const [selectedPlanIds, setSelectedPlanIds] = useState([]);
@@ -2283,6 +2306,12 @@ export default function PMPlan() {
           border-bottom: 1px solid var(--border);
           margin-bottom: 20px;
           padding-bottom: 2px;
+          overflow-x: auto;
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
+        }
+        .view-tabs::-webkit-scrollbar {
+          display: none;
         }
         .view-tab {
           font-family: var(--font-sans);
@@ -2298,6 +2327,8 @@ export default function PMPlan() {
           align-items: center;
           gap: 8px;
           transition: all 0.1s ease;
+          flex: 0 0 auto;
+          white-space: nowrap;
         }
         .view-tab:hover {
           color: var(--text);
@@ -2875,10 +2906,10 @@ export default function PMPlan() {
         </button>
       </div>
 
-      {/* Global Filter Bar: Search + Dropdown Filters */}
+      {/* Global Filter Bar: Search + Dropdown Filters (Desktop) */}
       {activeTab !== 'services-db' && (
       <div 
-        className="card controls-bar" 
+        className="card controls-bar hide-on-mobile" 
         id="pm-filters-bar" 
         style={{ 
           display: 'flex', 
@@ -3103,6 +3134,115 @@ export default function PMPlan() {
       </div>
       )}
 
+      {/* Mobile-Only Compact Search & Filter Bar */}
+      {activeTab !== 'services-db' && (
+        <div 
+          className="card mobile-only" 
+          id="pm-mobile-filters-bar"
+          style={{ padding: '8px 10px', marginBottom: '12px' }}
+        >
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {/* Search Machine & Checksheet ID */}
+            <div style={{ position: 'relative', flex: 1 }}>
+              <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text3)' }} />
+              <input 
+                type="text" 
+                placeholder="Search machine, ID..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="form-input"
+                style={{ paddingLeft: '30px', paddingRight: search ? '28px' : '10px', height: '34px', fontSize: '12.5px', width: '100%' }}
+                id="pm-mobile-search-input"
+              />
+              {search && (
+                <button 
+                  onClick={() => setSearch('')}
+                  style={{ position: 'absolute', right: '8px', top: '8px', background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: '2px' }}
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
+            {/* Bottom Sheet Filter Trigger Button */}
+            <button
+              type="button"
+              className={`btn btn-sm ${activeFiltersCount > 0 ? 'btn-primary' : ''}`}
+              onClick={() => setIsMobileFilterOpen(true)}
+              style={{
+                height: '34px',
+                padding: '0 10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '12px',
+                fontWeight: 600,
+                whiteSpace: 'nowrap'
+              }}
+              title="Filter PM Items"
+            >
+              <Filter size={14} />
+              <span>Filters</span>
+              {activeFiltersCount > 0 && (
+                <span style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.35)',
+                  color: '#fff',
+                  borderRadius: '10px',
+                  padding: '1px 6px',
+                  fontSize: '10px',
+                  fontWeight: 800
+                }}>
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Active Filter Tags Preview on Mobile */}
+          {activeFiltersCount > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', overflowX: 'auto', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid var(--border)' }}>
+              <span style={{ fontSize: '10.5px', color: 'var(--text3)', whiteSpace: 'nowrap' }}>Active:</span>
+              {filterPlant !== 'all' && (
+                <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                  Plant: {filterPlant}
+                </span>
+              )}
+              {filterType !== 'all' && (
+                <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                  Tag: {filterType}
+                </span>
+              )}
+              {filterRank !== 'all' && (
+                <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'var(--surface2)', color: 'var(--text2)', border: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                  Rank: {filterRank}
+                </span>
+              )}
+              {filterStatus !== 'all' && (
+                <span style={{ fontSize: '10.5px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.3)', whiteSpace: 'nowrap' }}>
+                  Status: {filterStatus}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  setFilterPlant('all');
+                  setFilterResponsible('all');
+                  setFilterCycle('all');
+                  setFilterType('all');
+                  setFilterRank('all');
+                  setFilterMonth('all');
+                  setFilterStatus('all');
+                }}
+                style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '10.5px', cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: 600 }}
+              >
+                Clear All
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Floating / Sticky Batch Action Bar when items are selected */}
       {activeTab !== 'services-db' && selectedPlanIds.length > 0 && (
         <div 
@@ -3207,8 +3347,9 @@ export default function PMPlan() {
           </button>
         </div>
       ) : activeTab === 'schedule' ? (
-        /* --- VIEW 1: SCHEDULE VIEW (12 MONTHS GRID) --- */
-        <div className="grid-card" id="schedule-grid-layout">
+        /* --- VIEW 1: SCHEDULE VIEW (12 MONTHS GRID - Desktop) --- */
+        <>
+        <div className="grid-card hide-on-mobile" id="schedule-grid-layout">
           <div className="grid-header-tools">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <CalendarDays size={16} className="text2" />
@@ -3527,6 +3668,394 @@ export default function PMPlan() {
             </div>
           </div>
         </div>
+
+        {/* Mobile-Only Schedule Agenda View */}
+        <div className="mobile-only" id="schedule-mobile-agenda" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Top Toolbar: Year Selector & View Mode Toggle */}
+          <div className="card" style={{ padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <CalendarDays size={15} className="text2" />
+              <span style={{ fontSize: '12.5px', fontWeight: 'bold' }}>Schedule</span>
+              {/* Year Selectors */}
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', marginLeft: '4px' }}>
+                {[2025, 2026, 2027, 2028].map((yr) => (
+                  <button
+                    key={yr}
+                    type="button"
+                    onClick={() => setSelectedYear(yr)}
+                    style={{
+                      padding: '2px 6px',
+                      fontSize: '11px',
+                      fontWeight: selectedYear === yr ? 700 : 500,
+                      borderRadius: '4px',
+                      border: selectedYear === yr ? '1px solid var(--accent)' : '1px solid var(--border)',
+                      backgroundColor: selectedYear === yr ? 'var(--accent)' : 'var(--surface2)',
+                      color: selectedYear === yr ? '#fff' : 'var(--text2)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {yr}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* View Mode Toggle: Cards vs 12M Matrix */}
+            <div style={{ display: 'inline-flex', borderRadius: '6px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+              <button
+                type="button"
+                onClick={() => setMobileScheduleViewMode('agenda')}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  border: 'none',
+                  backgroundColor: mobileScheduleViewMode === 'agenda' ? 'var(--accent)' : 'var(--surface)',
+                  color: mobileScheduleViewMode === 'agenda' ? '#fff' : 'var(--text2)',
+                  cursor: 'pointer'
+                }}
+                title="Monthly Agenda Cards"
+              >
+                📱 Cards
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileScheduleViewMode('matrix')}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  border: 'none',
+                  backgroundColor: mobileScheduleViewMode === 'matrix' ? 'var(--accent)' : 'var(--surface)',
+                  color: mobileScheduleViewMode === 'matrix' ? '#fff' : 'var(--text2)',
+                  cursor: 'pointer'
+                }}
+                title="Full 12-Month Table"
+              >
+                📊 12M Table
+              </button>
+            </div>
+          </div>
+
+          {/* If user toggled to 12M Matrix View on mobile */}
+          {mobileScheduleViewMode === 'matrix' ? (
+            <div className="grid-card" style={{ overflowX: 'auto' }}>
+              <div style={{ padding: '8px 12px', fontSize: '11px', color: 'var(--text3)', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
+                👉 ปัดเลื่อนซ้าย-ขวาเพื่อดูครบทั้ง 12 เดือน
+              </div>
+              <div className="grid-table-container">
+                <table className="grid-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '40px', position: 'sticky', left: 0, zIndex: 10, background: 'var(--surface2)', textAlign: 'center' }}>
+                        <input 
+                          type="checkbox" 
+                          className="pm-select-checkbox"
+                          checked={selectedPlanIds.length > 0 && selectedPlanIds.length === filteredItems.length}
+                          onChange={handleToggleSelectAll}
+                        />
+                      </th>
+                      {renderSortableHeader('plant', 'Plant', { width: '55px', position: 'sticky', left: '40px', zIndex: 10, background: 'var(--surface2)' })}
+                      {renderSortableHeader('machineName', 'Machine', { width: '180px', textAlign: 'left', position: 'sticky', left: '95px', zIndex: 10, background: 'var(--surface2)', borderRight: '2px solid var(--border2)' })}
+                      {MONTH_NAMES.map((name) => (
+                        <th key={name} style={{ width: '60px', minWidth: '55px' }}>{name}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedItems.map((item) => (
+                      <tr key={item.id}>
+                        <td style={{ position: 'sticky', left: 0, background: 'var(--surface)', zIndex: 5, textAlign: 'center' }}>
+                          <input 
+                            type="checkbox" 
+                            className="pm-select-checkbox"
+                            checked={selectedPlanIds.includes(item.id)}
+                            onChange={(e) => handleToggleSelectItem(item.id, e.nativeEvent)}
+                          />
+                        </td>
+                        <td style={{ position: 'sticky', left: '40px', background: 'var(--surface)', zIndex: 5 }}>
+                          <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`}>{item.plant || 'RFG'}</span>
+                        </td>
+                        <td 
+                          style={{ position: 'sticky', left: '95px', zIndex: 5, background: 'var(--surface)', borderRight: '2px solid var(--border2)', textAlign: 'left', cursor: 'pointer', padding: '6px 8px' }}
+                          onClick={() => handleOpenEdit(item)}
+                        >
+                          <div style={{ fontWeight: 600, fontSize: '12px', color: 'var(--text)' }}>{item.machineName}</div>
+                          <div style={{ fontSize: '10px', color: 'var(--text3)' }}>Rank {item.rank || 'B'} • {item.cycle}</div>
+                        </td>
+                        {Array.from({ length: 12 }).map((_, index) => {
+                          const mIndex = index + 1;
+                          const cellDetails = getCellDetails(item, selectedYear, mIndex);
+                          return (
+                            <td 
+                              key={mIndex} 
+                              className={`month-cell color-${cellDetails.status}`}
+                              onClick={() => handleCellClick(item, selectedYear, mIndex, cellDetails.status)}
+                              style={{ textAlign: 'center', cursor: cellDetails.status !== 'faded' ? 'pointer' : 'default', padding: '4px' }}
+                            >
+                              {cellDetails.line1 || cellDetails.line2 ? (
+                                <div style={{ fontSize: '10px', fontWeight: 700 }}>{cellDetails.line1 || cellDetails.line2}</div>
+                              ) : (
+                                <span style={{ fontSize: '10px', fontWeight: 700 }}>{cellDetails.text}</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            /* Month-by-Month Agenda Cards View */
+            <>
+              {/* Horizontal Month Selector Carousel */}
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  gap: '6px', 
+                  overflowX: 'auto', 
+                  padding: '4px 2px', 
+                  scrollbarWidth: 'none', 
+                  WebkitOverflowScrolling: 'touch' 
+                }}
+              >
+                {MONTH_NAMES.map((name, i) => {
+                  const mIdx = i + 1;
+                  const isCurrent = mobileScheduleMonth === mIdx;
+                  // Count items in this month
+                  const mCount = sortedItems.filter(item => isMonthRequired(item, selectedYear, mIdx)).length;
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => setMobileScheduleMonth(mIdx)}
+                      style={{
+                        flex: '0 0 auto',
+                        padding: '6px 12px',
+                        borderRadius: '18px',
+                        border: isCurrent ? '2px solid var(--accent)' : '1px solid var(--border)',
+                        backgroundColor: isCurrent ? 'var(--accent)' : 'var(--surface)',
+                        color: isCurrent ? '#ffffff' : 'var(--text)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '2px',
+                        cursor: 'pointer',
+                        boxShadow: isCurrent ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <span style={{ fontSize: '12px', fontWeight: 700 }}>{name}</span>
+                      <span style={{ 
+                        fontSize: '9.5px', 
+                        opacity: isCurrent ? 0.9 : 0.6,
+                        fontWeight: isCurrent ? 700 : 500
+                      }}>
+                        {mCount} งาน
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Selected Month Summary Banner */}
+              {(() => {
+                const mReqItems = sortedItems.filter(item => isMonthRequired(item, selectedYear, mobileScheduleMonth));
+                const mDoneCount = mReqItems.filter(item => ['done', 'shifted-plan'].includes(getCellStatus(item, selectedYear, mobileScheduleMonth))).length;
+                const mPendingCount = mReqItems.length - mDoneCount;
+                const pct = mReqItems.length > 0 ? Math.round((mDoneCount / mReqItems.length) * 100) : 100;
+
+                return (
+                  <div className="card" style={{ padding: '10px 12px', backgroundColor: 'var(--surface2)', border: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
+                          {MONTH_NAMES[mobileScheduleMonth - 1]} {selectedYear}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>
+                          ทั้งหมด <strong>{mReqItems.length}</strong> • เสร็จ <strong style={{ color: '#10b981' }}>{mDoneCount}</strong> • ค้าง <strong style={{ color: mPendingCount > 0 ? '#f59e0b' : 'var(--text3)' }}>{mPendingCount}</strong>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '15px', fontWeight: 800, color: pct >= 100 ? '#10b981' : 'var(--accent)' }}>
+                          {pct}%
+                        </span>
+                      </div>
+                    </div>
+                    {/* Mini Progress Bar */}
+                    <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--surface3)', borderRadius: '2px', marginTop: '6px', overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', backgroundColor: '#10b981', borderRadius: '2px', transition: 'width 0.3s' }} />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Agenda Machine Cards List for Active Month */}
+              {(() => {
+                const mReqItems = sortedItems.filter(item => isMonthRequired(item, selectedYear, mobileScheduleMonth));
+                if (mReqItems.length === 0) {
+                  return (
+                    <div className="card" style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--text3)' }}>
+                      <CalendarDays size={28} style={{ margin: '0 auto 8px', opacity: 0.4 }} />
+                      <div style={{ fontWeight: 600, fontSize: '13.5px' }}>ไม่มีกำหนดการ PM ในเดือน {MONTH_NAMES[mobileScheduleMonth - 1]} {selectedYear}</div>
+                      <p style={{ fontSize: '11.5px', marginTop: '4px' }}>ลองสลับเลือกดูเดือนอื่น หรือตรวจสอบตัวกรอง</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {mReqItems.map((item) => {
+                      const cellDetails = getCellDetails(item, selectedYear, mobileScheduleMonth);
+                      const isDone = ['done', 'shifted-plan'].includes(cellDetails.status);
+                      const isOverdue = cellDetails.status === 'overdue';
+                      const isShifted = cellDetails.status.startsWith('shifted');
+
+                      return (
+                        <div 
+                          key={item.id} 
+                          className="card"
+                          style={{ 
+                            padding: '12px', 
+                            backgroundColor: 'var(--surface)', 
+                            border: `1px solid ${isOverdue ? 'rgba(239, 68, 68, 0.4)' : (isDone ? 'rgba(16, 185, 129, 0.35)' : 'var(--border)')}`,
+                            borderRadius: '10px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px'
+                          }}
+                        >
+                          {/* Card Top: Badges & Status */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                              <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`}>{item.plant || 'RFG'}</span>
+                              {renderItemTypeBadge(item.itemType || item.type || 'pm')}
+                              <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>Rank {item.rank || 'B'}</span>
+                            </div>
+
+                            {/* Status Badge */}
+                            <span style={{
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              fontSize: '10.5px',
+                              fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              backgroundColor: isDone ? 'rgba(16, 185, 129, 0.12)' : (isOverdue ? '#fee2e2' : 'var(--surface2)'),
+                              color: isDone ? '#059669' : (isOverdue ? '#dc2626' : 'var(--text2)'),
+                              border: isDone ? '1px solid #10b981' : (isOverdue ? '1px solid #fca5a5' : '1px solid var(--border)')
+                            }}>
+                              {isDone ? (
+                                <>
+                                  <CheckCircle2 size={11} style={{ color: '#10b981' }} />
+                                  <span>{cellDetails.line1 || 'เสร็จแล้ว'}</span>
+                                </>
+                              ) : isOverdue ? (
+                                <>
+                                  <AlertCircle size={11} />
+                                  <span>เลยกำหนด</span>
+                                </>
+                              ) : isShifted ? (
+                                <span>{cellDetails.text}</span>
+                              ) : (
+                                <span>{cellDetails.text || 'มีแผน'}</span>
+                              )}
+                            </span>
+                          </div>
+
+                          {/* Machine Name & Checksheet ID */}
+                          <div>
+                            <div 
+                              style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text)', cursor: 'pointer' }}
+                              onClick={() => handleOpenEdit(item)}
+                            >
+                              {item.machineName}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>
+                              <span>รอบ: <strong style={{ textTransform: 'capitalize' }}>{item.cycle}</strong></span>
+                              {item.checksheetId && <span>• ID: <strong className="font-mono">{item.checksheetId}</strong></span>}
+                            </div>
+                          </div>
+
+                          {/* 12-Month Mini Indicator Heatmap */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', paddingTop: '2px' }}>
+                            <span style={{ fontSize: '9.5px', color: 'var(--text3)', marginRight: '2px' }}>ทั้งปี:</span>
+                            {MONTH_NAMES.map((mShort, idx) => {
+                              const mNum = idx + 1;
+                              const mReq = isMonthRequired(item, selectedYear, mNum);
+                              const mDet = getCellDetails(item, selectedYear, mNum);
+                              const isCurMonth = mNum === mobileScheduleMonth;
+                              let dotBg = 'var(--surface2)';
+                              if (mDet.status === 'done' || mDet.status === 'shifted-actual') dotBg = '#10b981';
+                              else if (mDet.status === 'overdue') dotBg = '#ef4444';
+                              else if (mDet.status === 'shifted-plan') dotBg = '#f59e0b';
+                              else if (mReq) dotBg = '#93c5fd';
+
+                              return (
+                                <div
+                                  key={mShort}
+                                  onClick={() => setMobileScheduleMonth(mNum)}
+                                  title={`${mShort}: ${mDet.tooltip}`}
+                                  style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    borderRadius: '3px',
+                                    backgroundColor: dotBg,
+                                    border: isCurMonth ? '2px solid var(--accent)' : '1px solid rgba(0,0,0,0.08)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '8px',
+                                    fontWeight: 700,
+                                    color: (mDet.status === 'done' || mDet.status === 'overdue') ? '#fff' : 'var(--text2)',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {mShort[0]}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Footer Quick Action Button */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: '6px' }}>
+                            <span style={{ fontSize: '10.5px', color: 'var(--text3)' }}>
+                              {item.responsible === 'Own Team' ? 'My team' : (item.responsible || 'My team')}
+                            </span>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button
+                                type="button"
+                                className={`btn btn-sm ${isDone ? 'btn-secondary' : 'btn-primary'}`}
+                                onClick={() => handleCellClick(item, selectedYear, mobileScheduleMonth, cellDetails.status)}
+                                style={{ padding: '3px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                {isDone ? (
+                                  <>
+                                    <Edit2 size={11} />
+                                    <span>แก้ไขผล</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Check size={11} />
+                                    <span>บันทึกผล PM</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </>
+          )}
+        </div>
+        </>
       ) : activeTab === 'trend' ? (
         /* --- VIEW 3: TREND & ACHIEVEMENT VIEW --- */
         <div className="card" id="trend-view-layout" style={{ padding: '20px' }}>
@@ -3554,7 +4083,7 @@ export default function PMPlan() {
           </div>
 
           {/* KPI Summary Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <div className="trend-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
             <div className="card" style={{ padding: '14px 18px', background: 'var(--surface2)', border: '1px solid var(--border)' }}>
               <span style={{ fontSize: '11.5px', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: '600' }}>Annual Target Inspections</span>
               <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text)', marginTop: '4px' }}>
@@ -3593,66 +4122,96 @@ export default function PMPlan() {
             </div>
           </div>
 
-          {/* Recharts Bar Chart */}
-          <div style={{ width: '100%', height: '320px', minHeight: '320px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={MONTH_NAMES.map((name, i) => {
-                  const planCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1)).length;
-                  const actualCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1) && ['done', 'shifted-plan'].includes(getCellStatus(item, selectedYear, i + 1))).length;
-                  const pct = planCount > 0 ? Math.round((actualCount / planCount) * 100) : 100;
-                  return {
-                    name,
-                    Plan: planCount,
-                    Actual: actualCount,
-                    AchievementPct: pct
-                  };
-                })}
-                margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--text2)' }} />
-                <YAxis tick={{ fontSize: 11, fill: 'var(--text2)' }} allowDecimals={false} />
-                <Tooltip
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      const plan = payload[0]?.value || 0;
-                      const actual = payload[1]?.value || 0;
-                      const pct = plan > 0 ? Math.round((actual / plan) * 100) : 100;
-                      return (
-                        <div className="custom-tooltip card" style={{ padding: '8px 12px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '11px' }}>
-                          <p style={{ fontWeight: '600', marginBottom: '4px', color: 'var(--text)' }}>{label}</p>
-                          <p style={{ color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ display: 'inline-block', width: '8px', height: '8px', backgroundColor: '#B4CDE6', borderRadius: '50%' }}></span>
-                            Plan: <strong>{plan}</strong>
-                          </p>
-                          <p style={{ color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ display: 'inline-block', width: '8px', height: '8px', backgroundColor: '#C2E2C5', borderRadius: '50%' }}></span>
-                            Actual: <strong>{actual}</strong>
-                          </p>
-                          <div style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid var(--border)', fontWeight: '600', color: pct >= 100 ? '#10b981' : pct > 0 ? '#f59e0b' : 'var(--text3)' }}>
-                            Achievement: {pct}%
+          {/* Recharts Bar Chart (Scrollable on Mobile) */}
+          <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <div style={{ minWidth: '540px', height: '320px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={MONTH_NAMES.map((name, i) => {
+                    const planCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1)).length;
+                    const actualCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1) && ['done', 'shifted-plan'].includes(getCellStatus(item, selectedYear, i + 1))).length;
+                    const pct = planCount > 0 ? Math.round((actualCount / planCount) * 100) : 100;
+                    return {
+                      name,
+                      Plan: planCount,
+                      Actual: actualCount,
+                      AchievementPct: pct
+                    };
+                  })}
+                  margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--text2)' }} />
+                  <YAxis tick={{ fontSize: 11, fill: 'var(--text2)' }} allowDecimals={false} />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        const plan = payload[0]?.value || 0;
+                        const actual = payload[1]?.value || 0;
+                        const pct = plan > 0 ? Math.round((actual / plan) * 100) : 100;
+                        return (
+                          <div className="custom-tooltip card" style={{ padding: '8px 12px', border: '1px solid var(--border)', background: 'var(--surface)', fontSize: '11px' }}>
+                            <p style={{ fontWeight: '600', marginBottom: '4px', color: 'var(--text)' }}>{label}</p>
+                            <p style={{ color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ display: 'inline-block', width: '8px', height: '8px', backgroundColor: '#B4CDE6', borderRadius: '50%' }}></span>
+                              Plan: <strong>{plan}</strong>
+                            </p>
+                            <p style={{ color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ display: 'inline-block', width: '8px', height: '8px', backgroundColor: '#C2E2C5', borderRadius: '50%' }}></span>
+                              Actual: <strong>{actual}</strong>
+                            </p>
+                            <div style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid var(--border)', fontWeight: '600', color: pct >= 100 ? '#10b981' : pct > 0 ? '#f59e0b' : 'var(--text3)' }}>
+                              Achievement: {pct}%
+                            </div>
                           </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Legend 
-                  verticalAlign="bottom" 
-                  height={36} 
-                  iconType="circle"
-                  formatter={(value) => <span style={{ fontSize: 12, color: 'var(--text)' }}>{value}</span>}
-                />
-                <Bar dataKey="Plan" fill="#B4CDE6" radius={[4, 4, 0, 0]}>
-                  <LabelList dataKey="Plan" position="top" style={{ fill: 'var(--text2)', fontSize: '10px', fontWeight: '600' }} />
-                </Bar>
-                <Bar dataKey="Actual" fill="#C2E2C5" radius={[4, 4, 0, 0]}>
-                  <LabelList dataKey="Actual" position="top" style={{ fill: 'var(--text2)', fontSize: '10px', fontWeight: '600' }} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Legend 
+                    verticalAlign="bottom" 
+                    height={36} 
+                    iconType="circle"
+                    formatter={(value) => <span style={{ fontSize: 12, color: 'var(--text)' }}>{value}</span>}
+                  />
+                  <Bar dataKey="Plan" fill="#B4CDE6" radius={[4, 4, 0, 0]}>
+                    <LabelList dataKey="Plan" position="top" style={{ fill: 'var(--text2)', fontSize: '10px', fontWeight: '600' }} />
+                  </Bar>
+                  <Bar dataKey="Actual" fill="#C2E2C5" radius={[4, 4, 0, 0]}>
+                    <LabelList dataKey="Actual" position="top" style={{ fill: 'var(--text2)', fontSize: '10px', fontWeight: '600' }} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Mobile-Only Monthly Achievement Breakdown List */}
+          <div className="mobile-only" style={{ marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 700, marginBottom: '10px', color: 'var(--text)' }}>
+              Monthly Achievement Breakdown
+            </h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {MONTH_NAMES.map((name, i) => {
+                const planCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1)).length;
+                const actualCount = trendItems.filter(item => isMonthRequired(item, selectedYear, i + 1) && ['done', 'shifted-plan'].includes(getCellStatus(item, selectedYear, i + 1))).length;
+                const pct = planCount > 0 ? Math.round((actualCount / planCount) * 100) : 100;
+                if (planCount === 0) return null;
+                return (
+                  <div key={name} style={{ padding: '8px 12px', backgroundColor: 'var(--surface2)', borderRadius: '8px', fontSize: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ fontWeight: 600, color: 'var(--text)' }}>{name} {selectedYear}</span>
+                      <span style={{ fontWeight: 700, color: pct >= 100 ? '#10b981' : (pct > 0 ? '#f59e0b' : 'var(--text3)') }}>
+                        {pct}% ({actualCount}/{planCount})
+                      </span>
+                    </div>
+                    <div style={{ width: '100%', height: '5px', backgroundColor: 'var(--surface3)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: `${Math.min(pct, 100)}%`, height: '100%', backgroundColor: pct >= 100 ? '#10b981' : (pct > 0 ? '#f59e0b' : 'transparent'), borderRadius: '3px' }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       ) : (
@@ -3874,17 +4433,50 @@ export default function PMPlan() {
 
           {/* Mobile responsive cards view */}
           <div className="mobile-cards-view" id="pm-mobile-view">
+            {/* Mobile Header Bar with Select Mode Toggle */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 2px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '11.5px', color: 'var(--text3)', fontWeight: 600 }}>
+                รายการทั้งหมด: {sortedItems.length} เครื่อง
+              </span>
+              <button
+                type="button"
+                className={`btn btn-sm ${isMobileSelectMode ? 'btn-primary' : ''}`}
+                onClick={() => {
+                  const next = !isMobileSelectMode;
+                  setIsMobileSelectMode(next);
+                  if (!next) setSelectedPlanIds([]);
+                }}
+                style={{ padding: '3px 8px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              >
+                <span>{isMobileSelectMode ? '✓ ออกจากโหมดเลือก' : '☑️ เลือกหลายเครื่อง'}</span>
+              </button>
+            </div>
+
             {sortedItems.map((item, index) => {
               const overdue = isPlanOverdue(item);
               const nextDueVal = getNextDueText(item);
               const displayResponsible = item.responsible === 'Own Team' ? 'My team' : (item.responsible || 'My team');
+              const isSelected = selectedPlanIds.includes(item.id);
               return (
-                <div key={item.id} className={`mobile-table-card ${overdue ? 'overdue-row' : ''}`} id={`pm-card-${item.id}`}>
+                <div key={item.id} className={`mobile-table-card ${overdue ? 'overdue-row' : ''}`} style={{ backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.08)' : undefined }} id={`pm-card-${item.id}`}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                        <span className="font-mono text3 text-xs">#{String(index + 1).padStart(2, '0')}</span>
-                        <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`}>{item.plant || 'RFG'}</span>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                      {isMobileSelectMode && (
+                        <input
+                          type="checkbox"
+                          className="pm-select-checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleToggleSelectItem(item.id, e.nativeEvent);
+                          }}
+                          style={{ width: '18px', height: '18px', marginTop: '2px', accentColor: 'var(--accent)' }}
+                        />
+                      )}
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span className="font-mono text3 text-xs">#{String(index + 1).padStart(2, '0')}</span>
+                          <span className={`plant-badge ${(item.plant || 'RFG').toLowerCase()}`}>{item.plant || 'RFG'}</span>
                         {renderItemTypeBadge(item.itemType || item.type || 'pm')}
                         <span className={`pm-rank-badge rank-${item.rank || 'B'}`}>
                           Rank {item.rank || 'B'}
@@ -3961,6 +4553,7 @@ export default function PMPlan() {
                       </span>
                     </div>
                   </div>
+                </div>
                   
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', margin: '10px 0', fontSize: '12px' }}>
                     <div>
@@ -5399,6 +5992,177 @@ export default function PMPlan() {
         getCellStatus={getCellStatus}
         getCellDetails={getCellDetails}
       />
+
+      {/* MOBILE BOTTOM SHEET FILTER MODAL */}
+      <Modal
+        isOpen={isMobileFilterOpen}
+        onClose={() => setIsMobileFilterOpen(false)}
+        title="Filter PM Plan"
+        subtitle={`Showing ${filteredItems.length} of ${items.length} items`}
+        footerActions={
+          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setSearch('');
+                setFilterPlant('all');
+                setFilterResponsible('all');
+                setFilterCycle('all');
+                setFilterType('all');
+                setFilterRank('all');
+                setFilterMonth('all');
+                setFilterStatus('all');
+              }}
+            >
+              Reset All
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setIsMobileFilterOpen(false)}
+            >
+              Apply ({filteredItems.length})
+            </button>
+          </div>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '4px 0' }}>
+          {/* Plant Filter */}
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: '6px' }}>Plant</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {['all', ...plantOptions].map(p => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setFilterPlant(p)}
+                  className={`filter-chip ${filterPlant === p ? 'active' : ''}`}
+                  style={{ padding: '5px 12px', fontSize: '12px', borderRadius: '16px' }}
+                >
+                  {p === 'all' ? 'All Plants' : p}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Activity Tag */}
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: '6px' }}>Activity Tag</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {[
+                { id: 'all', label: 'All Tags' },
+                { id: 'pm', label: '🔧 PM' },
+                { id: 'calibrate', label: '⚖️ Calibrate' },
+                { id: 'service_contract', label: '🤝 Contract' }
+              ].map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setFilterType(t.id)}
+                  className={`filter-chip ${filterType === t.id ? 'active' : ''}`}
+                  style={{ padding: '5px 12px', fontSize: '12px', borderRadius: '16px' }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Rank */}
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: '6px' }}>Criticality Rank</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {['all', 'S', 'A', 'B', 'C'].map(r => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setFilterRank(r)}
+                  className={`filter-chip ${filterRank === r ? 'active' : ''}`}
+                  style={{ padding: '5px 12px', fontSize: '12px', borderRadius: '16px' }}
+                >
+                  {r === 'all' ? 'All Ranks' : `Rank ${r}`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Status */}
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: '6px' }}>Schedule Status</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {[
+                { id: 'all', label: 'All Status' },
+                { id: 'remaining_overdue', label: '⚠️ Remaining & Overdue' },
+                { id: 'overdue', label: '🚨 Overdue Only' },
+                { id: 'ontrack', label: '✅ Completed / On Track' }
+              ].map(s => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setFilterStatus(s.id)}
+                  className={`filter-chip ${filterStatus === s.id ? 'active' : ''}`}
+                  style={{ padding: '5px 12px', fontSize: '12px', borderRadius: '16px' }}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Cycle */}
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: '6px' }}>Cycle</div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {[
+                { id: 'all', label: 'All Cycles' },
+                { id: '1 month', label: '1 Month' },
+                { id: '2 months', label: '2 Months' },
+                { id: '3 months', label: '3 Months' },
+                { id: '6 months', label: '6 Months' },
+                { id: '1 year', label: '1 Year' }
+              ].map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setFilterCycle(c.id)}
+                  className={`filter-chip ${filterCycle === c.id ? 'active' : ''}`}
+                  style={{ padding: '5px 12px', fontSize: '12px', borderRadius: '16px' }}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Mobile Floating Action Button (FAB) for Add PM Item */}
+      {activeTab !== 'services-db' && (
+        <div className="mobile-only" style={{ position: 'fixed', right: '18px', bottom: '70px', zIndex: 980 }}>
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '24px',
+              backgroundColor: 'var(--accent)',
+              color: '#fff',
+              border: 'none',
+              boxShadow: '0 4px 14px rgba(59, 130, 246, 0.45)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              WebkitTapHighlightColor: 'transparent'
+            }}
+            title="Add PM Item"
+          >
+            <Plus size={22} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

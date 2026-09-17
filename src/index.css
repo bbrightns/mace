@@ -1551,9 +1551,35 @@ h1, h2, h3, h4, h5, h6 {
     stroke-width: 2.3px;
     filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
   }
+
+  /* Mobile Modal transforms into Bottom Sheet */
+  .modal-overlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+  .modal-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: 16px !important;
+    border-top-right-radius: 16px !important;
+    max-height: 88vh !important;
+    margin: 0 !important;
+  }
+
+  .trend-kpi-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    margin-bottom: 16px !important;
+  }
 }
 
 /* Base Desktop Responsive Rules */
+.mobile-cards-view {
+  display: none;
+}
+
 .hide-on-desktop {
   display: none !important;
 }

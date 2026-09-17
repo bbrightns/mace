@@ -1342,8 +1342,8 @@ export default function ServicesDatabase() {
         </div>
       )}
 
-      {/* Main Database Table */}
-      <div className="card table-container" style={{ overflowX: 'auto', padding: 0 }}>
+      {/* Main Database Table (Desktop) */}
+      <div className="card table-container hide-on-mobile" style={{ overflowX: 'auto', padding: 0 }}>
         <table className="data-table" style={{ width: '100%', minWidth: '1100px', borderCollapse: 'collapse', fontSize: '12.5px' }}>
           <thead>
             <tr style={{ background: 'var(--surface2)', borderBottom: '2px solid var(--border)' }}>
@@ -1622,6 +1622,219 @@ export default function ServicesDatabase() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Equipment Cards (Optimized for field check on narrow screens) */}
+      <div className="mobile-cards-view mobile-only" id="services-db-mobile-cards" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+        {filteredUnits.length === 0 ? (
+          <div className="card" style={{ padding: '24px', textAlign: 'center', color: 'var(--text3)' }}>
+            <Info size={24} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
+            <div>ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา</div>
+          </div>
+        ) : (
+          filteredUnits.map((unit, index) => {
+            const theme = SUPPLIER_THEMES[unit.supplier] || { badgeBg: 'var(--surface2)', badgeColor: 'var(--text)', borderColor: 'var(--border)' };
+            const isEditingThis = inlineEditingId === (unit.id || `${unit.supplier}-${unit.plant}-${unit.itemNo}`);
+            const hasIssue = Boolean(unit.note && unit.note.trim());
+
+            return (
+              <div 
+                key={unit.id || `${unit.supplier}-${unit.plant}-${unit.itemNo}-${index}`}
+                className="card"
+                style={{
+                  padding: '14px',
+                  backgroundColor: 'var(--surface)',
+                  border: `1px solid ${hasIssue ? 'rgba(239, 68, 68, 0.4)' : (unit.isCleaned ? 'rgba(16, 185, 129, 0.35)' : 'var(--border)')}`,
+                  borderRadius: '10px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  position: 'relative'
+                }}
+              >
+                {/* Header: Plant, Supplier, Code & Wash Toggle Button */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <span className={`plant-badge ${(unit.plant || 'RFG').toLowerCase()}`} style={{ fontWeight: 700 }}>
+                      {unit.plant}
+                    </span>
+                    <span style={{
+                      fontSize: '10.5px',
+                      fontWeight: 600,
+                      padding: '2px 7px',
+                      borderRadius: '4px',
+                      backgroundColor: theme.badgeBg,
+                      color: theme.badgeColor,
+                      border: `1px solid ${theme.borderColor}`
+                    }}>
+                      {unit.supplier} No.{unit.itemNo}
+                    </span>
+                    {unit.newCode && (
+                      <span className="font-mono" style={{ fontSize: '13px', fontWeight: 800, color: 'var(--accent)' }}>
+                        {unit.newCode}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 1-Tap Wash Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleCleaned(unit)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 8px',
+                      borderRadius: '16px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      border: unit.isCleaned ? '1px solid #10b981' : '1px solid var(--border)',
+                      backgroundColor: unit.isCleaned ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface2)',
+                      color: unit.isCleaned ? '#059669' : 'var(--text3)',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="แตะเพื่อสลับสถานะล้างแอร์แล้ว"
+                  >
+                    <CheckCircle2 size={13} style={{ color: unit.isCleaned ? '#10b981' : 'var(--text3)' }} />
+                    <span>{unit.isCleaned ? 'ล้างแล้ว' : 'ยังไม่ล้าง'}</span>
+                  </button>
+                </div>
+
+                {/* Location & Brand */}
+                <div>
+                  <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text)' }}>
+                    {unit.location || '—'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text2)', marginTop: '2px' }}>
+                    {unit.brand ? `Brand: ${unit.brand}` : ''} {unit.btu ? `• ${Number(unit.btu).toLocaleString()} BTU` : ''}
+                  </div>
+                  {unit.specModel && (
+                    <div className="font-mono" style={{ fontSize: '11.5px', color: 'var(--text3)', marginTop: '2px' }}>
+                      Spec: {unit.specModel}
+                    </div>
+                  )}
+                </div>
+
+                {/* Note Section (Tap to edit inline) */}
+                <div style={{ 
+                  backgroundColor: hasIssue ? 'rgba(239, 68, 68, 0.06)' : 'var(--surface2)', 
+                  border: `1px dashed ${hasIssue ? '#fca5a5' : 'var(--border)'}`, 
+                  borderRadius: '6px', 
+                  padding: '8px 10px' 
+                }}>
+                  {isEditingThis ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <input
+                        type="text"
+                        value={inlineNoteValue}
+                        onChange={(e) => setInlineNoteValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveInlineNote(unit);
+                          if (e.key === 'Escape') handleCancelInlineEdit();
+                        }}
+                        placeholder="พิมพ์หมายเหตุ / อาการเสีย..."
+                        autoFocus
+                        className="form-input"
+                        style={{ height: '32px', fontSize: '12px' }}
+                      />
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveInlineNote(unit)}
+                          disabled={isSavingInline}
+                          className="btn btn-sm btn-primary"
+                          style={{ height: '26px', padding: '0 8px', fontSize: '11px' }}
+                        >
+                          <Check size={12} />
+                          <span>บันทึก</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCancelInlineEdit}
+                          disabled={isSavingInline}
+                          className="btn btn-sm"
+                          style={{ height: '26px', padding: '0 8px', fontSize: '11px' }}
+                        >
+                          <X size={12} />
+                          <span>ยกเลิก</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => handleStartInlineEdit(unit)}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', cursor: 'pointer' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        {hasIssue ? (
+                          <AlertTriangle size={13} style={{ color: '#dc2626', flexShrink: 0 }} />
+                        ) : (
+                          <Edit2 size={12} style={{ color: 'var(--text3)', flexShrink: 0 }} />
+                        )}
+                        <span style={{ fontSize: '12px', fontWeight: hasIssue ? 600 : 'normal', color: hasIssue ? '#dc2626' : 'var(--text3)' }}>
+                          {hasIssue ? unit.note : '+ แตะเพื่อเพิ่มหมายเหตุหน้างาน'}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 600 }}>แก้ไข</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer: Last Update & Action Buttons */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: '8px' }}>
+                  <span style={{ fontSize: '10.5px', color: 'var(--text3)' }}>
+                    {unit.noteUpdatedAt ? `แก้ไข: ${formatDateTime(unit.noteUpdatedAt)}` : 'ยังไม่มีการแก้ไข'}
+                  </span>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      type="button"
+                      className="btn btn-sm"
+                      onClick={() => handleOpenEdit(unit)}
+                      style={{ padding: '4px 8px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Edit2 size={12} />
+                      <span>แก้ไข</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-danger"
+                      onClick={() => setDeleteModal({ isOpen: true, item: unit })}
+                      style={{ padding: '4px 8px', fontSize: '11.5px' }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Mobile Floating Action Button (FAB) for Add Equipment */}
+      <div className="mobile-only" style={{ position: 'fixed', right: '18px', bottom: '70px', zIndex: 980 }}>
+        <button
+          type="button"
+          onClick={handleOpenAdd}
+          style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '24px',
+            backgroundColor: 'var(--accent)',
+            color: '#fff',
+            border: 'none',
+            boxShadow: '0 4px 14px rgba(59, 130, 246, 0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            WebkitTapHighlightColor: 'transparent'
+          }}
+          title="Add New Equipment"
+        >
+          <Plus size={22} />
+        </button>
       </div>
 
       {/* MODAL: ADD / EDIT SERVICE UNIT */}
