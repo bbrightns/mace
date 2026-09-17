@@ -2324,7 +2324,6 @@ export default function ServicesDatabase({
         const linkedPlans = pmPlans.filter(p => Array.isArray(p.targetUnitIds) && p.targetUnitIds.includes(u.id));
         return (
           <div
-            className="mobile-only"
             onClick={() => setMoreDetailUnit(null)}
             style={{
               position: 'fixed', inset: 0, zIndex: 1200,
