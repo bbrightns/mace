@@ -685,6 +685,22 @@ export default function ServicesDatabase() {
     return () => unsub();
   }, []);
 
+  // Reset / Reseed master data from default 37 units
+  const handleResetMasterData = async () => {
+    if (!window.confirm('คุณต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้น 37 รายการใช่หรือไม่? (สถานะที่เคยติ๊กและหมายเหตุจะถูกรีเซ็ต)')) {
+      return;
+    }
+    try {
+      await saveServicesDatabaseToCloud(INITIAL_SERVICES_DATA);
+      setUnits(INITIAL_SERVICES_DATA);
+      localStorage.setItem('mace_services_database_cache', JSON.stringify(INITIAL_SERVICES_DATA));
+      showToast('รีเซ็ตข้อมูลเริ่มต้น 37 รายการเรียบร้อยแล้ว', 'success');
+    } catch (err) {
+      console.error('Failed to reset master data:', err);
+      showToast('เกิดข้อผิดพลาดในการรีเซ็ตข้อมูล', 'error');
+    }
+  };
+
   // Start inline editing for a note
   const handleStartInlineEdit = (unit) => {
     setInlineEditingId(unit.id || `${unit.supplier}-${unit.plant}-${unit.itemNo}`);
@@ -988,7 +1004,7 @@ export default function ServicesDatabase() {
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button 
             className="btn" 
-            onClick={seedInitialData}
+            onClick={handleResetMasterData}
             title="คืนค่าข้อมูลเริ่มต้น 37 รายการ"
             style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
           >

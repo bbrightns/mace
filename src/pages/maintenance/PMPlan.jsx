@@ -3178,7 +3178,10 @@ export default function PMPlan() {
       )}
 
       {/* Main Content Renderers */}
-      {loading ? (
+      {activeTab === 'services-db' ? (
+        /* --- VIEW 4: SERVICES DATABASE --- */
+        <ServicesDatabase />
+      ) : loading ? (
         <div id="pm-loading-skeleton" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div className="skeleton-row" style={{ width: '100%', height: '42px' }}></div>
           <div className="skeleton-row" style={{ width: '100%', height: '42px' }}></div>
@@ -3643,9 +3646,6 @@ export default function PMPlan() {
             </ResponsiveContainer>
           </div>
         </div>
-      ) : activeTab === 'services-db' ? (
-        /* --- VIEW 4: SERVICES DATABASE --- */
-        <ServicesDatabase />
       ) : (
         /* --- VIEW 2: LIST VIEW (ORIGINAL CRUD MANAGER) --- */
         <>
