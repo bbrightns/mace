@@ -807,6 +807,9 @@ export default function ServicesDatabase({
   const [filterIssueOnly, setFilterIssueOnly] = useState(false);
   const [mobileViewMode, setMobileViewMode] = useState('cards'); // 'cards' or 'table'
 
+  // More Detail bottom-sheet state (mobile minimal card → tap ⋯ to open)
+  const [moreDetailUnit, setMoreDetailUnit] = useState(null);
+
   // Inline editing state for "หมายเหตุ"
   const [inlineEditingId, setInlineEditingId] = useState(null);
   const [inlineNoteValue, setInlineNoteValue] = useState('');
@@ -2173,9 +2176,9 @@ export default function ServicesDatabase({
         </table>
       </div>
 
-      {/* Mobile Equipment Cards (Optimized for field check on narrow screens) */}
+      {/* Mobile Equipment Cards — Minimal compact cards (2 rows each) */}
       {mobileViewMode === 'cards' && (
-        <div className="mobile-cards-view mobile-only" id="services-db-mobile-cards" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+        <div className="mobile-cards-view mobile-only" id="services-db-mobile-cards" style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
         {filteredUnits.length === 0 ? (
           <div className="card" style={{ padding: '24px', textAlign: 'center', color: 'var(--text3)' }}>
             <Info size={24} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
@@ -2188,243 +2191,300 @@ export default function ServicesDatabase({
             const hasIssue = statusInfo.status === 'breakdown' || statusInfo.status === 'monitoring';
 
             return (
-              <div 
+              <div
                 key={unit.id || `${unit.supplier}-${unit.plant}-${unit.itemNo}-${index}`}
-                className="card"
                 style={{
-                  padding: '14px',
+                  padding: '9px 12px',
                   backgroundColor: 'var(--surface)',
-                  border: `1px solid ${hasIssue ? 'rgba(239, 68, 68, 0.4)' : (unit.isCleaned ? 'rgba(16, 185, 129, 0.35)' : 'var(--border)')}`,
-                  borderRadius: '10px',
+                  border: `1px solid ${hasIssue ? 'rgba(239, 68, 68, 0.45)' : (unit.isCleaned ? 'rgba(16, 185, 129, 0.4)' : 'var(--border)')}`,
+                  borderLeft: `3px solid ${hasIssue ? '#ef4444' : (unit.isCleaned ? '#10b981' : 'var(--border)')}`,
+                  borderRadius: '8px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '10px',
-                  position: 'relative'
+                  gap: '5px',
                 }}
               >
-                {/* Header: Plant, Supplier, Code & Wash Toggle Button */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                    <span className={`plant-badge ${(unit.plant || 'RFG').toLowerCase()}`} style={{ fontWeight: 700 }}>
+                {/* Row 1: ID badges + Wash tick */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0, flex: 1 }}>
+                    <span className={`plant-badge ${(unit.plant || 'RFG').toLowerCase()}`} style={{ fontWeight: 700, flexShrink: 0, fontSize: '10px', padding: '1px 5px' }}>
                       {unit.plant}
                     </span>
                     <span style={{
-                      fontSize: '10.5px',
+                      fontSize: '10px',
                       fontWeight: 600,
-                      padding: '2px 7px',
+                      padding: '1px 5px',
                       borderRadius: '4px',
                       backgroundColor: theme.badgeBg,
                       color: theme.badgeColor,
-                      border: `1px solid ${theme.borderColor}`
+                      border: `1px solid ${theme.borderColor}`,
+                      flexShrink: 0,
+                      whiteSpace: 'nowrap'
                     }}>
                       {unit.supplier} No.{unit.itemNo}
                     </span>
                     {unit.newCode && (
-                      <span className="font-mono" style={{ fontSize: '13px', fontWeight: 800, color: 'var(--accent)' }}>
+                      <span className="font-mono" style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--accent)', flexShrink: 0 }}>
                         {unit.newCode}
                       </span>
                     )}
+                    {/* Issue dot indicator */}
+                    {hasIssue && (
+                      <span style={{
+                        width: '7px', height: '7px', borderRadius: '50%', flexShrink: 0,
+                        backgroundColor: statusInfo.status === 'breakdown' ? '#ef4444' : '#f59e0b',
+                        boxShadow: `0 0 0 2px ${statusInfo.status === 'breakdown' ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'}`
+                      }} title={statusInfo.label} />
+                    )}
                   </div>
 
-                  {/* 1-Tap Wash Toggle Button */}
+                  {/* Wash Tick: compact icon-only toggle */}
                   <button
                     type="button"
                     onClick={() => handleToggleCleaned(unit)}
+                    title={unit.isCleaned ? 'ล้างแล้ว — แตะเพื่อยกเลิก' : 'ยังไม่ล้าง — แตะเพื่อทำเครื่องหมาย'}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 8px',
-                      borderRadius: '16px',
-                      fontSize: '11px',
+                      gap: '3px',
+                      padding: '3px 7px',
+                      borderRadius: '12px',
+                      fontSize: '10.5px',
                       fontWeight: 700,
                       cursor: 'pointer',
                       border: unit.isCleaned ? '1px solid #10b981' : '1px solid var(--border)',
                       backgroundColor: unit.isCleaned ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface2)',
                       color: unit.isCleaned ? '#059669' : 'var(--text3)',
-                      transition: 'all 0.15s ease'
+                      flexShrink: 0,
+                      transition: 'all 0.15s ease',
+                      WebkitTapHighlightColor: 'transparent'
                     }}
-                    title="แตะเพื่อสลับสถานะล้างแอร์แล้ว"
                   >
-                    <CheckCircle2 size={13} style={{ color: unit.isCleaned ? '#10b981' : 'var(--text3)' }} />
+                    <CheckCircle2 size={12} style={{ color: unit.isCleaned ? '#10b981' : 'var(--text3)' }} />
                     <span>{unit.isCleaned ? 'ล้างแล้ว' : 'ยังไม่ล้าง'}</span>
                   </button>
                 </div>
 
-                {/* Location & Brand */}
-                <div>
-                  <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text)' }}>
-                    {unit.location || '—'}
-                  </div>
-                  <div style={{ fontSize: '12px', color: 'var(--text2)', marginTop: '2px' }}>
-                    {unit.brand ? `Brand: ${unit.brand}` : ''} {unit.btu ? `• ${Number(unit.btu).toLocaleString()} BTU` : ''}
-                  </div>
-                  {unit.specModel && (
-                    <div className="font-mono" style={{ fontSize: '11.5px', color: 'var(--text3)', marginTop: '2px' }}>
-                      Spec: {unit.specModel}
+                {/* Row 2: Name + detail + More Detail button */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'space-between' }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: 'var(--text)',
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {unit.location || '—'}
                     </div>
-                  )}
-                  {/* Linked Plan Badge (Mobile) */}
-                  {(() => {
-                    const linkedPlans = pmPlans.filter(p => Array.isArray(p.targetUnitIds) && p.targetUnitIds.includes(unit.id));
-                    if (linkedPlans.length === 0) return null;
-                    return (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
-                        {linkedPlans.map(lp => (
-                          <button
-                            key={lp.id}
-                            type="button"
-                            onClick={() => onNavigateToSchedule && onNavigateToSchedule(lp.id)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '3px',
-                              padding: '2px 6px',
-                              borderRadius: '4px',
-                              backgroundColor: 'rgba(5, 150, 105, 0.1)',
-                              color: '#059669',
-                              border: '1px solid rgba(5, 150, 105, 0.3)',
-                              fontSize: '10.5px',
-                              fontWeight: '600',
-                              cursor: onNavigateToSchedule ? 'pointer' : 'default'
-                            }}
-                          >
-                            <span>📅 ในแผน: {lp.machineName}</span>
-                            {onNavigateToSchedule && <ChevronRight size={11} />}
-                          </button>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {[unit.brand ? `${unit.brand}` : null, unit.btu ? `${unit.btu} BTU` : null].filter(Boolean).join(' • ') || <span style={{ fontStyle: 'italic' }}>ไม่มีข้อมูลเพิ่มเติม</span>}
+                    </div>
+                  </div>
 
-                {/* ประวัติการเสียและซ่อม (Touch Card to Open Mobile Bottom Sheet) */}
-                <div 
-                  onClick={() => handleOpenHistoryDrawer(unit)}
-                  style={{ 
-                    backgroundColor: statusInfo.status === 'breakdown' 
-                      ? 'rgba(239, 68, 68, 0.08)' 
-                      : (statusInfo.status === 'monitoring' 
-                        ? 'rgba(245, 158, 11, 0.08)' 
-                        : 'var(--surface2)'), 
-                    border: `1px solid ${statusInfo.status !== 'normal' ? statusInfo.border : 'var(--border)'}`, 
-                    borderRadius: '8px', 
-                    padding: '10px 12px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '6px',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <History size={13} style={{ color: statusInfo.color }} />
-                      <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text2)', letterSpacing: '0.3px' }}>
-                        ประวัติการเสียและซ่อม
-                      </span>
-                    </div>
-                    <span style={{
+                  {/* More Detail button */}
+                  <button
+                    type="button"
+                    onClick={() => setMoreDetailUnit(unit)}
+                    title="ดูรายละเอียด, แก้ไข, ลบ"
+                    style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '2px',
+                      gap: '3px',
+                      padding: '4px 9px',
+                      borderRadius: '6px',
                       fontSize: '11px',
-                      fontWeight: 700,
-                      color: 'var(--accent)',
-                      padding: '1px 6px',
-                      borderRadius: '10px',
-                      background: 'rgba(59, 130, 246, 0.08)'
-                    }}>
-                      <span>{statusInfo.totalCount} รายการ</span>
-                      <ChevronRight size={12} />
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
-                      {statusInfo.status === 'breakdown' ? (
-                        <>
-                          <AlertTriangle size={14} style={{ color: '#dc2626', flexShrink: 0 }} />
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#dc2626', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {statusInfo.latestIssue || 'มีอาการเสีย / รอดำเนินการ'}
-                            </div>
-                            {statusInfo.latestEntry?.date && (
-                              <div style={{ fontSize: '10.5px', color: 'var(--text3)', marginTop: '1px' }}>
-                                แจ้งเมื่อ: {formatDateThai(statusInfo.latestEntry.date)} {statusInfo.latestEntry.technician ? `• ${statusInfo.latestEntry.technician}` : ''}
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      ) : statusInfo.status === 'monitoring' ? (
-                        <>
-                          <Activity size={14} style={{ color: '#d97706', flexShrink: 0 }} />
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#d97706', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {statusInfo.latestIssue || 'เฝ้าระวังอาการ'}
-                            </div>
-                            {statusInfo.latestEntry?.date && (
-                              <div style={{ fontSize: '10.5px', color: 'var(--text3)', marginTop: '1px' }}>
-                                ล่าสุด: {formatDateThai(statusInfo.latestEntry.date)}
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      ) : statusInfo.status === 'resolved' ? (
-                        <>
-                          <CheckCircle2 size={14} style={{ color: '#059669', flexShrink: 0 }} />
-                          <div>
-                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#059669' }}>
-                              เครื่องปกติ (ซ่อมเสร็จแล้ว)
-                            </div>
-                            {statusInfo.latestEntry?.title && (
-                              <div style={{ fontSize: '10.5px', color: 'var(--text3)', marginTop: '1px' }}>
-                                ล่าสุด: {statusInfo.latestEntry.title} ({formatDateThai(statusInfo.latestEntry.date)})
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text3)', fontSize: '12px' }}>
-                          <PlusCircle size={14} style={{ color: 'var(--accent)' }} />
-                          <span>แตะเพื่อบันทึกประวัติการเสียหรือซ่อม</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Footer: Last Update & Action Buttons */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: '8px' }}>
-                  <span style={{ fontSize: '10.5px', color: 'var(--text3)' }}>
-                    {unit.noteUpdatedAt ? `แก้ไข: ${formatDateTime(unit.noteUpdatedAt)}` : 'ยังไม่มีการแก้ไข'}
-                  </span>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button
-                      type="button"
-                      className="btn btn-sm"
-                      onClick={() => handleOpenEdit(unit)}
-                      style={{ padding: '4px 8px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <Edit2 size={12} />
-                      <span>แก้ไข</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-danger"
-                      onClick={() => setDeleteModal({ isOpen: true, item: unit })}
-                      style={{ padding: '4px 8px', fontSize: '11.5px' }}
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      border: '1px solid var(--border)',
+                      backgroundColor: 'var(--surface2)',
+                      color: 'var(--text2)',
+                      flexShrink: 0,
+                      WebkitTapHighlightColor: 'transparent'
+                    }}
+                  >
+                    <span>⋯</span>
+                    <span>รายละเอียด</span>
+                  </button>
                 </div>
               </div>
             );
           })
         )}
-      </div>
+        </div>
       )}
+
+      {/* More Detail Bottom-Sheet (mobile) */}
+      {moreDetailUnit && (() => {
+        const u = units.find(x => x.id === moreDetailUnit.id) || moreDetailUnit;
+        const theme = SUPPLIER_THEMES[u.supplier] || { badgeBg: 'var(--surface2)', badgeColor: 'var(--text)', borderColor: 'var(--border)' };
+        const statusInfo = getUnitStatusInfo(u);
+        const hasIssue = statusInfo.status === 'breakdown' || statusInfo.status === 'monitoring';
+        const linkedPlans = pmPlans.filter(p => Array.isArray(p.targetUnitIds) && p.targetUnitIds.includes(u.id));
+        return (
+          <div
+            className="mobile-only"
+            onClick={() => setMoreDetailUnit(null)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 1200,
+              backgroundColor: 'rgba(0,0,0,0.45)',
+              display: 'flex', alignItems: 'flex-end'
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxHeight: '85vh',
+                overflowY: 'auto',
+                backgroundColor: 'var(--surface)',
+                borderRadius: '16px 16px 0 0',
+                padding: '0 0 32px 0',
+                boxShadow: '0 -4px 24px rgba(0,0,0,0.18)'
+              }}
+            >
+              {/* Drag Handle */}
+              <div style={{ width: '36px', height: '4px', borderRadius: '2px', backgroundColor: 'var(--border)', margin: '12px auto 8px auto' }} />
+
+              {/* Sheet Header */}
+              <div style={{
+                padding: '10px 16px 12px',
+                borderBottom: `1px solid ${hasIssue ? 'rgba(239,68,68,0.3)' : 'var(--border)'}`,
+                backgroundColor: hasIssue ? 'rgba(239,68,68,0.04)' : (u.isCleaned ? 'rgba(16,185,129,0.04)' : 'var(--surface)')
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                  <span className={`plant-badge ${(u.plant || 'RFG').toLowerCase()}`} style={{ fontWeight: 700 }}>{u.plant}</span>
+                  <span style={{ fontSize: '10.5px', fontWeight: 600, padding: '2px 7px', borderRadius: '4px', backgroundColor: theme.badgeBg, color: theme.badgeColor, border: `1px solid ${theme.borderColor}` }}>
+                    {u.supplier} No.{u.itemNo}
+                  </span>
+                  {u.newCode && <span className="font-mono" style={{ fontSize: '14px', fontWeight: 800, color: 'var(--accent)' }}>{u.newCode}</span>}
+                  {hasIssue && (
+                    <span style={{
+                      fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '8px',
+                      backgroundColor: statusInfo.status === 'breakdown' ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)',
+                      color: statusInfo.status === 'breakdown' ? '#dc2626' : '#d97706',
+                      border: `1px solid ${statusInfo.status === 'breakdown' ? '#fca5a5' : '#fde68a'}`
+                    }}>
+                      {statusInfo.label}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text)' }}>{u.location || '—'}</div>
+              </div>
+
+              {/* Detail rows */}
+              <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {/* Brand / BTU / Spec */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  <div style={{ background: 'var(--surface2)', borderRadius: '8px', padding: '8px 10px' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--text3)', fontWeight: 600, marginBottom: '2px' }}>BRAND</div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>{u.brand || '—'}</div>
+                  </div>
+                  <div style={{ background: 'var(--surface2)', borderRadius: '8px', padding: '8px 10px' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--text3)', fontWeight: 600, marginBottom: '2px' }}>BTU</div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)' }}>{u.btu ? `${u.btu} BTU` : '—'}</div>
+                  </div>
+                </div>
+
+                {u.specModel && (
+                  <div style={{ background: 'var(--surface2)', borderRadius: '8px', padding: '8px 10px' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--text3)', fontWeight: 600, marginBottom: '2px' }}>SPEC / MODEL</div>
+                    <div className="font-mono" style={{ fontSize: '12.5px', color: 'var(--text2)' }}>{u.specModel}</div>
+                  </div>
+                )}
+
+                {/* History status */}
+                <div
+                  onClick={() => { setMoreDetailUnit(null); handleOpenHistoryDrawer(u); }}
+                  style={{
+                    background: hasIssue ? (statusInfo.status === 'breakdown' ? 'rgba(239,68,68,0.07)' : 'rgba(245,158,11,0.07)') : 'var(--surface2)',
+                    border: `1px solid ${hasIssue ? statusInfo.border : 'var(--border)'}`,
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    gap: '8px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <History size={14} style={{ color: statusInfo.color }} />
+                    <div>
+                      <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text2)' }}>ประวัติการเสียและซ่อม</div>
+                      {hasIssue && statusInfo.latestIssue && (
+                        <div style={{ fontSize: '11px', color: statusInfo.color, marginTop: '1px' }}>{statusInfo.latestIssue}</div>
+                      )}
+                    </div>
+                  </div>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', fontSize: '11px', fontWeight: 700, color: 'var(--accent)', padding: '2px 7px', borderRadius: '10px', background: 'rgba(59,130,246,0.08)', flexShrink: 0 }}>
+                    {statusInfo.totalCount} รายการ <ChevronRight size={12} />
+                  </span>
+                </div>
+
+                {/* Linked plans */}
+                {linkedPlans.length > 0 && (
+                  <div style={{ background: 'var(--surface2)', borderRadius: '8px', padding: '8px 10px' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--text3)', fontWeight: 600, marginBottom: '6px' }}>ในแผน PM</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      {linkedPlans.map(lp => (
+                        <button
+                          key={lp.id}
+                          type="button"
+                          onClick={() => { setMoreDetailUnit(null); onNavigateToSchedule && onNavigateToSchedule(lp.id); }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', padding: '2px 7px', borderRadius: '4px', backgroundColor: 'rgba(5,150,105,0.1)', color: '#059669', border: '1px solid rgba(5,150,105,0.3)', fontSize: '11px', fontWeight: '600', cursor: onNavigateToSchedule ? 'pointer' : 'default' }}
+                        >
+                          📅 {lp.machineName} {onNavigateToSchedule && <ChevronRight size={11} />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Update timestamp */}
+                {u.noteUpdatedAt && (
+                  <div style={{ fontSize: '10.5px', color: 'var(--text3)', textAlign: 'right' }}>
+                    แก้ไขล่าสุด: {formatDateTime(u.noteUpdatedAt)}
+                  </div>
+                )}
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ padding: '0 16px', display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => { setMoreDetailUnit(null); handleOpenEdit(u); }}
+                  style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', fontSize: '13px' }}
+                >
+                  <Edit2 size={14} />
+                  แก้ไขข้อมูล
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => { setMoreDetailUnit(null); setDeleteModal({ isOpen: true, item: u }); }}
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px 16px', fontSize: '13px' }}
+                >
+                  <Trash2 size={14} />
+                  ลบ
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setMoreDetailUnit(null)}
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '10px 14px', fontSize: '13px' }}
+                >
+                  <X size={14} />
+                  ปิด
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
 
       {/* Mobile Floating Action Button (FAB) for Add Equipment */}
       <div className="mobile-only" style={{ position: 'fixed', right: '18px', bottom: '70px', zIndex: 980 }}>
