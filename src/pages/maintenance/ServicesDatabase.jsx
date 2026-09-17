@@ -663,8 +663,8 @@ export function getUnitHistory(unit) {
   if (!unit) return [];
   if (Array.isArray(unit.history) && unit.history.length > 0) {
     return [...unit.history].sort((a, b) => {
-      const dateA = a.date || (a.createdAt ? a.createdAt.split('T')[0] : '') || '';
-      const dateB = b.date || (b.createdAt ? b.createdAt.split('T')[0] : '') || '';
+      const dateA = a.resolvedDate || a.date || (a.createdAt ? a.createdAt.split('T')[0] : '') || '';
+      const dateB = b.resolvedDate || b.date || (b.createdAt ? b.createdAt.split('T')[0] : '') || '';
       return dateB.localeCompare(dateA);
     });
   }
@@ -799,6 +799,7 @@ export default function ServicesDatabase() {
   const [histTitle, setHistTitle] = useState('');
   const [histDetails, setHistDetails] = useState('');
   const [histStatus, setHistStatus] = useState('pending'); // pending, monitoring, resolved
+  const [histResolvedDate, setHistResolvedDate] = useState('');
   const [histTechnician, setHistTechnician] = useState('');
   const [histCost, setHistCost] = useState('');
   const [isSavingHistory, setIsSavingHistory] = useState(false);
@@ -950,7 +951,9 @@ export default function ServicesDatabase() {
   // Toggle or open Add History Entry form
   const handleOpenAddHistory = () => {
     setEditingHistoryEntry(null);
-    setHistDate(new Date().toISOString().split('T')[0]);
+    const today = new Date().toISOString().split('T')[0];
+    setHistDate(today);
+    setHistResolvedDate(today);
     setHistType('breakdown');
     setHistTitle('');
     setHistDetails('');
@@ -963,7 +966,9 @@ export default function ServicesDatabase() {
   // Open Edit History Entry form
   const handleOpenEditHistory = (entry) => {
     setEditingHistoryEntry(entry);
-    setHistDate(entry.date || (entry.createdAt ? entry.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]));
+    const today = new Date().toISOString().split('T')[0];
+    setHistDate(entry.date || (entry.createdAt ? entry.createdAt.split('T')[0] : today));
+    setHistResolvedDate(entry.resolvedDate || (entry.status === 'resolved' ? (entry.updatedAt ? entry.updatedAt.split('T')[0] : (entry.date || today)) : today));
     setHistType(entry.type || 'breakdown');
     setHistTitle(entry.title || '');
     setHistDetails(entry.details || '');
@@ -986,9 +991,14 @@ export default function ServicesDatabase() {
     const existingHistory = getUnitHistory(activeUnitInDrawer);
     const nowIso = new Date().toISOString();
 
+    const resolvedDateValue = (histStatus === 'resolved' || histStatus === 'monitoring')
+      ? (histResolvedDate || histDate || nowIso.split('T')[0])
+      : null;
+
     const entryToSave = {
       id: editingHistoryEntry ? editingHistoryEntry.id : `hist_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
       date: histDate || new Date().toISOString().split('T')[0],
+      resolvedDate: resolvedDateValue,
       type: histType,
       title: histTitle.trim(),
       details: histDetails.trim(),
@@ -1008,8 +1018,8 @@ export default function ServicesDatabase() {
 
     // Sort updated history by date descending
     updatedHistory.sort((a, b) => {
-      const dateA = a.date || (a.createdAt ? a.createdAt.split('T')[0] : '') || '';
-      const dateB = b.date || (b.createdAt ? b.createdAt.split('T')[0] : '') || '';
+      const dateA = a.resolvedDate || a.date || (a.createdAt ? a.createdAt.split('T')[0] : '') || '';
+      const dateB = b.resolvedDate || b.date || (b.createdAt ? b.createdAt.split('T')[0] : '') || '';
       return dateB.localeCompare(dateA);
     });
 
@@ -1023,7 +1033,9 @@ export default function ServicesDatabase() {
       syncedNoteUpdatedAt = activeIssues[0].date ? `${activeIssues[0].date}T12:00:00.000Z` : nowIso;
     } else if (updatedHistory.length > 0) {
       syncedNote = '';
-      syncedNoteUpdatedAt = updatedHistory[0].date ? `${updatedHistory[0].date}T12:00:00.000Z` : nowIso;
+      syncedNoteUpdatedAt = updatedHistory[0].resolvedDate 
+        ? `${updatedHistory[0].resolvedDate}T12:00:00.000Z` 
+        : (updatedHistory[0].date ? `${updatedHistory[0].date}T12:00:00.000Z` : nowIso);
     }
 
     const nextUnits = units.map(u => {
@@ -1884,20 +1896,13 @@ export default function ServicesDatabase() {
                   <span>ประวัติการเสียและซ่อม / หมายเหตุ</span>
                 </div>
               </th>
-              <th style={{ width: '145px', padding: '10px 10px', textAlign: 'left' }} title="บันทึกวันและเวลาที่มีการแก้ไขช่องหมายเหตุล่าสุดให้อัตโนมัติ (จะแสดงเป็น — หากไม่มีการแก้ไขหมายเหตุ)">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Clock size={12} style={{ color: 'var(--accent)' }} />
-                  <span>แก้ไขล่าสุด</span>
-                  <Info size={11} style={{ color: 'var(--text3)', cursor: 'help' }} />
-                </div>
-              </th>
               <th style={{ width: '80px', padding: '10px 8px', textAlign: 'center' }}>จัดการ</th>
             </tr>
           </thead>
           <tbody>
             {filteredUnits.length === 0 ? (
               <tr>
-                <td colSpan={12} style={{ textAlign: 'center', padding: '36px', color: 'var(--text3)' }}>
+                <td colSpan={11} style={{ textAlign: 'center', padding: '36px', color: 'var(--text3)' }}>
                   <Info size={24} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
                   <div>ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา</div>
                 </td>
@@ -2074,18 +2079,6 @@ export default function ServicesDatabase() {
                           <span>{statusInfo.totalCount}</span>
                         </span>
                       </div>
-                    </td>
-
-                    {/* วันที่แก้ไขล่าสุด (Last Updated Date) */}
-                    <td style={{ padding: '8px 10px', fontSize: '11px', color: unit.noteUpdatedAt ? 'var(--text2)' : 'var(--text3)', whiteSpace: 'nowrap' }}>
-                      {unit.noteUpdatedAt ? (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <Clock size={11} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                          <span>{formatDateTime(unit.noteUpdatedAt)}</span>
-                        </div>
-                      ) : (
-                        '—'
-                      )}
                     </td>
 
                     {/* Actions */}
@@ -2590,6 +2583,9 @@ export default function ServicesDatabase() {
                                   setHistType(preset.type);
                                   setHistStatus(preset.status);
                                   setHistTitle(preset.title);
+                                  if (preset.status === 'resolved' || preset.status === 'monitoring') {
+                                    setHistResolvedDate(new Date().toISOString().split('T')[0]);
+                                  }
                                 }}
                                 style={{
                                   fontSize: '11px',
@@ -2681,7 +2677,13 @@ export default function ServicesDatabase() {
                             </label>
                             <select
                               value={histStatus}
-                              onChange={(e) => setHistStatus(e.target.value)}
+                              onChange={(e) => {
+                                const newStatus = e.target.value;
+                                setHistStatus(newStatus);
+                                if ((newStatus === 'resolved' || newStatus === 'monitoring') && !histResolvedDate) {
+                                  setHistResolvedDate(new Date().toISOString().split('T')[0]);
+                                }
+                              }}
                               className="form-select"
                               style={{
                                 height: '34px',
@@ -2711,6 +2713,50 @@ export default function ServicesDatabase() {
                             />
                           </div>
                         </div>
+
+                        {/* Conditional Date Completed / Repaired Row (Timeline Continuation) */}
+                        {(histStatus === 'resolved' || histStatus === 'monitoring') && (
+                          <div style={{
+                            backgroundColor: histStatus === 'resolved' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)',
+                            border: `1px solid ${histStatus === 'resolved' ? '#a7f3d0' : '#fde68a'}`,
+                            borderRadius: '8px',
+                            padding: '10px 12px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '6px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                              <label style={{
+                                fontSize: '11.5px',
+                                fontWeight: 700,
+                                color: histStatus === 'resolved' ? '#059669' : '#d97706',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px'
+                              }}>
+                                <CheckCircle2 size={14} />
+                                <span>{histStatus === 'resolved' ? 'วันที่ซ่อมเสร็จสิ้น (Timeline ปิดงาน)' : 'วันที่เริ่มเฝ้าระวัง/ทดสอบ'}</span>
+                                <span style={{ color: '#ef4444' }}>*</span>
+                              </label>
+                              <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
+                                แสดงเป็นไทม์ไลน์บันทึกขั้นตอนต่อลงมา
+                              </span>
+                            </div>
+                            <input
+                              type="date"
+                              value={histResolvedDate}
+                              onChange={(e) => setHistResolvedDate(e.target.value)}
+                              required
+                              className="form-input"
+                              style={{
+                                height: '34px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                borderColor: histStatus === 'resolved' ? '#10b981' : '#f59e0b'
+                              }}
+                            />
+                          </div>
+                        )}
 
                         {/* Form Row 5: Cost & Save Buttons */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', alignItems: 'flex-end', marginTop: '2px' }}>
@@ -2793,12 +2839,12 @@ export default function ServicesDatabase() {
                         {/* List of History Items */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                           {historyLogs.map((entry, idx) => {
-                            const isBreakdown = entry.type === 'breakdown' || entry.status === 'pending';
+                            const isPending = entry.status === 'pending';
                             const isMonitoring = entry.status === 'monitoring';
                             const isResolved = entry.status === 'resolved';
 
-                            const nodeColor = isBreakdown ? '#ef4444' : (isMonitoring ? '#f59e0b' : '#10b981');
-                            const nodeBg = isBreakdown ? 'rgba(239, 68, 68, 0.15)' : (isMonitoring ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)');
+                            const nodeColor = isPending ? '#ef4444' : (isMonitoring ? '#f59e0b' : '#10b981');
+                            const nodeBg = isPending ? 'rgba(239, 68, 68, 0.15)' : (isMonitoring ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)');
 
                             return (
                               <div key={entry.id || idx} style={{ position: 'relative', zIndex: 1 }}>
@@ -2823,7 +2869,7 @@ export default function ServicesDatabase() {
                                 {/* Timeline Item Card */}
                                 <div style={{
                                   backgroundColor: 'var(--surface)',
-                                  border: `1px solid ${isBreakdown ? 'rgba(239, 68, 68, 0.3)' : (isMonitoring ? 'rgba(245, 158, 11, 0.3)' : 'var(--border)')}`,
+                                  border: `1px solid ${isPending ? 'rgba(239, 68, 68, 0.3)' : (isMonitoring ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.35)')}`,
                                   borderRadius: '10px',
                                   padding: '12px 14px',
                                   boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',
@@ -2865,10 +2911,10 @@ export default function ServicesDatabase() {
                                         fontWeight: 700,
                                         padding: '1px 7px',
                                         borderRadius: '4px',
-                                        backgroundColor: isBreakdown ? 'rgba(239, 68, 68, 0.15)' : (isMonitoring ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)'),
-                                        color: isBreakdown ? '#dc2626' : (isMonitoring ? '#d97706' : '#059669')
+                                        backgroundColor: isPending ? 'rgba(239, 68, 68, 0.15)' : (isMonitoring ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)'),
+                                        color: isPending ? '#dc2626' : (isMonitoring ? '#d97706' : '#059669')
                                       }}>
-                                        {isBreakdown ? '🔴 รอดำเนินการ' : (isMonitoring ? '🟡 เฝ้าระวัง' : '🟢 ซ่อมแล้ว')}
+                                        {isPending ? '🔴 รอดำเนินการ' : (isMonitoring ? '🟡 เฝ้าระวัง' : '🟢 ซ่อมเสร็จแล้ว')}
                                       </span>
                                     </div>
 
@@ -2895,16 +2941,215 @@ export default function ServicesDatabase() {
                                     </div>
                                   </div>
 
-                                  {/* Title / Symptom */}
-                                  <div style={{ fontSize: '13.5px', fontWeight: 700, color: isBreakdown ? '#dc2626' : 'var(--text)' }}>
-                                    {entry.title}
-                                  </div>
+                                  {/* Body: Connected Timeline Progression or Pending View */}
+                                  {isResolved ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginTop: '2px' }}>
+                                      {/* Stage 1: Incident / Discovery */}
+                                      <div style={{ display: 'flex', gap: '10px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0 }}>
+                                          <div style={{
+                                            width: '12px',
+                                            height: '12px',
+                                            borderRadius: '50%',
+                                            backgroundColor: '#ef4444',
+                                            border: '2px solid var(--surface)',
+                                            boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.3)',
+                                            marginTop: '3px'
+                                          }} />
+                                          <div style={{
+                                            width: '2px',
+                                            flex: 1,
+                                            minHeight: '24px',
+                                            backgroundColor: '#cbd5e1',
+                                            margin: '2px 0'
+                                          }} />
+                                        </div>
 
-                                  {/* Details */}
-                                  {entry.details && (
-                                    <div style={{ fontSize: '12px', color: 'var(--text2)', lineHeight: 1.45, whiteSpace: 'pre-wrap', backgroundColor: 'var(--surface2)', padding: '8px 10px', borderRadius: '6px' }}>
-                                      {entry.details}
+                                        <div style={{ flex: 1, paddingBottom: '8px' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#dc2626', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
+                                              พบเหตุ
+                                            </span>
+                                            <span style={{ fontSize: '11.5px', color: 'var(--text2)', fontWeight: 600 }}>
+                                              {formatDateThai(entry.date)}
+                                            </span>
+                                          </div>
+                                          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', marginTop: '2px' }}>
+                                            {entry.title}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Stage 2: Repaired / Resolved (ต่อลงมา) */}
+                                      <div style={{ display: 'flex', gap: '10px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0 }}>
+                                          <div style={{
+                                            width: '12px',
+                                            height: '12px',
+                                            borderRadius: '50%',
+                                            backgroundColor: '#10b981',
+                                            border: '2px solid var(--surface)',
+                                            boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.3)',
+                                            marginTop: '3px'
+                                          }} />
+                                        </div>
+
+                                        <div style={{ flex: 1 }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#059669', backgroundColor: 'rgba(16, 185, 129, 0.12)', padding: '1px 6px', borderRadius: '4px' }}>
+                                              ซ่อมเสร็จสิ้น
+                                            </span>
+                                            <span style={{ fontSize: '11.5px', color: '#059669', fontWeight: 700 }}>
+                                              {formatDateThai(entry.resolvedDate || (entry.updatedAt ? entry.updatedAt.split('T')[0] : entry.date))}
+                                            </span>
+                                          </div>
+
+                                          {entry.details ? (
+                                            <div style={{
+                                              fontSize: '12px',
+                                              color: 'var(--text2)',
+                                              lineHeight: 1.45,
+                                              whiteSpace: 'pre-wrap',
+                                              backgroundColor: 'var(--surface2)',
+                                              padding: '8px 10px',
+                                              borderRadius: '6px',
+                                              marginTop: '6px',
+                                              borderLeft: '3px solid #10b981'
+                                            }}>
+                                              {entry.details}
+                                            </div>
+                                          ) : (
+                                            <div style={{ fontSize: '11.5px', color: '#059669', fontStyle: 'italic', marginTop: '4px' }}>
+                                              ดำเนินการแก้ไขและทดสอบระบบเรียบร้อยแล้ว
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
+                                  ) : isMonitoring ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', marginTop: '2px' }}>
+                                      {/* Stage 1: Incident */}
+                                      <div style={{ display: 'flex', gap: '10px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0 }}>
+                                          <div style={{
+                                            width: '12px',
+                                            height: '12px',
+                                            borderRadius: '50%',
+                                            backgroundColor: '#ef4444',
+                                            border: '2px solid var(--surface)',
+                                            boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.3)',
+                                            marginTop: '3px'
+                                          }} />
+                                          <div style={{
+                                            width: '2px',
+                                            flex: 1,
+                                            minHeight: '24px',
+                                            backgroundColor: '#cbd5e1',
+                                            margin: '2px 0'
+                                          }} />
+                                        </div>
+
+                                        <div style={{ flex: 1, paddingBottom: '8px' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#dc2626', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '1px 6px', borderRadius: '4px' }}>
+                                              พบเหตุ
+                                            </span>
+                                            <span style={{ fontSize: '11.5px', color: 'var(--text2)', fontWeight: 600 }}>
+                                              {formatDateThai(entry.date)}
+                                            </span>
+                                          </div>
+                                          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', marginTop: '2px' }}>
+                                            {entry.title}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Stage 2: Monitoring (ต่อลงมา) */}
+                                      <div style={{ display: 'flex', gap: '10px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '16px', flexShrink: 0 }}>
+                                          <div style={{
+                                            width: '12px',
+                                            height: '12px',
+                                            borderRadius: '50%',
+                                            backgroundColor: '#f59e0b',
+                                            border: '2px solid var(--surface)',
+                                            boxShadow: '0 0 0 2px rgba(245, 158, 11, 0.3)',
+                                            marginTop: '3px'
+                                          }} />
+                                        </div>
+
+                                        <div style={{ flex: 1 }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#d97706', backgroundColor: 'rgba(245, 158, 11, 0.12)', padding: '1px 6px', borderRadius: '4px' }}>
+                                              เริ่มเฝ้าระวัง / ทดสอบ
+                                            </span>
+                                            <span style={{ fontSize: '11.5px', color: '#d97706', fontWeight: 700 }}>
+                                              {formatDateThai(entry.resolvedDate || (entry.updatedAt ? entry.updatedAt.split('T')[0] : entry.date))}
+                                            </span>
+                                          </div>
+
+                                          {entry.details && (
+                                            <div style={{
+                                              fontSize: '12px',
+                                              color: 'var(--text2)',
+                                              lineHeight: 1.45,
+                                              whiteSpace: 'pre-wrap',
+                                              backgroundColor: 'var(--surface2)',
+                                              padding: '8px 10px',
+                                              borderRadius: '6px',
+                                              marginTop: '6px',
+                                              borderLeft: '3px solid #f59e0b'
+                                            }}>
+                                              {entry.details}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      {/* Title / Symptom */}
+                                      <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#dc2626' }}>
+                                        {entry.title}
+                                      </div>
+
+                                      {/* Details */}
+                                      {entry.details && (
+                                        <div style={{ fontSize: '12px', color: 'var(--text2)', lineHeight: 1.45, whiteSpace: 'pre-wrap', backgroundColor: 'var(--surface2)', padding: '8px 10px', borderRadius: '6px' }}>
+                                          {entry.details}
+                                        </div>
+                                      )}
+
+                                      {/* Quick Action: Mark as Resolved */}
+                                      <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                                        border: '1px dashed rgba(239, 68, 68, 0.25)',
+                                        borderRadius: '6px',
+                                        padding: '6px 10px',
+                                        marginTop: '2px'
+                                      }}>
+                                        <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                          <Clock size={12} />
+                                          <span>กำลังรอดำเนินการซ่อม</span>
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            handleOpenEditHistory(entry);
+                                            setHistStatus('resolved');
+                                            setHistResolvedDate(new Date().toISOString().split('T')[0]);
+                                          }}
+                                          className="btn btn-sm btn-primary"
+                                          style={{ fontSize: '11px', height: '24px', padding: '0 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                        >
+                                          <CheckCircle2 size={12} />
+                                          <span>บันทึกการซ่อมเสร็จ</span>
+                                        </button>
+                                      </div>
+                                    </>
                                   )}
 
                                   {/* Card Footer: Tech & Cost */}
