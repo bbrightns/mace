@@ -57,7 +57,8 @@ import {
   uploadAttachment,
   getAttachmentFromLocalDB,
   getAttachmentFromCloudChunks,
-  subscribeServicesDatabase
+  subscribeServicesDatabase,
+  getServicesDatabaseFromCloud
 } from '../../firebase/collections';
 import Modal from '../../components/Modal';
 import PMReportPdfModal from '../../components/PMReportPdfModal';
@@ -291,10 +292,14 @@ export default function PMPlan() {
   const [servicesUnits, setServicesUnits] = useState(() => {
     try {
       const cached = localStorage.getItem('mace_services_database_cache');
-      return cached ? JSON.parse(cached) : INITIAL_SERVICES_DATA;
-    } catch (e) {
-      return INITIAL_SERVICES_DATA;
-    }
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return Array.isArray(INITIAL_SERVICES_DATA) ? INITIAL_SERVICES_DATA : [];
   });
 
   // Service units inspector modal states
@@ -412,6 +417,16 @@ export default function PMPlan() {
       }
     }, () => {});
 
+    // Direct cloud fetch backup to ensure units are always loaded immediately
+    getServicesDatabaseFromCloud().then(cloudItems => {
+      if (cloudItems && Array.isArray(cloudItems) && cloudItems.length > 0) {
+        setServicesUnits(cloudItems);
+        try {
+          localStorage.setItem('mace_services_database_cache', JSON.stringify(cloudItems));
+        } catch (e) {}
+      }
+    }).catch(err => console.warn('Direct fetch services error in PMPlan:', err));
+
     const unsubscribeServices = subscribeServicesDatabase(
       (data) => {
         if (data && Array.isArray(data) && data.length > 0) {
@@ -419,10 +434,13 @@ export default function PMPlan() {
           try {
             localStorage.setItem('mace_services_database_cache', JSON.stringify(data));
           } catch (e) {}
+        } else {
+          setServicesUnits(prev => (prev && prev.length > 0) ? prev : (INITIAL_SERVICES_DATA || []));
         }
       },
       (error) => {
         console.warn('Sync services database in PMPlan error:', error);
+        setServicesUnits(prev => (prev && prev.length > 0) ? prev : (INITIAL_SERVICES_DATA || []));
       }
     );
 
@@ -483,23 +501,63 @@ export default function PMPlan() {
     }
   };
 
+  // Base active services list with robust fallback
+  const activeServicesList = useMemo(() => {
+    if (servicesUnits && Array.isArray(servicesUnits) && servicesUnits.length > 0) {
+      return servicesUnits;
+    }
+    if (INITIAL_SERVICES_DATA && Array.isArray(INITIAL_SERVICES_DATA) && INITIAL_SERVICES_DATA.length > 0) {
+      return INITIAL_SERVICES_DATA;
+    }
+    return [];
+  }, [servicesUnits]);
+
+  // Dynamic supplier options with counts
+  const servicesSupplierOptions = useMemo(() => {
+    const counts = {};
+    activeServicesList.forEach(u => {
+      const s = (u.supplier || '').trim();
+      if (s) counts[s] = (counts[s] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, count }));
+  }, [activeServicesList]);
+
+  // Dynamic plant options with counts
+  const servicesPlantOptions = useMemo(() => {
+    const counts = {};
+    activeServicesList.forEach(u => {
+      const p = (u.plant || '').trim();
+      if (p) counts[p] = (counts[p] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, count }));
+  }, [activeServicesList]);
+
   // Unit picker filtered list for Add/Edit Modal
   const filteredPickerUnits = useMemo(() => {
-    return servicesUnits.filter(u => {
-      if (unitPickerSupplier !== 'all' && u.supplier !== unitPickerSupplier) return false;
-      if (unitPickerPlant !== 'all' && u.plant !== unitPickerPlant) return false;
+    return activeServicesList.filter(u => {
+      if (unitPickerSupplier !== 'all') {
+        const uSupp = (u.supplier || '').trim().toLowerCase();
+        const fSupp = unitPickerSupplier.trim().toLowerCase();
+        if (uSupp !== fSupp && !uSupp.includes(fSupp) && !fSupp.includes(uSupp)) return false;
+      }
+      if (unitPickerPlant !== 'all') {
+        const uPlant = (u.plant || '').trim().toLowerCase();
+        const fPlant = unitPickerPlant.trim().toLowerCase();
+        if (uPlant !== fPlant) return false;
+      }
       if (unitPickerSearch.trim()) {
-        const q = unitPickerSearch.toLowerCase();
+        const q = unitPickerSearch.trim().toLowerCase();
         const match = (u.newCode || '').toLowerCase().includes(q) ||
                       (u.location || '').toLowerCase().includes(q) ||
                       (u.brand || '').toLowerCase().includes(q) ||
                       (u.btu || '').toLowerCase().includes(q) ||
-                      (u.specModel || '').toLowerCase().includes(q);
+                      (u.specModel || '').toLowerCase().includes(q) ||
+                      (u.supplier || '').toLowerCase().includes(q);
         if (!match) return false;
       }
       return true;
     });
-  }, [servicesUnits, unitPickerSupplier, unitPickerPlant, unitPickerSearch]);
+  }, [activeServicesList, unitPickerSupplier, unitPickerPlant, unitPickerSearch]);
 
   const handleTogglePickerUnit = (unitId) => {
     setTargetUnitIds(prev => 
@@ -537,6 +595,13 @@ export default function PMPlan() {
     setUnitPickerSearch('');
     setUnitPickerSupplier('all');
     setUnitPickerPlant('all');
+    if (!servicesUnits || servicesUnits.length === 0) {
+      getServicesDatabaseFromCloud().then(cloudItems => {
+        if (cloudItems && Array.isArray(cloudItems) && cloudItems.length > 0) {
+          setServicesUnits(cloudItems);
+        }
+      }).catch(() => {});
+    }
     setRank('B');
     setSuggestedRankInfo(null);
     setPlant('RFG');
@@ -561,8 +626,15 @@ export default function PMPlan() {
     setItemType(item.itemType || item.type || 'pm');
     setTargetUnitIds(Array.isArray(item.targetUnitIds) ? item.targetUnitIds : []);
     setUnitPickerSearch('');
-    setUnitPickerSupplier(item.supplier || 'all');
-    setUnitPickerPlant(item.plant || 'all');
+    setUnitPickerSupplier('all');
+    setUnitPickerPlant('all');
+    if (!servicesUnits || servicesUnits.length === 0) {
+      getServicesDatabaseFromCloud().then(cloudItems => {
+        if (cloudItems && Array.isArray(cloudItems) && cloudItems.length > 0) {
+          setServicesUnits(cloudItems);
+        }
+      }).catch(() => {});
+    }
     setRank(item.rank || 'B');
     setSuggestedRankInfo(null);
     setPlant(item.plant || 'RFG');
@@ -5497,11 +5569,14 @@ export default function PMPlan() {
             backgroundColor: itemType === 'service_contract' ? 'rgba(5, 150, 105, 0.04)' : 'var(--surface2)',
             border: itemType === 'service_contract' ? '1.5px solid rgba(5, 150, 105, 0.35)' : '1px solid var(--border)',
             borderRadius: '8px',
-            marginTop: '4px'
+            marginTop: '4px',
+            boxSizing: 'border-box',
+            width: '100%',
+            overflow: 'hidden'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '15px' }}>❄️</span>
+                <span style={{ fontSize: '16px' }}>❄️</span>
                 <div>
                   <div style={{ fontWeight: '700', fontSize: '12.5px', color: 'var(--text)' }}>
                     ผูกรายการแอร์ในสัญญา (Scope of AC Units from Services DB)
@@ -5513,7 +5588,7 @@ export default function PMPlan() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{
-                  padding: '2px 8px',
+                  padding: '3px 10px',
                   borderRadius: '12px',
                   fontSize: '11px',
                   fontWeight: '700',
@@ -5526,60 +5601,96 @@ export default function PMPlan() {
               </div>
             </div>
 
-            {/* Filter toolbar inside modal */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(130px, 1.4fr) 1fr 1fr auto', gap: '6px', marginBottom: '8px' }}>
-              <div style={{ position: 'relative' }}>
-                <Search size={12} style={{ position: 'absolute', left: '7px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)' }} />
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="ค้นหารหัส / รุ่น / สเปค..."
-                  value={unitPickerSearch}
-                  onChange={(e) => setUnitPickerSearch(e.target.value)}
-                  style={{ paddingLeft: '24px', fontSize: '11.5px', height: '30px' }}
-                />
+            {/* Row 1: Full-width search input with clear icon */}
+            <div style={{ position: 'relative', width: '100%', marginBottom: '8px' }}>
+              <Search size={13} style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)', pointerEvents: 'none' }} />
+              <input
+                type="text"
+                className="form-input"
+                placeholder="ค้นหารหัสเครื่อง / สถานที่ / สเปค / ยี่ห้อ..."
+                value={unitPickerSearch}
+                onChange={(e) => setUnitPickerSearch(e.target.value)}
+                style={{ paddingLeft: '28px', paddingRight: unitPickerSearch ? '28px' : '8px', fontSize: '12px', height: '32px', width: '100%', boxSizing: 'border-box' }}
+              />
+              {unitPickerSearch && (
+                <button
+                  type="button"
+                  onClick={() => setUnitPickerSearch('')}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text3)',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                  title="ล้างคำค้นหา"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
+            {/* Row 2: Dynamic filter dropdowns and action buttons */}
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '6px',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '8px'
+            }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', flex: '1 1 auto', minWidth: '220px' }}>
+                <select
+                  className="form-select"
+                  value={unitPickerSupplier}
+                  onChange={(e) => setUnitPickerSupplier(e.target.value)}
+                  style={{ fontSize: '11.5px', height: '30px', minWidth: '130px', flex: '1 1 auto' }}
+                >
+                  <option value="all">ทุกผู้รับเหมา ({activeServicesList.length})</option>
+                  {servicesSupplierOptions.map(s => (
+                    <option key={s.name} value={s.name}>{s.name} ({s.count})</option>
+                  ))}
+                </select>
+                <select
+                  className="form-select"
+                  value={unitPickerPlant}
+                  onChange={(e) => setUnitPickerPlant(e.target.value)}
+                  style={{ fontSize: '11.5px', height: '30px', minWidth: '95px', flex: '1 1 auto' }}
+                >
+                  <option value="all">ทุกโรงงาน</option>
+                  {servicesPlantOptions.map(p => (
+                    <option key={p.name} value={p.name}>{p.name} ({p.count})</option>
+                  ))}
+                </select>
               </div>
-              <select
-                className="form-select"
-                value={unitPickerSupplier}
-                onChange={(e) => setUnitPickerSupplier(e.target.value)}
-                style={{ fontSize: '11.5px', height: '30px' }}
-              >
-                <option value="all">ทุกผู้รับเหมา</option>
-                <option value="SiamTemp">SiamTemp</option>
-                <option value="Thai-Top-Therm">Thai-Top-Therm</option>
-                <option value="Carrier">Carrier</option>
-                <option value="KB Cool">KB Cool</option>
-              </select>
-              <select
-                className="form-select"
-                value={unitPickerPlant}
-                onChange={(e) => setUnitPickerPlant(e.target.value)}
-                style={{ fontSize: '11.5px', height: '30px' }}
-              >
-                <option value="all">ทุกโรงงาน</option>
-                <option value="MIR">MIR</option>
-                <option value="RFG">RFG</option>
-              </select>
-              <div style={{ display: 'flex', gap: '4px' }}>
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
                   onClick={handleSelectAllFilteredPickerUnits}
+                  disabled={filteredPickerUnits.length === 0}
                   style={{ fontSize: '11px', whiteSpace: 'nowrap', padding: '0 8px', height: '30px' }}
                   title="สลับเลือก/ยกเลิกเครื่องทั้งหมดที่กรองอยู่"
                 >
-                  เลือกที่กรอง ({filteredPickerUnits.length})
+                  {filteredPickerUnits.length > 0 && filteredPickerUnits.every(u => targetUnitIds.includes(u.id))
+                    ? `ยกเลิกที่กรอง (${filteredPickerUnits.length})`
+                    : `เลือกที่กรอง (${filteredPickerUnits.length})`}
                 </button>
                 {targetUnitIds.length > 0 && (
                   <button
                     type="button"
-                    className="btn btn-sm"
+                    className="btn btn-secondary btn-sm"
                     onClick={() => setTargetUnitIds([])}
-                    style={{ fontSize: '11px', whiteSpace: 'nowrap', padding: '0 6px', height: '30px', color: '#dc2626' }}
+                    style={{ fontSize: '11px', whiteSpace: 'nowrap', padding: '0 8px', height: '30px', color: '#dc2626', borderColor: '#fca5a5' }}
                     title="ล้างที่เลือกทั้งหมด"
                   >
-                    ล้าง
+                    ล้าง ({targetUnitIds.length})
                   </button>
                 )}
               </div>
@@ -5587,15 +5698,30 @@ export default function PMPlan() {
 
             {/* Scrollable list of units with checkboxes */}
             <div style={{
-              maxHeight: '180px',
+              maxHeight: '190px',
               overflowY: 'auto',
               border: '1px solid var(--border)',
               borderRadius: '6px',
-              backgroundColor: 'var(--surface)'
+              backgroundColor: 'var(--surface)',
+              boxSizing: 'border-box'
             }}>
               {filteredPickerUnits.length === 0 ? (
-                <div style={{ padding: '16px', textAlign: 'center', fontSize: '11.5px', color: 'var(--text3)' }}>
-                  ไม่พบเครื่องปรับอากาศที่ตรงกับตัวกรอง
+                <div style={{ padding: '18px 12px', textAlign: 'center', fontSize: '12px', color: 'var(--text3)' }}>
+                  <div>ไม่พบเครื่องปรับอากาศที่ตรงกับตัวกรอง</div>
+                  {(unitPickerSearch || unitPickerSupplier !== 'all' || unitPickerPlant !== 'all') && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-xs"
+                      onClick={() => {
+                        setUnitPickerSearch('');
+                        setUnitPickerSupplier('all');
+                        setUnitPickerPlant('all');
+                      }}
+                      style={{ marginTop: '8px', fontSize: '11px', padding: '3px 10px' }}
+                    >
+                      รีเซ็ตตัวกรองทั้งหมด
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -5613,7 +5739,10 @@ export default function PMPlan() {
                           backgroundColor: isChecked ? 'rgba(5, 150, 105, 0.08)' : 'transparent',
                           cursor: 'pointer',
                           fontSize: '11.5px',
-                          userSelect: 'none'
+                          userSelect: 'none',
+                          boxSizing: 'border-box',
+                          width: '100%',
+                          overflow: 'hidden'
                         }}
                       >
                         <input
@@ -5626,7 +5755,7 @@ export default function PMPlan() {
                           fontFamily: 'monospace',
                           fontWeight: 700,
                           color: 'var(--accent)',
-                          minWidth: '85px',
+                          minWidth: '78px',
                           flexShrink: 0
                         }}>
                           {u.newCode || `No.${u.itemNo}`}
@@ -5640,9 +5769,9 @@ export default function PMPlan() {
                           color: 'var(--text2)',
                           flexShrink: 0
                         }}>
-                          {u.supplier} ({u.plant})
+                          {u.supplier || 'N/A'} ({u.plant || '-'})
                         </span>
-                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={u.location}>
+                        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={u.location}>
                           {u.location}
                         </span>
                         {u.btu && (
@@ -5651,7 +5780,7 @@ export default function PMPlan() {
                           </span>
                         )}
                         {u.specModel && (
-                          <span style={{ fontSize: '10px', color: 'var(--text3)', fontFamily: 'monospace', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={u.specModel}>
+                          <span style={{ fontSize: '10px', color: 'var(--text3)', fontFamily: 'monospace', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }} title={u.specModel}>
                             {u.specModel}
                           </span>
                         )}
