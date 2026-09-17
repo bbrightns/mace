@@ -32,7 +32,8 @@ import {
   CheckCircle2,
   ChevronRight,
   ChevronLeft,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Info
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -55,11 +56,12 @@ import {
   batchDeleteDocuments,
   uploadAttachment,
   getAttachmentFromLocalDB,
-  getAttachmentFromCloudChunks
+  getAttachmentFromCloudChunks,
+  subscribeServicesDatabase
 } from '../../firebase/collections';
 import Modal from '../../components/Modal';
 import PMReportPdfModal from '../../components/PMReportPdfModal';
-import ServicesDatabase from './ServicesDatabase';
+import ServicesDatabase, { INITIAL_SERVICES_DATA } from './ServicesDatabase';
 import { useToast } from '../../components/Toast';
 import { formatDate, toInputDate } from '../../utils';
 import { calculateGradeAndRank } from './MachineClassify';
@@ -285,6 +287,29 @@ export default function PMPlan() {
   const [status, setStatus] = useState('Open');
   const [formError, setFormError] = useState('');
 
+  // Services Database AC units for Service Contract integration
+  const [servicesUnits, setServicesUnits] = useState(() => {
+    try {
+      const cached = localStorage.getItem('mace_services_database_cache');
+      return cached ? JSON.parse(cached) : INITIAL_SERVICES_DATA;
+    } catch (e) {
+      return INITIAL_SERVICES_DATA;
+    }
+  });
+
+  // Service units inspector modal states
+  const [inspectorPlan, setInspectorPlan] = useState(null);
+  const [isInspectorModalOpen, setIsInspectorModalOpen] = useState(false);
+
+  // Initial filter/search when switching to Services Database view
+  const [servicesDbInitialFilter, setServicesDbInitialFilter] = useState(null);
+
+  // Linked unit picker states inside Add/Edit PM Plan Modal
+  const [targetUnitIds, setTargetUnitIds] = useState([]);
+  const [unitPickerSearch, setUnitPickerSearch] = useState('');
+  const [unitPickerSupplier, setUnitPickerSupplier] = useState('all');
+  const [unitPickerPlant, setUnitPickerPlant] = useState('all');
+
   // Log Modal states
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [selectedCellItem, setSelectedCellItem] = useState(null);
@@ -387,10 +412,25 @@ export default function PMPlan() {
       }
     }, () => {});
 
+    const unsubscribeServices = subscribeServicesDatabase(
+      (data) => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          setServicesUnits(data);
+          try {
+            localStorage.setItem('mace_services_database_cache', JSON.stringify(data));
+          } catch (e) {}
+        }
+      },
+      (error) => {
+        console.warn('Sync services database in PMPlan error:', error);
+      }
+    );
+
     return () => {
       unsubscribePlans();
       unsubscribeLogs();
       unsubscribeClassify();
+      if (unsubscribeServices) unsubscribeServices();
     };
   }, [showToast]);
 
@@ -443,10 +483,60 @@ export default function PMPlan() {
     }
   };
 
+  // Unit picker filtered list for Add/Edit Modal
+  const filteredPickerUnits = useMemo(() => {
+    return servicesUnits.filter(u => {
+      if (unitPickerSupplier !== 'all' && u.supplier !== unitPickerSupplier) return false;
+      if (unitPickerPlant !== 'all' && u.plant !== unitPickerPlant) return false;
+      if (unitPickerSearch.trim()) {
+        const q = unitPickerSearch.toLowerCase();
+        const match = (u.newCode || '').toLowerCase().includes(q) ||
+                      (u.location || '').toLowerCase().includes(q) ||
+                      (u.brand || '').toLowerCase().includes(q) ||
+                      (u.btu || '').toLowerCase().includes(q) ||
+                      (u.specModel || '').toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [servicesUnits, unitPickerSupplier, unitPickerPlant, unitPickerSearch]);
+
+  const handleTogglePickerUnit = (unitId) => {
+    setTargetUnitIds(prev => 
+      prev.includes(unitId) ? prev.filter(id => id !== unitId) : [...prev, unitId]
+    );
+  };
+
+  const handleSelectAllFilteredPickerUnits = () => {
+    const filteredIds = filteredPickerUnits.map(u => u.id);
+    if (filteredIds.length === 0) return;
+    const allSelected = filteredIds.every(id => targetUnitIds.includes(id));
+    if (allSelected) {
+      setTargetUnitIds(prev => prev.filter(id => !filteredIds.includes(id)));
+    } else {
+      setTargetUnitIds(prev => Array.from(new Set([...prev, ...filteredIds])));
+    }
+  };
+
+  // Jump from Inspector Modal to Services Database
+  const handleJumpToServicesDb = (unit) => {
+    setServicesDbInitialFilter({
+      search: unit.newCode || unit.location || '',
+      supplier: unit.supplier || 'all',
+      plant: unit.plant || 'all'
+    });
+    setIsInspectorModalOpen(false);
+    setActiveTab('services-db');
+  };
+
   const handleOpenAdd = () => {
     setEditingItem(null);
     setMachineName('');
     setItemType('pm');
+    setTargetUnitIds([]);
+    setUnitPickerSearch('');
+    setUnitPickerSupplier('all');
+    setUnitPickerPlant('all');
     setRank('B');
     setSuggestedRankInfo(null);
     setPlant('RFG');
@@ -469,6 +559,10 @@ export default function PMPlan() {
     setEditingItem(item);
     setMachineName(item.machineName || '');
     setItemType(item.itemType || item.type || 'pm');
+    setTargetUnitIds(Array.isArray(item.targetUnitIds) ? item.targetUnitIds : []);
+    setUnitPickerSearch('');
+    setUnitPickerSupplier(item.supplier || 'all');
+    setUnitPickerPlant(item.plant || 'all');
     setRank(item.rank || 'B');
     setSuggestedRankInfo(null);
     setPlant(item.plant || 'RFG');
@@ -607,6 +701,7 @@ export default function PMPlan() {
     const payload = {
       machineName: machineName.trim(),
       itemType: itemType || 'pm',
+      targetUnitIds: targetUnitIds || [],
       rank: rank || 'B',
       plant,
       responsible,
@@ -3405,8 +3500,19 @@ export default function PMPlan() {
 
       {/* Main Content Renderers */}
       {activeTab === 'services-db' ? (
-        /* --- VIEW 4: SERVICES DATABASE --- */
-        <ServicesDatabase />
+        <ServicesDatabase 
+          pmPlans={items}
+          onNavigateToSchedule={(planId) => {
+            setActiveTab('schedule');
+            const foundPlan = items.find(p => p.id === planId);
+            if (foundPlan) {
+              setSearch(foundPlan.machineName);
+            }
+          }}
+          initialSearch={servicesDbInitialFilter?.search || ''}
+          initialSupplier={servicesDbInitialFilter?.supplier || 'all'}
+          initialPlant={servicesDbInitialFilter?.plant || 'all'}
+        />
       ) : loading ? (
         <div id="pm-loading-skeleton" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div className="skeleton-row" style={{ width: '100%', height: '42px' }}></div>
@@ -3603,6 +3709,35 @@ export default function PMPlan() {
                                 <StickyNote size={10} />
                                 <span>Note</span>
                               </span>
+                            )}
+                            {/* Linked Services AC Units Badge */}
+                            {Array.isArray(item.targetUnitIds) && item.targetUnitIds.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setInspectorPlan(item);
+                                  setIsInspectorModalOpen(true);
+                                }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  padding: '1px 5px',
+                                  borderRadius: '4px',
+                                  backgroundColor: 'rgba(6, 182, 212, 0.12)',
+                                  color: '#0891b2',
+                                  fontSize: '9.5px',
+                                  fontWeight: '700',
+                                  border: '1px solid rgba(6, 182, 212, 0.35)',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                title={`คลิกเพื่อดูสเปคแอร์ที่ผูกไว้ (${item.targetUnitIds.length} เครื่อง)`}
+                              >
+                                <span>❄️ {item.targetUnitIds.length} เครื่อง</span>
+                                <Eye size={10} />
+                              </button>
                             )}
                             <span style={{ fontSize: '9.5px', color: 'var(--text3)', fontWeight: '600', textTransform: 'uppercase', marginLeft: 'auto' }}>
                               {displayResponsible}
@@ -4095,9 +4230,35 @@ export default function PMPlan() {
                                     >
                                       {item.machineName}
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text2)', marginTop: '2px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text2)', marginTop: '2px', flexWrap: 'wrap' }}>
                                       <span>รอบ: <strong style={{ textTransform: 'capitalize' }}>{item.cycle}</strong></span>
                                       {item.checksheetId && <span>• ID: <strong className="font-mono">{item.checksheetId}</strong></span>}
+                                      {Array.isArray(item.targetUnitIds) && item.targetUnitIds.length > 0 && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setInspectorPlan(item);
+                                            setIsInspectorModalOpen(true);
+                                          }}
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '3px',
+                                            padding: '1px 6px',
+                                            borderRadius: '4px',
+                                            backgroundColor: 'rgba(6, 182, 212, 0.12)',
+                                            color: '#0891b2',
+                                            fontSize: '10px',
+                                            fontWeight: '700',
+                                            border: '1px solid rgba(6, 182, 212, 0.35)',
+                                            cursor: 'pointer'
+                                          }}
+                                        >
+                                          <span>❄️ {item.targetUnitIds.length} เครื่อง</span>
+                                          <Eye size={10} />
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
 
@@ -4820,6 +4981,35 @@ export default function PMPlan() {
                                 <span>Note</span>
                               </span>
                             )}
+                            {/* Linked Services AC Units Badge */}
+                            {Array.isArray(item.targetUnitIds) && item.targetUnitIds.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setInspectorPlan(item);
+                                  setIsInspectorModalOpen(true);
+                                }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  padding: '1px 5px',
+                                  borderRadius: '4px',
+                                  backgroundColor: 'rgba(6, 182, 212, 0.12)',
+                                  color: '#0891b2',
+                                  fontSize: '9.5px',
+                                  fontWeight: '700',
+                                  border: '1px solid rgba(6, 182, 212, 0.35)',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                title={`คลิกเพื่อดูสเปคแอร์ที่ผูกไว้ (${item.targetUnitIds.length} เครื่อง)`}
+                              >
+                                <span>❄️ {item.targetUnitIds.length} เครื่อง</span>
+                                <Eye size={10} />
+                              </button>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -5299,6 +5489,178 @@ export default function PMPlan() {
               onChange={(e) => setChecksheetId(e.target.value)}
               id="form-checksheetId"
             />
+          </div>
+
+          {/* LINKED SERVICES DATABASE AC UNITS (Service Contract Scope) */}
+          <div className="form-group form-full" style={{
+            padding: '12px',
+            backgroundColor: itemType === 'service_contract' ? 'rgba(5, 150, 105, 0.04)' : 'var(--surface2)',
+            border: itemType === 'service_contract' ? '1.5px solid rgba(5, 150, 105, 0.35)' : '1px solid var(--border)',
+            borderRadius: '8px',
+            marginTop: '4px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '15px' }}>❄️</span>
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '12.5px', color: 'var(--text)' }}>
+                    ผูกรายการแอร์ในสัญญา (Scope of AC Units from Services DB)
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text3)' }}>
+                    เลือกเครื่องปรับอากาศจาก Services Database ที่อยู่ในขอบเขตรอบงานนี้
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  backgroundColor: targetUnitIds.length > 0 ? '#dcfce7' : 'var(--surface)',
+                  color: targetUnitIds.length > 0 ? '#15803d' : 'var(--text3)',
+                  border: `1px solid ${targetUnitIds.length > 0 ? '#86efac' : 'var(--border)'}`
+                }}>
+                  เลือกแล้ว {targetUnitIds.length} เครื่อง
+                </span>
+              </div>
+            </div>
+
+            {/* Filter toolbar inside modal */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(130px, 1.4fr) 1fr 1fr auto', gap: '6px', marginBottom: '8px' }}>
+              <div style={{ position: 'relative' }}>
+                <Search size={12} style={{ position: 'absolute', left: '7px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)' }} />
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="ค้นหารหัส / รุ่น / สเปค..."
+                  value={unitPickerSearch}
+                  onChange={(e) => setUnitPickerSearch(e.target.value)}
+                  style={{ paddingLeft: '24px', fontSize: '11.5px', height: '30px' }}
+                />
+              </div>
+              <select
+                className="form-select"
+                value={unitPickerSupplier}
+                onChange={(e) => setUnitPickerSupplier(e.target.value)}
+                style={{ fontSize: '11.5px', height: '30px' }}
+              >
+                <option value="all">ทุกผู้รับเหมา</option>
+                <option value="SiamTemp">SiamTemp</option>
+                <option value="Thai-Top-Therm">Thai-Top-Therm</option>
+                <option value="Carrier">Carrier</option>
+                <option value="KB Cool">KB Cool</option>
+              </select>
+              <select
+                className="form-select"
+                value={unitPickerPlant}
+                onChange={(e) => setUnitPickerPlant(e.target.value)}
+                style={{ fontSize: '11.5px', height: '30px' }}
+              >
+                <option value="all">ทุกโรงงาน</option>
+                <option value="MIR">MIR</option>
+                <option value="RFG">RFG</option>
+              </select>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleSelectAllFilteredPickerUnits}
+                  style={{ fontSize: '11px', whiteSpace: 'nowrap', padding: '0 8px', height: '30px' }}
+                  title="สลับเลือก/ยกเลิกเครื่องทั้งหมดที่กรองอยู่"
+                >
+                  เลือกที่กรอง ({filteredPickerUnits.length})
+                </button>
+                {targetUnitIds.length > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    onClick={() => setTargetUnitIds([])}
+                    style={{ fontSize: '11px', whiteSpace: 'nowrap', padding: '0 6px', height: '30px', color: '#dc2626' }}
+                    title="ล้างที่เลือกทั้งหมด"
+                  >
+                    ล้าง
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Scrollable list of units with checkboxes */}
+            <div style={{
+              maxHeight: '180px',
+              overflowY: 'auto',
+              border: '1px solid var(--border)',
+              borderRadius: '6px',
+              backgroundColor: 'var(--surface)'
+            }}>
+              {filteredPickerUnits.length === 0 ? (
+                <div style={{ padding: '16px', textAlign: 'center', fontSize: '11.5px', color: 'var(--text3)' }}>
+                  ไม่พบเครื่องปรับอากาศที่ตรงกับตัวกรอง
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {filteredPickerUnits.map((u) => {
+                    const isChecked = targetUnitIds.includes(u.id);
+                    return (
+                      <label
+                        key={u.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '6px 10px',
+                          borderBottom: '1px solid var(--border)',
+                          backgroundColor: isChecked ? 'rgba(5, 150, 105, 0.08)' : 'transparent',
+                          cursor: 'pointer',
+                          fontSize: '11.5px',
+                          userSelect: 'none'
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleTogglePickerUnit(u.id)}
+                          style={{ accentColor: '#059669', cursor: 'pointer', flexShrink: 0 }}
+                        />
+                        <span style={{
+                          fontFamily: 'monospace',
+                          fontWeight: 700,
+                          color: 'var(--accent)',
+                          minWidth: '85px',
+                          flexShrink: 0
+                        }}>
+                          {u.newCode || `No.${u.itemNo}`}
+                        </span>
+                        <span style={{
+                          fontSize: '10px',
+                          fontWeight: 600,
+                          padding: '1px 5px',
+                          borderRadius: '3px',
+                          backgroundColor: 'var(--surface2)',
+                          color: 'var(--text2)',
+                          flexShrink: 0
+                        }}>
+                          {u.supplier} ({u.plant})
+                        </span>
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={u.location}>
+                          {u.location}
+                        </span>
+                        {u.btu && (
+                          <span style={{ fontSize: '10.5px', color: 'var(--text3)', flexShrink: 0 }}>
+                            {u.btu} BTU
+                          </span>
+                        )}
+                        {u.specModel && (
+                          <span style={{ fontSize: '10px', color: 'var(--text3)', fontFamily: 'monospace', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={u.specModel}>
+                            {u.specModel}
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* NOTE */}
@@ -6418,6 +6780,165 @@ export default function PMPlan() {
           </p>
         </div>
       </Modal>
+
+      {/* MODAL: SERVICE UNITS QUICK SPEC INSPECTOR */}
+      {isInspectorModalOpen && inspectorPlan && (
+        <Modal
+          isOpen={isInspectorModalOpen}
+          onClose={() => setIsInspectorModalOpen(false)}
+          title={`❄️ ข้อมูลสเปคแอร์ในสัญญา: ${inspectorPlan.machineName}`}
+          footerActions={
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  setServicesDbInitialFilter({
+                    search: '',
+                    supplier: 'all',
+                    plant: inspectorPlan.plant || 'all'
+                  });
+                  setIsInspectorModalOpen(false);
+                  setActiveTab('services-db');
+                }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Database size={14} />
+                <span>เปิดดูใน Services Database</span>
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={() => setIsInspectorModalOpen(false)}>
+                ปิดหน้าต่าง
+              </button>
+            </div>
+          }
+        >
+          {(() => {
+            const planUnitIds = Array.isArray(inspectorPlan.targetUnitIds) ? inspectorPlan.targetUnitIds : [];
+            const matchedUnits = servicesUnits.filter(u => planUnitIds.includes(u.id));
+            const cleanedCount = matchedUnits.filter(u => u.isCleaned).length;
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* Meta summary cards */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                  gap: '8px',
+                  padding: '12px',
+                  backgroundColor: 'var(--surface2)',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border)'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--text3)' }}>โรงงาน / แผนก</div>
+                    <div style={{ fontWeight: 700, fontSize: '13px' }}>{inspectorPlan.plant}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--text3)' }}>รอบการเข้าตรวจ</div>
+                    <div style={{ fontWeight: 700, fontSize: '13px', textTransform: 'capitalize' }}>{inspectorPlan.cycle}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--text3)' }}>แอร์ในสัญญา</div>
+                    <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--accent)' }}>{matchedUnits.length} เครื่อง</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--text3)' }}>สถานะการล้าง</div>
+                    <div style={{ fontWeight: 700, fontSize: '13px', color: cleanedCount === matchedUnits.length && matchedUnits.length > 0 ? '#10b981' : '#d97706' }}>
+                      {cleanedCount}/{matchedUnits.length} ล้างแล้ว
+                    </div>
+                  </div>
+                </div>
+
+                {/* Units Spec Table */}
+                {matchedUnits.length === 0 ? (
+                  <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text3)', background: 'var(--surface)', borderRadius: '6px', border: '1px dashed var(--border)' }}>
+                    <Info size={24} style={{ margin: '0 auto 8px', opacity: 0.6 }} />
+                    <div>ยังไม่มีข้อมูลเครื่องปรับอากาศที่ผูกไว้ หรือรหัสเครื่องไม่ตรงกัน ({planUnitIds.length} IDs)</div>
+                  </div>
+                ) : (
+                  <div style={{ maxHeight: '360px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '6px' }}>
+                    <table className="data-table" style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
+                      <thead style={{ position: 'sticky', top: 0, background: 'var(--surface2)', zIndex: 2 }}>
+                        <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                          <th style={{ padding: '8px', textAlign: 'left' }}>รหัส (Code)</th>
+                          <th style={{ padding: '8px', textAlign: 'left' }}>สถานที่ / ตำแหน่ง</th>
+                          <th style={{ padding: '8px', textAlign: 'left' }}>ยี่ห้อ / BTU</th>
+                          <th style={{ padding: '8px', textAlign: 'left' }}>สเปค / รุ่น / สายพาน</th>
+                          <th style={{ padding: '8px', textAlign: 'center' }}>สถานะ</th>
+                          <th style={{ padding: '8px', textAlign: 'center' }}>ลิงก์</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {matchedUnits.map((u, uIdx) => (
+                          <tr key={u.id || uIdx} style={{ borderBottom: '1px solid var(--border)', backgroundColor: u.isCleaned ? 'rgba(16, 185, 129, 0.03)' : undefined }}>
+                            <td style={{ padding: '8px', fontWeight: 'bold', fontFamily: 'monospace', color: 'var(--accent)' }}>
+                              {u.newCode || `No.${u.itemNo}`}
+                              <div style={{ fontSize: '10px', color: 'var(--text3)', fontWeight: 'normal' }}>{u.supplier}</div>
+                            </td>
+                            <td style={{ padding: '8px' }}>
+                              <div style={{ fontWeight: 600 }}>{u.location}</div>
+                              {u.note && <div style={{ fontSize: '10.5px', color: '#d97706', marginTop: '2px' }}>📝 {u.note}</div>}
+                            </td>
+                            <td style={{ padding: '8px' }}>
+                              <div>{u.brand || '—'}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--text2)', fontWeight: 600 }}>{u.btu ? `${u.btu} BTU` : ''}</div>
+                            </td>
+                            <td style={{ padding: '8px', fontFamily: 'monospace', fontSize: '11px', color: 'var(--text2)' }}>
+                              {u.specModel || '—'}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'center' }}>
+                              {u.isCleaned ? (
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  padding: '2px 6px',
+                                  borderRadius: '10px',
+                                  backgroundColor: '#dcfce7',
+                                  color: '#15803d',
+                                  fontSize: '10.5px',
+                                  fontWeight: 700
+                                }}>
+                                  <Check size={11} /> ล้างแล้ว
+                                </span>
+                              ) : (
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                  padding: '2px 6px',
+                                  borderRadius: '10px',
+                                  backgroundColor: '#fef3c7',
+                                  color: '#b45309',
+                                  fontSize: '10.5px',
+                                  fontWeight: 600
+                                }}>
+                                  <Clock size={11} /> รอล้าง
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => handleJumpToServicesDb(u)}
+                                style={{ padding: '2px 6px', fontSize: '10.5px' }}
+                                title="เปิดดูใน Services Database"
+                              >
+                                <ExternalLink size={11} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </Modal>
+      )}
 
       {/* MODAL: PM REPORT PDF 2-PAGE EXPORT */}
       <PMReportPdfModal

@@ -762,7 +762,13 @@ const SUPPLIER_THEMES = {
   }
 };
 
-export default function ServicesDatabase() {
+export default function ServicesDatabase({
+  pmPlans = [],
+  onNavigateToSchedule = null,
+  initialSearch = '',
+  initialSupplier = 'all',
+  initialPlant = 'all'
+} = {}) {
   const { showToast } = useToast();
 
   // Load from local storage cache first for instant UI response
@@ -776,9 +782,27 @@ export default function ServicesDatabase() {
   });
 
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [filterSupplier, setFilterSupplier] = useState('all');
-  const [filterPlant, setFilterPlant] = useState('all');
+  const [search, setSearch] = useState(() => initialSearch || '');
+  const [filterSupplier, setFilterSupplier] = useState(() => initialSupplier || 'all');
+  const [filterPlant, setFilterPlant] = useState(() => initialPlant || 'all');
+
+  useEffect(() => {
+    if (initialSearch !== undefined && initialSearch !== '') {
+      setSearch(initialSearch);
+    }
+  }, [initialSearch]);
+
+  useEffect(() => {
+    if (initialSupplier && initialSupplier !== 'all') {
+      setFilterSupplier(initialSupplier);
+    }
+  }, [initialSupplier]);
+
+  useEffect(() => {
+    if (initialPlant && initialPlant !== 'all') {
+      setFilterPlant(initialPlant);
+    }
+  }, [initialPlant]);
   const [filterCleaned, setFilterCleaned] = useState('all'); // 'all', 'cleaned', 'pending'
   const [filterIssueOnly, setFilterIssueOnly] = useState(false);
   const [mobileViewMode, setMobileViewMode] = useState('cards'); // 'cards' or 'table'
@@ -1978,8 +2002,45 @@ export default function ServicesDatabase() {
                     </td>
 
                     {/* ชื่อใหม่ (New Code) */}
-                    <td style={{ padding: '8px 10px', fontWeight: '600', color: 'var(--accent)', fontFamily: 'monospace' }}>
-                      {unit.newCode || '—'}
+                    <td style={{ padding: '8px 10px', fontFamily: 'monospace' }}>
+                      <div style={{ fontWeight: '600', color: 'var(--accent)' }}>
+                        {unit.newCode || '—'}
+                      </div>
+                      {/* Linked Plan Badge */}
+                      {(() => {
+                        const linkedPlans = pmPlans.filter(p => Array.isArray(p.targetUnitIds) && p.targetUnitIds.includes(unit.id));
+                        if (linkedPlans.length === 0) return null;
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '3px' }}>
+                            {linkedPlans.map(lp => (
+                              <button
+                                key={lp.id}
+                                type="button"
+                                onClick={() => onNavigateToSchedule && onNavigateToSchedule(lp.id)}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '2px',
+                                  padding: '1px 5px',
+                                  borderRadius: '3px',
+                                  backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                                  color: '#059669',
+                                  border: '1px solid rgba(5, 150, 105, 0.3)',
+                                  fontSize: '9.5px',
+                                  fontWeight: '600',
+                                  cursor: onNavigateToSchedule ? 'pointer' : 'default',
+                                  textAlign: 'left',
+                                  whiteSpace: 'nowrap'
+                                }}
+                                title={`คลิกเพื่อสลับไปดูรอบงานใน Schedule: ${lp.machineName}`}
+                              >
+                                <span>📅 {lp.machineName}</span>
+                                {onNavigateToSchedule && <ChevronRight size={10} />}
+                              </button>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     {/* Brand */}
@@ -2203,6 +2264,38 @@ export default function ServicesDatabase() {
                       Spec: {unit.specModel}
                     </div>
                   )}
+                  {/* Linked Plan Badge (Mobile) */}
+                  {(() => {
+                    const linkedPlans = pmPlans.filter(p => Array.isArray(p.targetUnitIds) && p.targetUnitIds.includes(unit.id));
+                    if (linkedPlans.length === 0) return null;
+                    return (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                        {linkedPlans.map(lp => (
+                          <button
+                            key={lp.id}
+                            type="button"
+                            onClick={() => onNavigateToSchedule && onNavigateToSchedule(lp.id)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                              color: '#059669',
+                              border: '1px solid rgba(5, 150, 105, 0.3)',
+                              fontSize: '10.5px',
+                              fontWeight: '600',
+                              cursor: onNavigateToSchedule ? 'pointer' : 'default'
+                            }}
+                          >
+                            <span>📅 ในแผน: {lp.machineName}</span>
+                            {onNavigateToSchedule && <ChevronRight size={11} />}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* ประวัติการเสียและซ่อม (Touch Card to Open Mobile Bottom Sheet) */}
