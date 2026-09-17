@@ -19,9 +19,20 @@ import {
   Save,
   Server,
   Zap,
-  Info,
-  MapPin,
-  Tag
+  Info, 
+  MapPin, 
+  Tag,
+  History,
+  Wrench,
+  Calendar,
+  ChevronRight,
+  UserCheck,
+  CheckCircle,
+  Activity,
+  AlertCircle,
+  DollarSign,
+  PlusCircle,
+  ClipboardList
 } from 'lucide-react';
 import { 
   subscribeServicesDatabase, 
@@ -597,6 +608,7 @@ export const INITIAL_SERVICES_DATA = RAW_INITIAL_SERVICES_DATA.map((item, idx) =
   cleanedAt: item.cleanedAt || null,
   note: item.note || '',
   noteUpdatedAt: item.noteUpdatedAt || null,
+  history: item.history || [],
   ...item
 }));
 
@@ -616,6 +628,108 @@ export function formatDateTime(isoString) {
   } catch (e) {
     return isoString;
   }
+}
+
+// Helper to format Date string (YYYY-MM-DD or ISO) into readable Thai date (e.g. 17 ก.ย. 2026)
+export function formatDateThai(dateStr) {
+  if (!dateStr) return '—';
+  try {
+    if (typeof dateStr === 'string' && dateStr.includes('-')) {
+      const parts = dateStr.split('T')[0].split('-');
+      if (parts.length === 3) {
+        const year = parts[0];
+        const monthIdx = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const thMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        return `${day} ${thMonths[monthIdx] || parts[1]} ${year}`;
+      }
+    }
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      const day = d.getDate();
+      const thMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+      return `${day} ${thMonths[d.getMonth()]} ${d.getFullYear()}`;
+    }
+    return dateStr;
+  } catch (e) {
+    return dateStr;
+  }
+}
+
+// Helper to retrieve and sort a unit's breakdown and repair history logs
+export function getUnitHistory(unit) {
+  if (!unit) return [];
+  if (Array.isArray(unit.history) && unit.history.length > 0) {
+    return [...unit.history].sort((a, b) => {
+      const dateA = a.date || (a.createdAt ? a.createdAt.split('T')[0] : '') || '';
+      const dateB = b.date || (b.createdAt ? b.createdAt.split('T')[0] : '') || '';
+      return dateB.localeCompare(dateA);
+    });
+  }
+  // Synthesize initial entry if unit has legacy note so zero data is lost
+  if (unit.note && unit.note.trim()) {
+    const legacyDate = unit.noteUpdatedAt ? unit.noteUpdatedAt.split('T')[0] : '2026-09-16';
+    return [{
+      id: `legacy_${unit.id || `${unit.supplier}-${unit.plant}-${unit.itemNo}`}`,
+      date: legacyDate,
+      type: 'breakdown',
+      title: unit.note.trim(),
+      details: 'บันทึกประวัติเริ่มต้นจากฐานข้อมูลหมายเหตุเดิม',
+      status: 'pending',
+      technician: unit.supplier || 'ผู้รับเหมา',
+      cost: '',
+      createdAt: unit.noteUpdatedAt || '2026-09-16T09:00:00.000Z'
+    }];
+  }
+  return [];
+}
+
+// Helper to determine equipment condition summary from its history logs
+export function getUnitStatusInfo(unit) {
+  const history = getUnitHistory(unit);
+  if (history.length === 0) {
+    return {
+      status: 'normal',
+      label: 'ปกติ',
+      color: '#10b981',
+      bg: 'rgba(16, 185, 129, 0.08)',
+      border: '#a7f3d0',
+      activeCount: 0,
+      totalCount: 0,
+      latestIssue: null,
+      latestEntry: null
+    };
+  }
+
+  // Find active pending or monitoring issues
+  const pendingIssues = history.filter(h => h.status === 'pending' || h.status === 'monitoring');
+  if (pendingIssues.length > 0) {
+    const latest = pendingIssues[0];
+    const isMonitoring = latest.status === 'monitoring';
+    return {
+      status: isMonitoring ? 'monitoring' : 'breakdown',
+      label: isMonitoring ? 'เฝ้าระวัง' : 'เสีย/รอดำเนินการ',
+      color: isMonitoring ? '#d97706' : '#dc2626',
+      bg: isMonitoring ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+      border: isMonitoring ? '#fde68a' : '#fca5a5',
+      activeCount: pendingIssues.length,
+      totalCount: history.length,
+      latestIssue: latest.title,
+      latestEntry: latest
+    };
+  }
+
+  return {
+    status: 'resolved',
+    label: 'ซ่อมแล้ว/ปกติ',
+    color: '#059669',
+    bg: 'rgba(16, 185, 129, 0.1)',
+    border: '#a7f3d0',
+    activeCount: 0,
+    totalCount: history.length,
+    latestIssue: null,
+    latestEntry: history[0]
+  };
 }
 
 // Visual color badges for Suppliers matching the original spreadsheet colors
@@ -671,6 +785,21 @@ export default function ServicesDatabase() {
   const [inlineEditingId, setInlineEditingId] = useState(null);
   const [inlineNoteValue, setInlineNoteValue] = useState('');
   const [isSavingInline, setIsSavingInline] = useState(false);
+
+  // Breakdown & Repair History Drawer State (Desktop Slide-Drawer / Mobile Bottom-Sheet)
+  const [historyDrawerUnit, setHistoryDrawerUnit] = useState(null);
+  const [isHistoryFormOpen, setIsHistoryFormOpen] = useState(false);
+  const [editingHistoryEntry, setEditingHistoryEntry] = useState(null);
+
+  // History Form Inputs
+  const [histDate, setHistDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [histType, setHistType] = useState('breakdown'); // breakdown, repair, maintenance, inspection
+  const [histTitle, setHistTitle] = useState('');
+  const [histDetails, setHistDetails] = useState('');
+  const [histStatus, setHistStatus] = useState('pending'); // pending, monitoring, resolved
+  const [histTechnician, setHistTechnician] = useState('');
+  const [histCost, setHistCost] = useState('');
+  const [isSavingHistory, setIsSavingHistory] = useState(false);
 
   // Full Item Modal State (Add / Edit)
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -767,6 +896,191 @@ export default function ServicesDatabase() {
     } catch (err) {
       console.error('Failed to reset master data:', err);
       showToast('เกิดข้อผิดพลาดในการรีเซ็ตข้อมูล', 'error');
+    }
+  };
+
+  // Derive live active unit being inspected in the history drawer
+  const activeUnitInDrawer = useMemo(() => {
+    if (!historyDrawerUnit) return null;
+    return units.find(u => 
+      (u.id && u.id === historyDrawerUnit.id) || 
+      (u.supplier === historyDrawerUnit.supplier && u.plant === historyDrawerUnit.plant && Number(u.itemNo) === Number(historyDrawerUnit.itemNo))
+    ) || historyDrawerUnit;
+  }, [units, historyDrawerUnit]);
+
+  // Open history drawer for a unit
+  const handleOpenHistoryDrawer = (unit) => {
+    setHistoryDrawerUnit(unit);
+    setIsHistoryFormOpen(false);
+    setEditingHistoryEntry(null);
+  };
+
+  // Close history drawer
+  const handleCloseHistoryDrawer = () => {
+    setHistoryDrawerUnit(null);
+    setIsHistoryFormOpen(false);
+    setEditingHistoryEntry(null);
+  };
+
+  // Toggle or open Add History Entry form
+  const handleOpenAddHistory = () => {
+    setEditingHistoryEntry(null);
+    setHistDate(new Date().toISOString().split('T')[0]);
+    setHistType('breakdown');
+    setHistTitle('');
+    setHistDetails('');
+    setHistStatus('pending');
+    setHistTechnician(activeUnitInDrawer?.supplier || 'KB Cool');
+    setHistCost('');
+    setIsHistoryFormOpen(true);
+  };
+
+  // Open Edit History Entry form
+  const handleOpenEditHistory = (entry) => {
+    setEditingHistoryEntry(entry);
+    setHistDate(entry.date || (entry.createdAt ? entry.createdAt.split('T')[0] : new Date().toISOString().split('T')[0]));
+    setHistType(entry.type || 'breakdown');
+    setHistTitle(entry.title || '');
+    setHistDetails(entry.details || '');
+    setHistStatus(entry.status || 'pending');
+    setHistTechnician(entry.technician || '');
+    setHistCost(entry.cost || '');
+    setIsHistoryFormOpen(true);
+  };
+
+  // Save history entry (Add or Update) and sync to Cloud Firestore
+  const handleSaveHistoryEntry = async (e) => {
+    if (e) e.preventDefault();
+    if (!activeUnitInDrawer) return;
+    if (!histTitle.trim()) {
+      showToast('กรุณาระบุหัวข้อหรืออาการเสีย', 'warning');
+      return;
+    }
+
+    setIsSavingHistory(true);
+    const existingHistory = getUnitHistory(activeUnitInDrawer);
+    const nowIso = new Date().toISOString();
+
+    const entryToSave = {
+      id: editingHistoryEntry ? editingHistoryEntry.id : `hist_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      date: histDate || new Date().toISOString().split('T')[0],
+      type: histType,
+      title: histTitle.trim(),
+      details: histDetails.trim(),
+      status: histStatus,
+      technician: histTechnician.trim(),
+      cost: histCost.trim(),
+      createdAt: editingHistoryEntry?.createdAt || nowIso,
+      updatedAt: nowIso
+    };
+
+    let updatedHistory;
+    if (editingHistoryEntry) {
+      updatedHistory = existingHistory.map(item => item.id === editingHistoryEntry.id ? entryToSave : item);
+    } else {
+      updatedHistory = [entryToSave, ...existingHistory];
+    }
+
+    // Sort updated history by date descending
+    updatedHistory.sort((a, b) => {
+      const dateA = a.date || (a.createdAt ? a.createdAt.split('T')[0] : '') || '';
+      const dateB = b.date || (b.createdAt ? b.createdAt.split('T')[0] : '') || '';
+      return dateB.localeCompare(dateA);
+    });
+
+    // Determine synced note and noteUpdatedAt for backward-compatibility with search and KPI counts
+    const activeIssues = updatedHistory.filter(h => h.status === 'pending' || h.status === 'monitoring');
+    let syncedNote = '';
+    let syncedNoteUpdatedAt = null;
+
+    if (activeIssues.length > 0) {
+      syncedNote = activeIssues[0].title;
+      syncedNoteUpdatedAt = activeIssues[0].date ? `${activeIssues[0].date}T12:00:00.000Z` : nowIso;
+    } else if (updatedHistory.length > 0) {
+      syncedNote = '';
+      syncedNoteUpdatedAt = updatedHistory[0].date ? `${updatedHistory[0].date}T12:00:00.000Z` : nowIso;
+    }
+
+    const nextUnits = units.map(u => {
+      const matchById = activeUnitInDrawer.id && u.id === activeUnitInDrawer.id;
+      const matchByCompound = u.supplier === activeUnitInDrawer.supplier && u.plant === activeUnitInDrawer.plant && Number(u.itemNo) === Number(activeUnitInDrawer.itemNo);
+      if (matchById || matchByCompound) {
+        return {
+          ...u,
+          history: updatedHistory,
+          note: syncedNote,
+          noteUpdatedAt: syncedNoteUpdatedAt
+        };
+      }
+      return u;
+    });
+
+    setUnits(nextUnits);
+    try {
+      localStorage.setItem('mace_services_database_cache', JSON.stringify(nextUnits));
+    } catch (err) {}
+
+    try {
+      await saveServicesDatabaseToCloud(nextUnits);
+      showToast(editingHistoryEntry ? 'แก้ไขประวัติการเสีย/ซ่อมเรียบร้อย' : 'บันทึกประวัติการเสีย/ซ่อมใหม่สำเร็จ', 'success');
+      setIsHistoryFormOpen(false);
+      setEditingHistoryEntry(null);
+    } catch (err) {
+      console.error('Failed to sync history to cloud:', err);
+      showToast('บันทึกลงเครื่องแล้ว (เชื่อมต่อ Cloud ขัดข้อง)', 'warning');
+      setIsHistoryFormOpen(false);
+      setEditingHistoryEntry(null);
+    } finally {
+      setIsSavingHistory(false);
+    }
+  };
+
+  // Delete history entry
+  const handleDeleteHistoryEntry = async (entryId) => {
+    if (!activeUnitInDrawer) return;
+    if (!window.confirm('คุณต้องการลบรายการประวัตินี้ใช่หรือไม่?')) return;
+
+    const existingHistory = getUnitHistory(activeUnitInDrawer);
+    const updatedHistory = existingHistory.filter(h => h.id !== entryId);
+    const nowIso = new Date().toISOString();
+
+    const activeIssues = updatedHistory.filter(h => h.status === 'pending' || h.status === 'monitoring');
+    let syncedNote = '';
+    let syncedNoteUpdatedAt = null;
+
+    if (activeIssues.length > 0) {
+      syncedNote = activeIssues[0].title;
+      syncedNoteUpdatedAt = activeIssues[0].date ? `${activeIssues[0].date}T12:00:00.000Z` : nowIso;
+    } else if (updatedHistory.length > 0) {
+      syncedNote = '';
+      syncedNoteUpdatedAt = updatedHistory[0].date ? `${updatedHistory[0].date}T12:00:00.000Z` : nowIso;
+    }
+
+    const nextUnits = units.map(u => {
+      const matchById = activeUnitInDrawer.id && u.id === activeUnitInDrawer.id;
+      const matchByCompound = u.supplier === activeUnitInDrawer.supplier && u.plant === activeUnitInDrawer.plant && Number(u.itemNo) === Number(activeUnitInDrawer.itemNo);
+      if (matchById || matchByCompound) {
+        return {
+          ...u,
+          history: updatedHistory,
+          note: syncedNote,
+          noteUpdatedAt: syncedNoteUpdatedAt
+        };
+      }
+      return u;
+    });
+
+    setUnits(nextUnits);
+    try {
+      localStorage.setItem('mace_services_database_cache', JSON.stringify(nextUnits));
+    } catch (err) {}
+
+    try {
+      await saveServicesDatabaseToCloud(nextUnits);
+      showToast('ลบรายการประวัติเรียบร้อยแล้ว', 'info');
+    } catch (err) {
+      console.error('Failed to delete history on cloud:', err);
+      showToast('ลบออกจากเครื่องแล้ว (เชื่อมต่อ Cloud ขัดข้อง)', 'warning');
     }
   };
 
@@ -897,6 +1211,7 @@ export default function ServicesDatabase() {
       specModel: formSpecModel.trim(),
       note: formNote.trim(),
       noteUpdatedAt: formNote.trim() ? (editingItem?.note !== formNote.trim() ? new Date().toISOString() : editingItem?.noteUpdatedAt || new Date().toISOString()) : null,
+      history: editingItem?.history || [],
       isCleaned: formIsCleaned,
       cleanedAt: formIsCleaned ? (editingItem?.isCleaned ? editingItem?.cleanedAt || new Date().toISOString() : new Date().toISOString()) : null
     };
@@ -996,7 +1311,9 @@ export default function ServicesDatabase() {
         const matchBtu = (u.btu || '').toLowerCase().includes(q);
         const matchSupplier = (u.supplier || '').toLowerCase().includes(q);
         const matchNote = (u.note || '').toLowerCase().includes(q);
-        if (!matchCode && !matchLoc && !matchBrand && !matchSpec && !matchBtu && !matchSupplier && !matchNote) {
+        const sInfo = getUnitStatusInfo(u);
+        const matchIssue = (sInfo.latestIssue || '').toLowerCase().includes(q);
+        if (!matchCode && !matchLoc && !matchBrand && !matchSpec && !matchBtu && !matchSupplier && !matchNote && !matchIssue) {
           return false;
         }
       }
@@ -1020,8 +1337,11 @@ export default function ServicesDatabase() {
       }
 
       // Filter Issue Only
-      if (filterIssueOnly && !u.note) {
-        return false;
+      if (filterIssueOnly) {
+        const sInfo = getUnitStatusInfo(u);
+        if (sInfo.status !== 'breakdown' && sInfo.status !== 'monitoring') {
+          return false;
+        }
       }
 
       return true;
@@ -1033,7 +1353,10 @@ export default function ServicesDatabase() {
     const total = units.length;
     const rfgCount = units.filter(u => u.plant === 'RFG').length;
     const mirCount = units.filter(u => u.plant === 'MIR').length;
-    const issueCount = units.filter(u => u.note && u.note.trim().length > 0).length;
+    const issueCount = units.filter(u => {
+      const sInfo = getUnitStatusInfo(u);
+      return sInfo.status === 'breakdown' || sInfo.status === 'monitoring';
+    }).length;
     const cleanedCount = units.filter(u => Boolean(u.isCleaned)).length;
     const cleanedPercent = total > 0 ? Math.round((cleanedCount / total) * 100) : 0;
     const bySupplier = {
@@ -1526,10 +1849,10 @@ export default function ServicesDatabase() {
               <th style={{ width: '220px', padding: '10px 12px', textAlign: 'left' }}>Location</th>
               <th style={{ width: '110px', padding: '10px 10px', textAlign: 'right' }}>BTU</th>
               <th style={{ width: '180px', padding: '10px 10px', textAlign: 'left' }}>spec/model</th>
-              <th style={{ width: '240px', padding: '10px 12px', textAlign: 'left', background: 'rgba(245, 158, 11, 0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span>หมายเหตุ</span>
-                  <span style={{ fontSize: '10px', color: '#d97706', fontWeight: 'normal' }}>(คลิกเพื่อแก้ไข)</span>
+              <th style={{ width: '270px', padding: '10px 12px', textAlign: 'left', background: 'rgba(245, 158, 11, 0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <History size={13} style={{ color: '#d97706' }} />
+                  <span>ประวัติการเสียและซ่อม / หมายเหตุ</span>
                 </div>
               </th>
               <th style={{ width: '145px', padding: '10px 10px', textAlign: 'left' }} title="บันทึกวันและเวลาที่มีการแก้ไขช่องหมายเหตุล่าสุดให้อัตโนมัติ (จะแสดงเป็น — หากไม่มีการแก้ไขหมายเหตุ)">
@@ -1554,7 +1877,8 @@ export default function ServicesDatabase() {
               filteredUnits.map((unit, index) => {
                 const theme = SUPPLIER_THEMES[unit.supplier] || { badgeBg: 'var(--surface2)', badgeColor: 'var(--text)', borderColor: 'var(--border)' };
                 const isEditingThis = inlineEditingId === (unit.id || `${unit.supplier}-${unit.plant}-${unit.itemNo}`);
-                const hasIssue = Boolean(unit.note && unit.note.trim());
+                const statusInfo = getUnitStatusInfo(unit);
+                const hasIssue = statusInfo.status === 'breakdown' || statusInfo.status === 'monitoring';
 
                 return (
                   <tr 
@@ -1644,106 +1968,83 @@ export default function ServicesDatabase() {
                       {unit.specModel || '—'}
                     </td>
 
-                    {/* หมายเหตุ (Inline Editable!) */}
+                    {/* ประวัติการเสียและซ่อม / หมายเหตุ (Click to Open History Drawer) */}
                     <td 
                       style={{ 
                         padding: '6px 10px', 
-                        backgroundColor: isEditingThis ? 'rgba(59, 130, 246, 0.08)' : (hasIssue ? 'rgba(239, 68, 68, 0.06)' : undefined),
+                        backgroundColor: statusInfo.status === 'breakdown' ? 'rgba(239, 68, 68, 0.04)' : (statusInfo.status === 'monitoring' ? 'rgba(245, 158, 11, 0.04)' : undefined),
                         borderRadius: '4px'
                       }}
                     >
-                      {isEditingThis ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <input 
-                            type="text"
-                            value={inlineNoteValue}
-                            onChange={(e) => setInlineNoteValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleSaveInlineNote(unit);
-                              } else if (e.key === 'Escape') {
-                                handleCancelInlineEdit();
-                              }
-                            }}
-                            autoFocus
-                            placeholder="พิมพ์หมายเหตุ (เช่น น้ำยารั่ว, เสีย, ปกติ)..."
-                            className="form-input"
-                            style={{ 
-                              height: '30px', 
-                              fontSize: '12px', 
-                              padding: '2px 8px',
-                              width: '100%',
-                              borderColor: 'var(--accent)'
-                            }}
-                          />
-                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                            <button
-                              type="button"
-                              onClick={() => handleSaveInlineNote(unit)}
-                              disabled={isSavingInline}
-                              className="btn btn-sm btn-primary"
-                              style={{ height: '24px', padding: '0 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}
-                            >
-                              <Check size={12} />
-                              <span>บันทึก</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleCancelInlineEdit}
-                              disabled={isSavingInline}
-                              className="btn btn-sm"
-                              style={{ height: '24px', padding: '0 6px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '2px' }}
-                            >
-                              <X size={12} />
-                              <span>ยกเลิก</span>
-                            </button>
+                      <div 
+                        onClick={() => handleOpenHistoryDrawer(unit)}
+                        style={{ 
+                          cursor: 'pointer', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          gap: '6px',
+                          minHeight: '28px',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          border: `1px solid ${statusInfo.status !== 'normal' ? statusInfo.border : 'var(--border)'}`,
+                          backgroundColor: statusInfo.status !== 'normal' ? statusInfo.bg : 'var(--surface2)',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = 'var(--accent)';
+                          e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = statusInfo.status !== 'normal' ? statusInfo.border : 'var(--border)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
+                        title="คลิกเพื่อดูประวัติการเสียและซ่อมทั้งหมด (เปิดสมุดประวัติ)"
+                      >
+                        {statusInfo.status === 'breakdown' ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', overflow: 'hidden' }}>
+                            <AlertTriangle size={13} style={{ color: '#dc2626', flexShrink: 0 }} />
+                            <span style={{ color: '#dc2626', fontWeight: '600', fontSize: '11.5px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '140px' }}>
+                              {statusInfo.latestIssue || 'เสีย/รอดำเนินการ'}
+                            </span>
                           </div>
-                        </div>
-                      ) : (
-                        <div 
-                          onClick={() => handleStartInlineEdit(unit)}
-                          style={{ 
-                            cursor: 'pointer', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'space-between',
-                            gap: '6px',
-                            minHeight: '26px',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            border: '1px dashed transparent',
-                            transition: 'border-color 0.15s, background-color 0.15s'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = 'var(--border)';
-                            e.currentTarget.style.backgroundColor = 'var(--surface2)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.borderColor = 'transparent';
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }}
-                          title="คลิกเพื่อแก้ไขหมายเหตุ"
-                        >
-                          {hasIssue ? (
-                            <span style={{ 
-                              display: 'inline-flex', 
-                              alignItems: 'center', 
-                              gap: '4px', 
-                              color: '#dc2626', 
-                              fontWeight: '600' 
-                            }}>
-                              <AlertTriangle size={12} style={{ color: '#dc2626', flexShrink: 0 }} />
-                              <span>{unit.note}</span>
+                        ) : statusInfo.status === 'monitoring' ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', overflow: 'hidden' }}>
+                            <Activity size={13} style={{ color: '#d97706', flexShrink: 0 }} />
+                            <span style={{ color: '#d97706', fontWeight: '600', fontSize: '11.5px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '140px' }}>
+                              {statusInfo.latestIssue || 'เฝ้าระวัง'}
                             </span>
-                          ) : (
-                            <span style={{ color: 'var(--text3)', fontStyle: 'italic', fontSize: '11.5px' }}>
-                              + เพิ่มหมายเหตุ
+                          </div>
+                        ) : statusInfo.status === 'resolved' ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <CheckCircle2 size={13} style={{ color: '#059669', flexShrink: 0 }} />
+                            <span style={{ color: '#059669', fontWeight: '600', fontSize: '11.5px' }}>
+                              ปกติ (ซ่อมแล้ว)
                             </span>
-                          )}
-                          <Edit2 size={11} style={{ color: 'var(--text3)', opacity: 0.6, flexShrink: 0 }} />
-                        </div>
-                      )}
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text3)', fontStyle: 'italic', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Plus size={12} /> บันทึกประวัติ
+                          </span>
+                        )}
+
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          fontSize: '10.5px',
+                          fontWeight: '700',
+                          padding: '1px 6px',
+                          borderRadius: '10px',
+                          background: statusInfo.totalCount > 0 ? 'var(--surface)' : 'transparent',
+                          color: statusInfo.totalCount > 0 ? 'var(--accent)' : 'var(--text3)',
+                          border: statusInfo.totalCount > 0 ? '1px solid var(--border)' : 'none',
+                          flexShrink: 0
+                        }}>
+                          <History size={10} />
+                          <span>{statusInfo.totalCount}</span>
+                        </span>
+                      </div>
                     </td>
 
                     {/* วันที่แก้ไขล่าสุด (Last Updated Date) */}
@@ -1800,8 +2101,8 @@ export default function ServicesDatabase() {
         ) : (
           filteredUnits.map((unit, index) => {
             const theme = SUPPLIER_THEMES[unit.supplier] || { badgeBg: 'var(--surface2)', badgeColor: 'var(--text)', borderColor: 'var(--border)' };
-            const isEditingThis = inlineEditingId === (unit.id || `${unit.supplier}-${unit.plant}-${unit.itemNo}`);
-            const hasIssue = Boolean(unit.note && unit.note.trim());
+            const statusInfo = getUnitStatusInfo(unit);
+            const hasIssue = statusInfo.status === 'breakdown' || statusInfo.status === 'monitoring';
 
             return (
               <div 
@@ -1882,69 +2183,100 @@ export default function ServicesDatabase() {
                   )}
                 </div>
 
-                {/* Note Section (Tap to edit inline) */}
-                <div style={{ 
-                  backgroundColor: hasIssue ? 'rgba(239, 68, 68, 0.06)' : 'var(--surface2)', 
-                  border: `1px dashed ${hasIssue ? '#fca5a5' : 'var(--border)'}`, 
-                  borderRadius: '6px', 
-                  padding: '8px 10px' 
-                }}>
-                  {isEditingThis ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <input
-                        type="text"
-                        value={inlineNoteValue}
-                        onChange={(e) => setInlineNoteValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSaveInlineNote(unit);
-                          if (e.key === 'Escape') handleCancelInlineEdit();
-                        }}
-                        placeholder="พิมพ์หมายเหตุ / อาการเสีย..."
-                        autoFocus
-                        className="form-input"
-                        style={{ height: '32px', fontSize: '12px' }}
-                      />
-                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                        <button
-                          type="button"
-                          onClick={() => handleSaveInlineNote(unit)}
-                          disabled={isSavingInline}
-                          className="btn btn-sm btn-primary"
-                          style={{ height: '26px', padding: '0 8px', fontSize: '11px' }}
-                        >
-                          <Check size={12} />
-                          <span>บันทึก</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleCancelInlineEdit}
-                          disabled={isSavingInline}
-                          className="btn btn-sm"
-                          style={{ height: '26px', padding: '0 8px', fontSize: '11px' }}
-                        >
-                          <X size={12} />
-                          <span>ยกเลิก</span>
-                        </button>
-                      </div>
+                {/* ประวัติการเสียและซ่อม (Touch Card to Open Mobile Bottom Sheet) */}
+                <div 
+                  onClick={() => handleOpenHistoryDrawer(unit)}
+                  style={{ 
+                    backgroundColor: statusInfo.status === 'breakdown' 
+                      ? 'rgba(239, 68, 68, 0.08)' 
+                      : (statusInfo.status === 'monitoring' 
+                        ? 'rgba(245, 158, 11, 0.08)' 
+                        : 'var(--surface2)'), 
+                    border: `1px solid ${statusInfo.status !== 'normal' ? statusInfo.border : 'var(--border)'}`, 
+                    borderRadius: '8px', 
+                    padding: '10px 12px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <History size={13} style={{ color: statusInfo.color }} />
+                      <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text2)', letterSpacing: '0.3px' }}>
+                        ประวัติการเสียและซ่อม
+                      </span>
                     </div>
-                  ) : (
-                    <div 
-                      onClick={() => handleStartInlineEdit(unit)}
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', cursor: 'pointer' }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        {hasIssue ? (
-                          <AlertTriangle size={13} style={{ color: '#dc2626', flexShrink: 0 }} />
-                        ) : (
-                          <Edit2 size={12} style={{ color: 'var(--text3)', flexShrink: 0 }} />
-                        )}
-                        <span style={{ fontSize: '12px', fontWeight: hasIssue ? 600 : 'normal', color: hasIssue ? '#dc2626' : 'var(--text3)' }}>
-                          {hasIssue ? unit.note : '+ แตะเพื่อเพิ่มหมายเหตุหน้างาน'}
-                        </span>
-                      </div>
-                      <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 600 }}>แก้ไข</span>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '2px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: 'var(--accent)',
+                      padding: '1px 6px',
+                      borderRadius: '10px',
+                      background: 'rgba(59, 130, 246, 0.08)'
+                    }}>
+                      <span>{statusInfo.totalCount} รายการ</span>
+                      <ChevronRight size={12} />
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
+                      {statusInfo.status === 'breakdown' ? (
+                        <>
+                          <AlertTriangle size={14} style={{ color: '#dc2626', flexShrink: 0 }} />
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#dc2626', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {statusInfo.latestIssue || 'มีอาการเสีย / รอดำเนินการ'}
+                            </div>
+                            {statusInfo.latestEntry?.date && (
+                              <div style={{ fontSize: '10.5px', color: 'var(--text3)', marginTop: '1px' }}>
+                                แจ้งเมื่อ: {formatDateThai(statusInfo.latestEntry.date)} {statusInfo.latestEntry.technician ? `• ${statusInfo.latestEntry.technician}` : ''}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      ) : statusInfo.status === 'monitoring' ? (
+                        <>
+                          <Activity size={14} style={{ color: '#d97706', flexShrink: 0 }} />
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#d97706', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {statusInfo.latestIssue || 'เฝ้าระวังอาการ'}
+                            </div>
+                            {statusInfo.latestEntry?.date && (
+                              <div style={{ fontSize: '10.5px', color: 'var(--text3)', marginTop: '1px' }}>
+                                ล่าสุด: {formatDateThai(statusInfo.latestEntry.date)}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      ) : statusInfo.status === 'resolved' ? (
+                        <>
+                          <CheckCircle2 size={14} style={{ color: '#059669', flexShrink: 0 }} />
+                          <div>
+                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#059669' }}>
+                              เครื่องปกติ (ซ่อมเสร็จแล้ว)
+                            </div>
+                            {statusInfo.latestEntry?.title && (
+                              <div style={{ fontSize: '10.5px', color: 'var(--text3)', marginTop: '1px' }}>
+                                ล่าสุด: {statusInfo.latestEntry.title} ({formatDateThai(statusInfo.latestEntry.date)})
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text3)', fontSize: '12px' }}>
+                          <PlusCircle size={14} style={{ color: 'var(--accent)' }} />
+                          <span>แตะเพื่อบันทึกประวัติการเสียหรือซ่อม</span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
 
                 {/* Footer: Last Update & Action Buttons */}
@@ -2003,6 +2335,573 @@ export default function ServicesDatabase() {
           <Plus size={22} />
         </button>
       </div>
+
+      {/* ======================================================================= */}
+      {/* BREAKDOWN & REPAIR HISTORY DRAWER / BOTTOM SHEET                         */}
+      {/* ======================================================================= */}
+      {activeUnitInDrawer && (
+        <div 
+          className="history-drawer-overlay" 
+          onClick={handleCloseHistoryDrawer}
+          id="service-history-drawer-overlay"
+        >
+          <div 
+            className="history-drawer-panel" 
+            onClick={(e) => e.stopPropagation()}
+            id="service-history-drawer-panel"
+          >
+            {/* Mobile Sheet Drag Handle */}
+            <div className="mobile-only" style={{ width: '38px', height: '4px', borderRadius: '2px', backgroundColor: 'var(--border)', margin: '10px auto 4px auto' }} />
+
+            {/* Drawer Header */}
+            {(() => {
+              const unitTheme = SUPPLIER_THEMES[activeUnitInDrawer.supplier] || { badgeBg: 'var(--surface2)', badgeColor: 'var(--text)', borderColor: 'var(--border)' };
+              const unitStatus = getUnitStatusInfo(activeUnitInDrawer);
+              const historyLogs = getUnitHistory(activeUnitInDrawer);
+
+              return (
+                <>
+                  <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {/* Top Row: Tags & Close Button */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span className={`plant-badge ${(activeUnitInDrawer.plant || 'RFG').toLowerCase()}`} style={{ fontWeight: 700 }}>
+                          {activeUnitInDrawer.plant || 'RFG'}
+                        </span>
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          backgroundColor: unitTheme.badgeBg,
+                          color: unitTheme.badgeColor,
+                          border: `1px solid ${unitTheme.borderColor}`
+                        }}>
+                          {activeUnitInDrawer.supplier} No.{activeUnitInDrawer.itemNo}
+                        </span>
+                        {activeUnitInDrawer.newCode && (
+                          <span className="font-mono" style={{ fontSize: '13px', fontWeight: 800, color: 'var(--accent)' }}>
+                            {activeUnitInDrawer.newCode}
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleCloseHistoryDrawer}
+                        className="btn btn-sm"
+                        style={{ width: '32px', height: '32px', padding: 0, borderRadius: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                        title="ปิด (Close)"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+
+                    {/* Middle Row: Title & Location */}
+                    <div>
+                      <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--text)' }}>
+                        {activeUnitInDrawer.newCode ? `${activeUnitInDrawer.newCode} — ` : ''}{activeUnitInDrawer.location || 'ไม่ระบุตำแหน่ง'}
+                      </h3>
+                      <div style={{ fontSize: '12px', color: 'var(--text3)', marginTop: '3px' }}>
+                        {activeUnitInDrawer.brand ? `Brand: ${activeUnitInDrawer.brand}` : ''} {activeUnitInDrawer.btu ? `• ${activeUnitInDrawer.btu} BTU` : ''} {activeUnitInDrawer.specModel ? `• Spec: ${activeUnitInDrawer.specModel}` : ''}
+                      </div>
+                    </div>
+
+                    {/* Bottom Row: Status Badge Pill */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        backgroundColor: unitStatus.bg,
+                        color: unitStatus.color,
+                        border: `1px solid ${unitStatus.border}`
+                      }}>
+                        {unitStatus.status === 'breakdown' ? (
+                          <>
+                            <AlertTriangle size={14} style={{ color: '#dc2626' }} />
+                            <span>มีอาการเสีย / รอดำเนินการ ({unitStatus.activeCount} รายการ)</span>
+                          </>
+                        ) : unitStatus.status === 'monitoring' ? (
+                          <>
+                            <Activity size={14} style={{ color: '#d97706' }} />
+                            <span>เฝ้าระวังอาการ ({unitStatus.activeCount} รายการ)</span>
+                          </>
+                        ) : unitStatus.status === 'resolved' ? (
+                          <>
+                            <CheckCircle2 size={14} style={{ color: '#059669' }} />
+                            <span>ทำงานปกติ (ซ่อมเสร็จแล้ว)</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 size={14} style={{ color: '#10b981' }} />
+                            <span>ทำงานปกติ (ยังไม่มีประวัติเสีย)</span>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Cleaned Status Badge */}
+                      <span style={{
+                        fontSize: '11px',
+                        padding: '3px 8px',
+                        borderRadius: '12px',
+                        backgroundColor: activeUnitInDrawer.isCleaned ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface2)',
+                        color: activeUnitInDrawer.isCleaned ? '#059669' : 'var(--text3)',
+                        border: activeUnitInDrawer.isCleaned ? '1px solid #a7f3d0' : '1px solid var(--border)',
+                        fontWeight: 600
+                      }}>
+                        {activeUnitInDrawer.isCleaned ? '✓ ผรม. ล้างแอร์แล้ว' : '⏳ ยังไม่ได้รับการล้าง'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Sub-header Bar: Log Count & Add Button */}
+                  <div style={{
+                    padding: '10px 20px',
+                    borderBottom: '1px solid var(--border)',
+                    backgroundColor: 'var(--surface2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <History size={15} style={{ color: 'var(--accent)' }} />
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>
+                        สมุดประวัติการเสียและซ่อม ({historyLogs.length})
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => isHistoryFormOpen ? setIsHistoryFormOpen(false) : handleOpenAddHistory()}
+                      className={`btn btn-sm ${isHistoryFormOpen ? '' : 'btn-primary'}`}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600 }}
+                    >
+                      {isHistoryFormOpen ? (
+                        <>
+                          <X size={13} />
+                          <span>ซ่อนฟอร์ม</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={14} />
+                          <span>+ บันทึกประวัติใหม่</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Scrollable Timeline & Form Container */}
+                  <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* ADD / EDIT HISTORY FORM */}
+                    {isHistoryFormOpen && (
+                      <div style={{
+                        background: 'var(--surface)',
+                        border: '2px solid var(--accent)',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                        animation: 'fadeIn 0.2s ease'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Wrench size={15} />
+                            {editingHistoryEntry ? 'แก้ไขบันทึกประวัติ' : 'บันทึกประวัติการเสียและซ่อมใหม่'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => { setIsHistoryFormOpen(false); setEditingHistoryEntry(null); }}
+                            className="btn btn-sm"
+                            style={{ padding: '2px 6px', height: '22px' }}
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+
+                        {/* Quick Presets (1-Tap Fast Fill) */}
+                        <div>
+                          <div style={{ fontSize: '11px', color: 'var(--text3)', fontWeight: 600, marginBottom: '6px' }}>
+                            เลือกด่วน (Quick Presets):
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            {[
+                              { label: 'น้ำยารั่ว', type: 'breakdown', status: 'pending', title: 'น้ำยารั่ว รอยเชื่อมท่อทองแดง' },
+                              { label: 'คอมเสีย', type: 'breakdown', status: 'pending', title: 'คอมเพรสเซอร์เสีย มีเสียงดังผิดปกติ' },
+                              { label: 'ไม่เย็น (รั่ว)', type: 'breakdown', status: 'pending', title: 'แอร์ไม่เย็น ลมออกไม่ฉ่ำ' },
+                              { label: 'ซ่อมแซม/เติมน้ำยา', type: 'repair', status: 'resolved', title: 'ซ่อมรอยรั่ว เติมน้ำยาแอร์เสร็จสมบูรณ์' },
+                              { label: 'เปลี่ยนคอมเพรสเซอร์', type: 'repair', status: 'resolved', title: 'เปลี่ยนคอมเพรสเซอร์ลูกใหม่' },
+                              { label: 'เปลี่ยนสายพาน/ลูกปืน', type: 'repair', status: 'resolved', title: 'เปลี่ยนสายพานและลูกปืนพัดลม' },
+                              { label: 'ล้างใหญ่ PM', type: 'maintenance', status: 'resolved', title: 'ล้างใหญ่ประจำรอบและตรวจเช็คระบบ' }
+                            ].map(preset => (
+                              <button
+                                key={preset.label}
+                                type="button"
+                                onClick={() => {
+                                  setHistType(preset.type);
+                                  setHistStatus(preset.status);
+                                  setHistTitle(preset.title);
+                                }}
+                                style={{
+                                  fontSize: '11px',
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  border: '1px solid var(--border)',
+                                  backgroundColor: histTitle === preset.title ? 'var(--accent)' : 'var(--surface2)',
+                                  color: histTitle === preset.title ? '#fff' : 'var(--text2)',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.1s'
+                                }}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Form Row 1: Date & Type */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text2)' }}>
+                              วันที่พบเหตุ/ซ่อม <span style={{ color: '#ef4444' }}>*</span>
+                            </label>
+                            <input
+                              type="date"
+                              value={histDate}
+                              onChange={(e) => setHistDate(e.target.value)}
+                              required
+                              className="form-input"
+                              style={{ height: '34px', fontSize: '12px' }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text2)' }}>
+                              ประเภทรายการ <span style={{ color: '#ef4444' }}>*</span>
+                            </label>
+                            <select
+                              value={histType}
+                              onChange={(e) => setHistType(e.target.value)}
+                              className="form-select"
+                              style={{ height: '34px', fontSize: '12px' }}
+                            >
+                              <option value="breakdown">⚡ อาการเสีย (Breakdown)</option>
+                              <option value="repair">🔧 การซ่อมแซม (Repair)</option>
+                              <option value="maintenance">📋 บำรุงรักษา (PM)</option>
+                              <option value="inspection">🔍 ตรวจเช็คทั่วไป (Inspection)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Form Row 2: Title / Symptom */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text2)' }}>
+                            หัวข้อ / อาการเสีย <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={histTitle}
+                            onChange={(e) => setHistTitle(e.target.value)}
+                            placeholder="เช่น น้ำยารั่ว, คอมเสีย, มีเสียงดัง, ไม่เย็น..."
+                            required
+                            className="form-input"
+                            style={{ height: '34px', fontSize: '12.5px', fontWeight: 600 }}
+                          />
+                        </div>
+
+                        {/* Form Row 3: Details */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text2)' }}>
+                            รายละเอียดการตรวจเช็ค / การดำเนินการซ่อม
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={histDetails}
+                            onChange={(e) => setHistDetails(e.target.value)}
+                            placeholder="ระบุรายละเอียด เช่น ช่างเข้ามาตรวจพบรอยรั่วที่แฟลร์นัท ทำการบานแฟลร์ใหม่ เติมน้ำยา R22 จำนวน 3 กก. ทดสอบแรงดันปกติ..."
+                            className="form-input"
+                            style={{ fontSize: '12px', minHeight: '65px', resize: 'vertical' }}
+                          />
+                        </div>
+
+                        {/* Form Row 4: Status & Technician */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text2)' }}>
+                              สถานะเครื่องหลังดำเนินการ <span style={{ color: '#ef4444' }}>*</span>
+                            </label>
+                            <select
+                              value={histStatus}
+                              onChange={(e) => setHistStatus(e.target.value)}
+                              className="form-select"
+                              style={{
+                                height: '34px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                color: histStatus === 'pending' ? '#dc2626' : (histStatus === 'monitoring' ? '#d97706' : '#059669'),
+                                borderColor: histStatus === 'pending' ? '#fca5a5' : (histStatus === 'monitoring' ? '#fde68a' : '#a7f3d0')
+                              }}
+                            >
+                              <option value="pending">🔴 ยังไม่เสร็จ / รอดำเนินการ (Pending)</option>
+                              <option value="monitoring">🟡 เฝ้าระวัง / ทดสอบ (Monitoring)</option>
+                              <option value="resolved">🟢 ซ่อมเสร็จแล้ว / ปกติ (Resolved)</option>
+                            </select>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text2)' }}>
+                              ช่าง / ผู้รับเหมา
+                            </label>
+                            <input
+                              type="text"
+                              value={histTechnician}
+                              onChange={(e) => setHistTechnician(e.target.value)}
+                              placeholder={`เช่น ${activeUnitInDrawer.supplier}`}
+                              className="form-input"
+                              style={{ height: '34px', fontSize: '12px' }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Form Row 5: Cost & Save Buttons */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', alignItems: 'flex-end', marginTop: '2px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <label style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text2)' }}>
+                              ค่าใช้จ่าย (บาท) ถ้ามี
+                            </label>
+                            <input
+                              type="text"
+                              value={histCost}
+                              onChange={(e) => setHistCost(e.target.value)}
+                              placeholder="เช่น 12,000"
+                              className="form-input"
+                              style={{ height: '34px', fontSize: '12px' }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              onClick={() => { setIsHistoryFormOpen(false); setEditingHistoryEntry(null); }}
+                              className="btn btn-sm"
+                              style={{ height: '34px', padding: '0 12px', fontSize: '12px' }}
+                            >
+                              ยกเลิก
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleSaveHistoryEntry}
+                              disabled={isSavingHistory}
+                              className="btn btn-sm btn-primary"
+                              style={{ height: '34px', padding: '0 14px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                            >
+                              <Save size={13} />
+                              <span>{isSavingHistory ? 'กำลังบันทึก...' : 'บันทึกประวัติ'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TIMELINE LIST */}
+                    {historyLogs.length === 0 ? (
+                      <div style={{
+                        textAlign: 'center',
+                        padding: '40px 20px',
+                        color: 'var(--text3)',
+                        background: 'var(--surface)',
+                        borderRadius: '12px',
+                        border: '1px dashed var(--border)'
+                      }}>
+                        <History size={36} style={{ margin: '0 auto 12px', opacity: 0.4, color: 'var(--accent)' }} />
+                        <h4 style={{ margin: 0, fontSize: '14px', color: 'var(--text)' }}>ยังไม่มีประวัติการเสียหรือซ่อม</h4>
+                        <p style={{ margin: '6px 0 16px 0', fontSize: '12px' }}>
+                          อุปกรณ์เครื่องนี้ยังไม่มีประวัติแจ้งซ่อม หรือยังไม่เคยถูกบันทึกปัญหา
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleOpenAddHistory}
+                          className="btn btn-primary btn-sm"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <Plus size={14} />
+                          <span>บันทึกประวัติรายการแรก</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ position: 'relative', paddingLeft: '24px' }}>
+                        {/* Continuous Vertical Timeline Line */}
+                        <div style={{
+                          position: 'absolute',
+                          left: '9px',
+                          top: '12px',
+                          bottom: '12px',
+                          width: '2px',
+                          backgroundColor: 'var(--border)',
+                          zIndex: 0
+                        }} />
+
+                        {/* List of History Items */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          {historyLogs.map((entry, idx) => {
+                            const isBreakdown = entry.type === 'breakdown' || entry.status === 'pending';
+                            const isMonitoring = entry.status === 'monitoring';
+                            const isResolved = entry.status === 'resolved';
+
+                            const nodeColor = isBreakdown ? '#ef4444' : (isMonitoring ? '#f59e0b' : '#10b981');
+                            const nodeBg = isBreakdown ? 'rgba(239, 68, 68, 0.15)' : (isMonitoring ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)');
+
+                            return (
+                              <div key={entry.id || idx} style={{ position: 'relative', zIndex: 1 }}>
+                                {/* Timeline Node Dot */}
+                                <div style={{
+                                  position: 'absolute',
+                                  left: '-24px',
+                                  top: '10px',
+                                  width: '20px',
+                                  height: '20px',
+                                  borderRadius: '50%',
+                                  backgroundColor: 'var(--surface)',
+                                  border: `2.5px solid ${nodeColor}`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  boxShadow: `0 0 0 3px ${nodeBg}`
+                                }}>
+                                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: nodeColor }} />
+                                </div>
+
+                                {/* Timeline Item Card */}
+                                <div style={{
+                                  backgroundColor: 'var(--surface)',
+                                  border: `1px solid ${isBreakdown ? 'rgba(239, 68, 68, 0.3)' : (isMonitoring ? 'rgba(245, 158, 11, 0.3)' : 'var(--border)')}`,
+                                  borderRadius: '10px',
+                                  padding: '12px 14px',
+                                  boxShadow: '0 1px 4px rgba(0, 0, 0, 0.04)',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '8px'
+                                }}>
+                                  {/* Card Header: Date, Badges & Actions */}
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                      {/* Date */}
+                                      <span style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        fontSize: '12px',
+                                        fontWeight: 700,
+                                        color: 'var(--text)'
+                                      }}>
+                                        <Calendar size={13} style={{ color: 'var(--accent)' }} />
+                                        <span>{formatDateThai(entry.date)}</span>
+                                      </span>
+
+                                      {/* Type Badge */}
+                                      <span style={{
+                                        fontSize: '10.5px',
+                                        fontWeight: 600,
+                                        padding: '1px 7px',
+                                        borderRadius: '4px',
+                                        backgroundColor: entry.type === 'breakdown' ? 'rgba(239, 68, 68, 0.1)' : (entry.type === 'repair' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)'),
+                                        color: entry.type === 'breakdown' ? '#dc2626' : (entry.type === 'repair' ? '#2563eb' : '#059669')
+                                      }}>
+                                        {entry.type === 'breakdown' ? '⚡ อาการเสีย' : (entry.type === 'repair' ? '🔧 งานซ่อมแซม' : (entry.type === 'maintenance' ? '📋 PM' : '🔍 ตรวจเช็ค'))}
+                                      </span>
+
+                                      {/* Status Badge */}
+                                      <span style={{
+                                        fontSize: '10.5px',
+                                        fontWeight: 700,
+                                        padding: '1px 7px',
+                                        borderRadius: '4px',
+                                        backgroundColor: isBreakdown ? 'rgba(239, 68, 68, 0.15)' : (isMonitoring ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)'),
+                                        color: isBreakdown ? '#dc2626' : (isMonitoring ? '#d97706' : '#059669')
+                                      }}>
+                                        {isBreakdown ? '🔴 รอดำเนินการ' : (isMonitoring ? '🟡 เฝ้าระวัง' : '🟢 ซ่อมแล้ว')}
+                                      </span>
+                                    </div>
+
+                                    {/* Action Buttons: Edit & Delete */}
+                                    <div style={{ display: 'inline-flex', gap: '4px' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenEditHistory(entry)}
+                                        className="btn btn-sm"
+                                        style={{ padding: '2px 6px', height: '24px' }}
+                                        title="แก้ไขรายการนี้"
+                                      >
+                                        <Edit2 size={11} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteHistoryEntry(entry.id)}
+                                        className="btn btn-sm btn-danger"
+                                        style={{ padding: '2px 6px', height: '24px' }}
+                                        title="ลบรายการนี้"
+                                      >
+                                        <Trash2 size={11} />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Title / Symptom */}
+                                  <div style={{ fontSize: '13.5px', fontWeight: 700, color: isBreakdown ? '#dc2626' : 'var(--text)' }}>
+                                    {entry.title}
+                                  </div>
+
+                                  {/* Details */}
+                                  {entry.details && (
+                                    <div style={{ fontSize: '12px', color: 'var(--text2)', lineHeight: 1.45, whiteSpace: 'pre-wrap', backgroundColor: 'var(--surface2)', padding: '8px 10px', borderRadius: '6px' }}>
+                                      {entry.details}
+                                    </div>
+                                  )}
+
+                                  {/* Card Footer: Tech & Cost */}
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '11px', color: 'var(--text3)', borderTop: '1px solid var(--border)', paddingTop: '6px', marginTop: '2px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                      {entry.technician && (
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                          <UserCheck size={12} style={{ color: 'var(--accent)' }} />
+                                          <span>{entry.technician}</span>
+                                        </span>
+                                      )}
+                                      {entry.cost && (
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontWeight: 600, color: '#d97706' }}>
+                                          <DollarSign size={12} />
+                                          <span>{entry.cost} บ.</span>
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {entry.createdAt && (
+                                      <span style={{ fontSize: '10px', opacity: 0.8 }}>
+                                        บันทึก: {formatDateTime(entry.createdAt)}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* MODAL: ADD / EDIT SERVICE UNIT */}
       <Modal 

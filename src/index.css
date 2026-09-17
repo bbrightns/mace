@@ -2114,3 +2114,69 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* ==========================================================================
+   Services Database: Breakdown & Repair History Drawer / Bottom Sheet
+   ========================================================================== */
+.history-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  z-index: 1100;
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  animation: fadeIn 0.2s ease;
+}
+
+.history-drawer-panel {
+  width: 520px;
+  max-width: 92vw;
+  height: 100vh;
+  background-color: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: drawerSlideRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes drawerSlideRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes drawerSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .history-drawer-overlay {
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .history-drawer-panel {
+    width: 100% !important;
+    max-width: 100vw !important;
+    height: auto !important;
+    max-height: 88vh !important;
+    border-left: none !important;
+    border-top: 1px solid var(--border);
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.25) !important;
+    animation: drawerSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+}
+
