@@ -32,7 +32,8 @@ import {
   AlertCircle,
   DollarSign,
   PlusCircle,
-  ClipboardList
+  ClipboardList,
+  FileText
 } from 'lucide-react';
 import { 
   subscribeServicesDatabase, 
@@ -609,6 +610,7 @@ export const INITIAL_SERVICES_DATA = RAW_INITIAL_SERVICES_DATA.map((item, idx) =
   note: item.note || '',
   noteUpdatedAt: item.noteUpdatedAt || null,
   history: item.history || [],
+  detail: item.detail || '',
   ...item
 }));
 
@@ -813,6 +815,7 @@ export default function ServicesDatabase() {
   const [formBtu, setFormBtu] = useState('');
   const [formSpecModel, setFormSpecModel] = useState('');
   const [formNote, setFormNote] = useState('');
+  const [formDetail, setFormDetail] = useState('');
   const [formIsCleaned, setFormIsCleaned] = useState(false);
 
   // Delete Confirmation Modal State
@@ -1176,6 +1179,7 @@ export default function ServicesDatabase() {
     setFormBtu('');
     setFormSpecModel('');
     setFormNote('');
+    setFormDetail('');
     setFormIsCleaned(false);
     setIsModalOpen(true);
   };
@@ -1192,6 +1196,7 @@ export default function ServicesDatabase() {
     setFormBtu(unit.btu || '');
     setFormSpecModel(unit.specModel || '');
     setFormNote(unit.note || '');
+    setFormDetail(unit.detail || '');
     setFormIsCleaned(Boolean(unit.isCleaned));
     setIsModalOpen(true);
   };
@@ -1212,6 +1217,7 @@ export default function ServicesDatabase() {
       note: formNote.trim(),
       noteUpdatedAt: formNote.trim() ? (editingItem?.note !== formNote.trim() ? new Date().toISOString() : editingItem?.noteUpdatedAt || new Date().toISOString()) : null,
       history: editingItem?.history || [],
+      detail: formDetail.trim(),
       isCleaned: formIsCleaned,
       cleanedAt: formIsCleaned ? (editingItem?.isCleaned ? editingItem?.cleanedAt || new Date().toISOString() : new Date().toISOString()) : null
     };
@@ -1270,7 +1276,7 @@ export default function ServicesDatabase() {
   // Export Table to CSV
   const handleExportCSV = () => {
     if (!units.length) return;
-    const headers = ['Supplier', 'Plant', 'No.', 'ชื่อใหม่ (New Code)', 'Brand', 'Location', 'BTU', 'spec/model', 'สถานะล้างแอร์ (Cleaned)', 'วันที่ล้าง (Cleaned Date)', 'หมายเหตุ (Remarks)', 'แก้ไขล่าสุด (Last Updated)'];
+    const headers = ['Supplier', 'Plant', 'No.', 'ชื่อใหม่ (New Code)', 'Brand', 'Location', 'BTU', 'spec/model', 'สถานะล้างแอร์ (Cleaned)', 'วันที่ล้าง (Cleaned Date)', 'หมายเหตุ (Remarks)', 'รายละเอียดเพิ่มเติม (Detail)', 'แก้ไขล่าสุด (Last Updated)'];
     const rows = filteredUnits.map(u => [
       `"${u.supplier || ''}"`,
       `"${u.plant || ''}"`,
@@ -1283,6 +1289,7 @@ export default function ServicesDatabase() {
       `"${u.isCleaned ? 'ล้างแล้ว' : 'ยังไม่ได้ล้าง'}"`,
       `"${formatDateTime(u.cleanedAt)}"`,
       `"${(u.note || '').replace(/"/g, '""')}"`,
+      `"${(u.detail || '').replace(/"/g, '""')}"`,
       `"${formatDateTime(u.noteUpdatedAt)}"`
     ]);
 
@@ -1310,10 +1317,10 @@ export default function ServicesDatabase() {
         const matchSpec = (u.specModel || '').toLowerCase().includes(q);
         const matchBtu = (u.btu || '').toLowerCase().includes(q);
         const matchSupplier = (u.supplier || '').toLowerCase().includes(q);
-        const matchNote = (u.note || '').toLowerCase().includes(q);
         const sInfo = getUnitStatusInfo(u);
         const matchIssue = (sInfo.latestIssue || '').toLowerCase().includes(q);
-        if (!matchCode && !matchLoc && !matchBrand && !matchSpec && !matchBtu && !matchSupplier && !matchNote && !matchIssue) {
+        const matchDetail = (u.detail || '').toLowerCase().includes(q);
+        if (!matchCode && !matchLoc && !matchBrand && !matchSpec && !matchBtu && !matchSupplier && !matchNote && !matchIssue && !matchDetail) {
           return false;
         }
       }
@@ -2386,15 +2393,28 @@ export default function ServicesDatabase() {
                         )}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={handleCloseHistoryDrawer}
-                        className="btn btn-sm"
-                        style={{ width: '32px', height: '32px', padding: 0, borderRadius: '16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                        title="ปิด (Close)"
-                      >
-                        <X size={16} />
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(activeUnitInDrawer)}
+                          className="btn btn-sm"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', padding: '3px 8px', height: '30px' }}
+                          title="แก้ไขข้อมูลอุปกรณ์ / ดู Detail"
+                        >
+                          <Edit2 size={12} />
+                          <span>แก้ไข / Detail</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleCloseHistoryDrawer}
+                          className="btn btn-sm"
+                          style={{ width: '30px', height: '30px', padding: 0, borderRadius: '15px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                          title="ปิด (Close)"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Middle Row: Title & Location */}
@@ -3249,6 +3269,51 @@ export default function ServicesDatabase() {
 
             <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
               💡 ระบบจะบันทึกวันที่และเวลาแก้ไขล่าสุดลงฐานข้อมูลให้อัตโนมัติเมื่อกดบันทึก
+            </span>
+          </div>
+
+          {/* SECTION 4: รายละเอียดเพิ่มเติม (Detail - ไม่แสดงผลหน้าแรก จะดูได้เมื่อกด Edit) */}
+          <div style={{ 
+            background: 'var(--surface2)', 
+            border: '1px solid var(--border)', 
+            borderRadius: '10px', 
+            padding: '14px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <FileText size={14} /> รายละเอียดเพิ่มเติม (Detail)
+              </div>
+              <span style={{ fontSize: '10.5px', color: 'var(--text3)', background: 'var(--surface)', padding: '2px 8px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                🔒 ไม่แสดงผลหน้าตารางหลัก (ดูได้เมื่อกด Edit)
+              </span>
+            </div>
+
+            <textarea 
+              rows={4} 
+              value={formDetail} 
+              onChange={(e) => setFormDetail(e.target.value)} 
+              placeholder="พิมพ์รายละเอียดเพิ่มเติมของอุปกรณ์ (เช่น หมายเลขเครื่อง / Serial Number, ประวัติการติดตั้ง, ข้อมูลเฉพาะ, เบอร์ติดต่อช่าง ฯลฯ)..."
+              style={{ 
+                width: '100%', 
+                boxSizing: 'border-box',
+                borderRadius: '8px', 
+                border: '1px solid var(--border)', 
+                padding: '8px 12px', 
+                fontSize: '13px', 
+                background: 'var(--surface)',
+                color: 'var(--text)',
+                resize: 'vertical',
+                minHeight: '80px',
+                outline: 'none',
+                fontFamily: 'inherit'
+              }}
+            />
+
+            <span style={{ fontSize: '11px', color: 'var(--text3)' }}>
+              💡 ข้อมูลส่วนนี้จะไม่แสดงผลบนตารางหรือการ์ดหน้าหลัก แต่สามารถค้นหาได้ผ่านช่องค้นหา และจะแสดงให้ดูเมื่อกด Edit รายการนี้
             </span>
           </div>
         </form>
