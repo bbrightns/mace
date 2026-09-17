@@ -1180,69 +1180,30 @@ export default function ServicesDatabase() {
       {/* KPI Metric Summary Cards */}
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
         gap: '12px', 
         marginBottom: '16px' 
       }}>
         {/* Card 1: Total Units */}
-        <div className="card" style={{ padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '11px', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <Server size={13} style={{ color: 'var(--accent)' }} />
+        <div className="card" style={{ padding: '14px 18px', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <span style={{ fontSize: '11.5px', color: 'var(--text3)', textTransform: 'uppercase', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Server size={14} style={{ color: 'var(--accent)' }} />
             Total Equipment
           </span>
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text)', marginTop: '4px' }}>
-            {metrics.total} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text3)' }}>units</span>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text)', marginTop: '4px' }}>
+            {metrics.total} <span style={{ fontSize: '13px', fontWeight: 'normal', color: 'var(--text3)' }}>units</span>
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '2px' }}>
+          <div style={{ fontSize: '11.5px', color: 'var(--text3)', marginTop: '4px' }}>
             Plant RFG: <strong style={{ color: '#3b82f6' }}>{metrics.rfgCount}</strong> | MIR: <strong style={{ color: '#8b5cf6' }}>{metrics.mirCount}</strong>
           </div>
         </div>
 
-        {/* Card 2: KB Cool */}
-        <div className="card" style={{ padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '11px', color: '#0891b2', textTransform: 'uppercase', fontWeight: '600' }}>
-            KB Cool (Air Cond)
-          </span>
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#0891b2', marginTop: '4px' }}>
-            {metrics.bySupplier['KB Cool']} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text3)' }}>units</span>
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '2px' }}>
-            RFG (14) • MIR (4)
-          </div>
-        </div>
-
-        {/* Card 3: Thai-Top-Therm */}
-        <div className="card" style={{ padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '11px', color: '#4f46e5', textTransform: 'uppercase', fontWeight: '600' }}>
-            Thai-Top-Therm (C/P)
-          </span>
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#4f46e5', marginTop: '4px' }}>
-            {metrics.bySupplier['Thai-Top-Therm']} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text3)' }}>units</span>
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '2px' }}>
-            RFG (2) • MIR (6)
-          </div>
-        </div>
-
-        {/* Card 4: SiamTemp & Carrier */}
-        <div className="card" style={{ padding: '12px 16px', background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <span style={{ fontSize: '11px', color: '#db2777', textTransform: 'uppercase', fontWeight: '600' }}>
-            SiamTemp & Carrier
-          </span>
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--text)', marginTop: '4px' }}>
-            {metrics.bySupplier['SiamTemp'] + metrics.bySupplier['Carrier']} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text3)' }}>units</span>
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--text3)', marginTop: '2px' }}>
-            SiamTemp: 6 • Carrier: 5
-          </div>
-        </div>
-
-        {/* Card 5: Cleaned Progress (ผรม. ล้างแอร์แล้ว) */}
+        {/* Card 2: Cleaned Progress (ผรม. ล้างแอร์แล้ว) */}
         <div 
           className="card" 
           onClick={() => setFilterCleaned(prev => prev === 'cleaned' ? 'all' : 'cleaned')}
           style={{ 
-            padding: '12px 16px', 
+            padding: '14px 18px', 
             background: filterCleaned === 'cleaned' ? 'rgba(16, 185, 129, 0.12)' : 'var(--surface)', 
             border: `1px solid ${filterCleaned === 'cleaned' ? '#10b981' : 'var(--border)'}`,
             cursor: 'pointer',
@@ -1250,38 +1211,39 @@ export default function ServicesDatabase() {
           }}
           title="คลิกเพื่อกรองดูเฉพาะตัวที่ ผรม. ล้างแอร์แล้ว"
         >
-          <span style={{ fontSize: '11px', color: '#059669', textTransform: 'uppercase', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <CheckCircle2 size={13} style={{ color: '#10b981' }} />
+          <span style={{ fontSize: '11.5px', color: '#059669', textTransform: 'uppercase', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CheckCircle2 size={14} style={{ color: '#10b981' }} />
             ผรม. ล้างแอร์แล้ว
           </span>
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#059669', marginTop: '4px' }}>
-            {metrics.cleanedCount} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text3)' }}>/ {metrics.total} ({metrics.cleanedPercent}%)</span>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#059669', marginTop: '4px' }}>
+            {metrics.cleanedCount} <span style={{ fontSize: '13px', fontWeight: 'normal', color: 'var(--text3)' }}>/ {metrics.total} ({metrics.cleanedPercent}%)</span>
           </div>
-          <div style={{ width: '100%', height: '4px', background: 'var(--surface3)', borderRadius: '2px', marginTop: '6px', overflow: 'hidden' }}>
+          <div style={{ width: '100%', height: '4px', background: 'var(--surface3)', borderRadius: '2px', marginTop: '8px', overflow: 'hidden' }}>
             <div style={{ width: `${metrics.cleanedPercent}%`, height: '100%', background: '#10b981', transition: 'width 0.3s' }} />
           </div>
         </div>
 
-        {/* Card 6: Issues / Repairs Pending */}
+        {/* Card 3: Issues / Repairs Pending */}
         <div 
           className="card" 
           onClick={() => setFilterIssueOnly(prev => !prev)}
           style={{ 
-            padding: '12px 16px', 
+            padding: '14px 18px', 
             background: filterIssueOnly ? 'rgba(239, 68, 68, 0.1)' : 'var(--surface)', 
             border: `1px solid ${filterIssueOnly ? '#ef4444' : 'var(--border)'}`,
-            cursor: 'pointer'
+            cursor: 'pointer',
+            transition: 'all 0.15s'
           }}
           title="คลิกเพื่อกรองเฉพาะรายการที่มีหมายเหตุ / ปัญหา"
         >
-          <span style={{ fontSize: '11px', color: '#dc2626', textTransform: 'uppercase', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <AlertTriangle size={13} style={{ color: '#dc2626' }} />
+          <span style={{ fontSize: '11.5px', color: '#dc2626', textTransform: 'uppercase', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <AlertTriangle size={14} style={{ color: '#dc2626' }} />
             Issues / หมายเหตุเสีย
           </span>
-          <div style={{ fontSize: '22px', fontWeight: 'bold', color: '#dc2626', marginTop: '4px' }}>
-            {metrics.issueCount} <span style={{ fontSize: '12px', fontWeight: 'normal', color: 'var(--text3)' }}>issues</span>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc2626', marginTop: '4px' }}>
+            {metrics.issueCount} <span style={{ fontSize: '13px', fontWeight: 'normal', color: 'var(--text3)' }}>issues</span>
           </div>
-          <div style={{ fontSize: '11px', color: filterIssueOnly ? '#b91c1c' : 'var(--text3)', marginTop: '2px', fontWeight: filterIssueOnly ? '600' : 'normal' }}>
+          <div style={{ fontSize: '11.5px', color: filterIssueOnly ? '#b91c1c' : 'var(--text3)', marginTop: '4px', fontWeight: filterIssueOnly ? '600' : 'normal' }}>
             {filterIssueOnly ? '✓ กำลังกรองเฉพาะรายการเสีย' : 'คลิกเพื่อดูเฉพาะเครื่องมีปัญหา'}
           </div>
         </div>
