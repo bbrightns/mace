@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Search, 
   Plus, 
@@ -820,6 +820,28 @@ export default function ServicesDatabase() {
 
   // Delete Confirmation Modal State
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null });
+
+  // Refs and auto-expand helpers for modal textareas
+  const detailTextareaRef = useRef(null);
+  const noteTextareaRef = useRef(null);
+
+  const adjustTextareaHeight = (el, minH = 80) => {
+    if (!el) return;
+    el.style.height = 'auto';
+    const nextH = Math.max(el.scrollHeight, minH);
+    el.style.height = `${nextH}px`;
+  };
+
+  // Automatically recalculate textarea height when modal opens or content updates
+  useEffect(() => {
+    if (isModalOpen) {
+      const timer = setTimeout(() => {
+        adjustTextareaHeight(detailTextareaRef.current, 80);
+        adjustTextareaHeight(noteTextareaRef.current, 70);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isModalOpen, formDetail, formNote]);
 
   // Sync with Cloud Firestore (mace_audits/services_database_master)
   useEffect(() => {
@@ -3215,21 +3237,27 @@ export default function ServicesDatabase() {
 
             {/* Remarks Textarea */}
             <textarea 
-              rows={3} 
+              ref={noteTextareaRef}
+              rows={2} 
               value={formNote} 
-              onChange={(e) => setFormNote(e.target.value)} 
+              onChange={(e) => {
+                setFormNote(e.target.value);
+                adjustTextareaHeight(e.target, 70);
+              }} 
               placeholder="พิมพ์หมายเหตุ หรือคลิกเลือกสถานะด่วนด้านบน..."
               style={{ 
                 width: '100%', 
                 boxSizing: 'border-box',
                 borderRadius: '8px', 
                 border: `1px solid ${formNote ? '#fca5a5' : 'var(--border)'}`, 
-                padding: '8px 12px', 
+                padding: '10px 12px', 
                 fontSize: '13px', 
+                lineHeight: '1.5',
                 background: 'var(--surface)',
                 color: 'var(--text)',
                 resize: 'vertical',
                 minHeight: '70px',
+                overflowY: 'hidden',
                 outline: 'none',
                 fontFamily: 'inherit'
               }}
@@ -3251,9 +3279,9 @@ export default function ServicesDatabase() {
               }}
             >
               <input 
-                type="checkbox"
-                checked={formIsCleaned}
-                onChange={(e) => setFormIsCleaned(e.target.checked)}
+                type="checkbox" 
+                checked={formIsCleaned} 
+                onChange={(e) => setFormIsCleaned(e.target.checked)} 
                 style={{ width: '18px', height: '18px', accentColor: '#10b981', cursor: 'pointer' }}
                 onClick={(e) => e.stopPropagation()}
               />
@@ -3292,23 +3320,31 @@ export default function ServicesDatabase() {
             </div>
 
             <textarea 
-              rows={4} 
+              ref={detailTextareaRef}
+              rows={3} 
               value={formDetail} 
-              onChange={(e) => setFormDetail(e.target.value)} 
+              onChange={(e) => {
+                setFormDetail(e.target.value);
+                adjustTextareaHeight(e.target, 80);
+              }} 
               placeholder="พิมพ์รายละเอียดเพิ่มเติมของอุปกรณ์ (เช่น หมายเลขเครื่อง / Serial Number, ประวัติการติดตั้ง, ข้อมูลเฉพาะ, เบอร์ติดต่อช่าง ฯลฯ)..."
               style={{ 
                 width: '100%', 
                 boxSizing: 'border-box',
                 borderRadius: '8px', 
                 border: '1px solid var(--border)', 
-                padding: '8px 12px', 
+                padding: '10px 12px', 
                 fontSize: '13px', 
+                lineHeight: '1.6',
                 background: 'var(--surface)',
                 color: 'var(--text)',
                 resize: 'vertical',
                 minHeight: '80px',
+                overflowY: 'hidden',
                 outline: 'none',
-                fontFamily: 'inherit'
+                fontFamily: 'inherit',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
               }}
             />
 
