@@ -344,8 +344,8 @@ const RAW_INITIAL_SERVICES_DATA = [
     location: "LOGO Control Room",
     btu: "12200",
     specModel: "38TSAA013 / 42TSAA013",
-    note: "",
-    noteUpdatedAt: null,
+    note: "เสีย ไม่ได้ล้าง",
+    noteUpdatedAt: "2026-09-17T03:15:07.277Z",
     isCleaned: false,
     cleanedAt: null
   },
@@ -688,46 +688,13 @@ export default function ServicesDatabase() {
   // Delete Confirmation Modal State
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, item: null });
 
-  // Sync with Cloud Firestore (mace_pm_plans/services_database_master)
+  // Sync with Cloud Firestore (mace_audits/services_database_master)
   useEffect(() => {
     setLoading(true);
     const unsub = subscribeServicesDatabase(
-      async (cloudItems) => {
-        if (cloudItems && cloudItems.length > 0) {
-          // Check if local cache has any ticked items that might not have made it to cloud yet
-          let merged = [...cloudItems];
-          try {
-            const cached = localStorage.getItem('mace_services_database_cache');
-            if (cached) {
-              const localParsed = JSON.parse(cached);
-              if (Array.isArray(localParsed)) {
-                let hasLocalChanges = false;
-                merged = cloudItems.map(cItem => {
-                  const localMatch = localParsed.find(l => 
-                    (l.id && l.id === cItem.id) ||
-                    (l.supplier === cItem.supplier && l.plant === cItem.plant && l.itemNo === cItem.itemNo)
-                  );
-                  if (localMatch) {
-                    // If local has isCleaned true and cloud doesn't, preserve local tick!
-                    if (localMatch.isCleaned && !cItem.isCleaned) {
-                      hasLocalChanges = true;
-                      return { ...cItem, isCleaned: true, cleanedAt: localMatch.cleanedAt || new Date().toISOString() };
-                    }
-                    if (localMatch.note && !cItem.note) {
-                      hasLocalChanges = true;
-                      return { ...cItem, note: localMatch.note, noteUpdatedAt: localMatch.noteUpdatedAt || new Date().toISOString() };
-                    }
-                  }
-                  return cItem;
-                });
-                if (hasLocalChanges) {
-                  await saveServicesDatabaseToCloud(merged);
-                }
-              }
-            }
-          } catch (e) {}
-
-          const sorted = [...merged].sort((a, b) => {
+      (cloudItems) => {
+        if (cloudItems && Array.isArray(cloudItems) && cloudItems.length > 0) {
+          const sorted = [...cloudItems].sort((a, b) => {
             const supplierOrder = ['SiamTemp', 'Thai-Top-Therm', 'Carrier', 'KB Cool'];
             const sDiff = supplierOrder.indexOf(a.supplier) - supplierOrder.indexOf(b.supplier);
             if (sDiff !== 0) return sDiff;
@@ -740,41 +707,16 @@ export default function ServicesDatabase() {
             localStorage.setItem('mace_services_database_cache', JSON.stringify(sorted));
           } catch (e) {}
         } else {
-          // Cloud store is not initialized yet: seed to Cloud Firestore
-          let seedData = INITIAL_SERVICES_DATA;
+          // If cloud document is temporarily not loaded, fallback to local cache
           try {
             const cached = localStorage.getItem('mace_services_database_cache');
             if (cached) {
               const localParsed = JSON.parse(cached);
               if (Array.isArray(localParsed) && localParsed.length > 0) {
-                seedData = INITIAL_SERVICES_DATA.map(initItem => {
-                  const match = localParsed.find(l => 
-                    (l.id && l.id === initItem.id) ||
-                    (l.supplier === initItem.supplier && l.plant === initItem.plant && l.itemNo === initItem.itemNo)
-                  );
-                  if (match) {
-                    return {
-                      ...initItem,
-                      isCleaned: Boolean(match.isCleaned),
-                      cleanedAt: match.cleanedAt || null,
-                      note: match.note || initItem.note,
-                      noteUpdatedAt: match.noteUpdatedAt || initItem.noteUpdatedAt
-                    };
-                  }
-                  return initItem;
-                });
+                setUnits(localParsed);
               }
             }
           } catch (e) {}
-
-          try {
-            await saveServicesDatabaseToCloud(seedData);
-            setUnits(seedData);
-            localStorage.setItem('mace_services_database_cache', JSON.stringify(seedData));
-          } catch (err) {
-            console.error('Failed to seed services database to cloud:', err);
-            setUnits(seedData);
-          }
         }
         setLoading(false);
       },
