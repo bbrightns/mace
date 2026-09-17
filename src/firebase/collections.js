@@ -292,11 +292,36 @@ export function subscribeCollection(collectionName, onNext, onError) {
   );
 }
 
+/**
+ * Recursively sanitize objects before writing to Firestore.
+ * Firestore strictly disallows `undefined` values and throws:
+ * "Unsupported field value: undefined".
+ * This helper strips undefined or converts them cleanly to null.
+ */
+export function sanitizeForFirestore(val) {
+  if (val === undefined) return null;
+  if (val === null) return null;
+  if (Array.isArray(val)) {
+    return val.map(sanitizeForFirestore);
+  }
+  if (typeof val === 'object' && val.constructor === Object) {
+    const cleaned = {};
+    for (const [k, v] of Object.entries(val)) {
+      if (v !== undefined) {
+        cleaned[k] = sanitizeForFirestore(v);
+      }
+    }
+    return cleaned;
+  }
+  return val;
+}
+
 export async function createDocument(collectionName, data) {
   try {
     const colRef = collection(db, collectionName);
+    const sanitized = sanitizeForFirestore(data);
     const docRef = await addDoc(colRef, {
-      ...data,
+      ...sanitized,
       createdAt: new Date().toISOString()
     });
     return docRef.id;
@@ -308,10 +333,11 @@ export async function createDocument(collectionName, data) {
 export async function updateDocument(collectionName, id, data) {
   try {
     const docRef = doc(db, collectionName, id);
-    await updateDoc(docRef, {
-      ...data,
+    const sanitized = sanitizeForFirestore(data);
+    await setDoc(docRef, {
+      ...sanitized,
       updatedAt: new Date().toISOString()
-    });
+    }, { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `${collectionName}/${id}`);
   }
@@ -320,8 +346,9 @@ export async function updateDocument(collectionName, id, data) {
 export async function setDocument(collectionName, id, data) {
   try {
     const docRef = doc(db, collectionName, id);
+    const sanitized = sanitizeForFirestore(data);
     await setDoc(docRef, {
-      ...data,
+      ...sanitized,
       updatedAt: new Date().toISOString()
     }, { merge: true });
   } catch (error) {
@@ -350,20 +377,22 @@ export async function batchWriteOperations(operations) {
 
     for (const op of chunk) {
       const targetId = op.id || op.docId;
+      if (!targetId && op.type !== 'create') continue;
+
       if (op.type === 'delete') {
         const docRef = doc(db, op.collectionName, targetId);
         batch.delete(docRef);
       } else if (op.type === 'set') {
         const docRef = doc(db, op.collectionName, targetId);
         batch.set(docRef, {
-          ...op.data,
+          ...sanitizeForFirestore(op.data),
           updatedAt: new Date().toISOString()
         }, { merge: true });
       } else if (op.type === 'create') {
         const colRef = collection(db, op.collectionName);
         const newDocRef = targetId ? doc(db, op.collectionName, targetId) : doc(colRef);
         batch.set(newDocRef, {
-          ...op.data,
+          ...sanitizeForFirestore(op.data),
           createdAt: new Date().toISOString()
         });
         if (op.onDocCreated) {
@@ -371,10 +400,10 @@ export async function batchWriteOperations(operations) {
         }
       } else if (op.type === 'update') {
         const docRef = doc(db, op.collectionName, targetId);
-        batch.update(docRef, {
-          ...op.data,
+        batch.set(docRef, {
+          ...sanitizeForFirestore(op.data),
           updatedAt: new Date().toISOString()
-        });
+        }, { merge: true });
       }
     }
 
@@ -428,8 +457,9 @@ export async function getServicesDatabaseFromCloud() {
 export async function saveServicesDatabaseToCloud(items) {
   try {
     const storeDocRef = doc(db, 'mace_audits', 'services_database_master');
+    const sanitized = sanitizeForFirestore(items);
     await setDoc(storeDocRef, {
-      items,
+      items: sanitized,
       updatedAt: new Date().toISOString()
     }, { merge: true });
     return true;

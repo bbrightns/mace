@@ -298,7 +298,6 @@ export default function PMPlan() {
   const [logUploadProgress, setLogUploadProgress] = useState(0);
   const [existingLog, setExistingLog] = useState(null);
   const [showDeleteLogConfirm, setShowDeleteLogConfirm] = useState(false);
-  const [deletingPlanId, setDeletingPlanId] = useState(null);
   const [planToDelete, setPlanToDelete] = useState(null);
 
   // Import Modal states
@@ -619,6 +618,11 @@ export default function PMPlan() {
       attachment: planAttachments[0] || null // For backwards compatibility
     };
 
+    // If editing existing item with existing completion date, recalculate nextDueDate in case cycle changed
+    if (editingItem && editingItem.lastDoneDate) {
+      payload.nextDueDate = calculateNextDueDate(editingItem.lastDoneDate, cycle);
+    }
+
     try {
       if (editingItem) {
         await updateDocument('mace_pm_plans', editingItem.id, payload);
@@ -687,23 +691,35 @@ export default function PMPlan() {
   };
 
   const handleOpenDeleteModal = (item) => {
-    setPlanToDelete(item);
+    handleDelete(item);
   };
 
   const confirmDeletePlan = async () => {
     if (!planToDelete) return;
+    const targetId = planToDelete.id || (typeof planToDelete === 'string' ? planToDelete : null);
+    if (!targetId) return;
     try {
-      await deleteDocument('mace_pm_plans', planToDelete.id);
-      showToast(`PM Schedule "${planToDelete.machineName}" deleted.`);
+      await deleteDocument('mace_pm_plans', targetId);
+      // Clean up any associated completion logs for this plan
+      const associatedLogs = logs.filter(l => l.planId === targetId);
+      if (associatedLogs.length > 0) {
+        await batchDeleteDocuments('mace_pm_logs', associatedLogs.map(l => l.id));
+      }
+      showToast(`PM Schedule "${planToDelete.machineName || 'Item'}" deleted.`);
       setPlanToDelete(null);
       setIsOpen(false);
     } catch (error) {
+      console.error('Failed to delete PM schedule:', error);
       showToast('Failed to delete PM schedule.', 'error');
     }
   };
 
-  const handleDelete = (item) => {
-    setPlanToDelete(item);
+  const handleDelete = (itemOrId) => {
+    if (!itemOrId) return;
+    const target = typeof itemOrId === 'object' && itemOrId !== null
+      ? itemOrId 
+      : items.find(i => i.id === itemOrId);
+    setPlanToDelete(target || { id: itemOrId, machineName: 'PM Item' });
   };
 
   // Dynamic Helpers for item completions and schedules
@@ -4838,13 +4854,12 @@ export default function PMPlan() {
                             <Edit2 size={12} />
                           </button>
                           <button 
-                            className={`btn btn-sm ${deletingPlanId === item.id ? 'btn-danger bg-red-600 animate-pulse' : 'btn-danger'}`} 
-                            onClick={() => handleDelete(item.id)}
-                            title={deletingPlanId === item.id ? 'Click again to confirm delete' : 'Delete Plan'}
+                            className="btn btn-sm btn-danger" 
+                            onClick={() => handleDelete(item)}
+                            title="Delete Plan"
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                           >
                             <Trash2 size={12} />
-                            {deletingPlanId === item.id && <span style={{ fontSize: '10px', fontWeight: 'bold' }}>Confirm?</span>}
                           </button>
                         </div>
                       </td>
@@ -5000,12 +5015,12 @@ export default function PMPlan() {
                       <span>Edit</span>
                     </button>
                     <button 
-                      className={`btn btn-sm ${deletingPlanId === item.id ? 'btn-danger bg-red-600 animate-pulse' : 'btn-danger'}`} 
-                      onClick={() => handleDelete(item.id)}
+                      className="btn btn-sm btn-danger" 
+                      onClick={() => handleDelete(item)}
+                      title="Delete Plan"
                       style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     >
                       <Trash2 size={12} />
-                      {deletingPlanId === item.id && <span style={{ fontSize: '10px', fontWeight: 'bold' }}>Confirm?</span>}
                     </button>
                   </div>
                 </div>
